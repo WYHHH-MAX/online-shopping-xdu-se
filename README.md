@@ -88,6 +88,7 @@ mvn spring-boot:run
 - 个人中心和订单历史
 
 ## 项目结构
+```
 spm2/
 ├── frontend/ # Vue.js前端项目
 │ ├── public/ # 静态资源
@@ -117,3 +118,4 @@ spm2/
 │ │ ├── static/ # 静态资源
 │ │ └── application.yml # 应用配置
 └── pom.xml # Maven配置
+```
