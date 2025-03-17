@@ -91,7 +91,7 @@ const loadOrders = async () => {
   try {
     loading.value = true
     const res = await getOrders({ status: props.status })
-    orders.value = res.data
+    orders.value = res.records || []
   } catch (error) {
     message.error('获取订单列表失败')
   } finally {
@@ -100,25 +100,33 @@ const loadOrders = async () => {
 }
 
 const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    unpaid: 'orange',
-    paid: 'blue',
-    shipped: 'cyan',
-    completed: 'green',
-    cancelled: 'red'
+  // 将字符串转为数字
+  const statusNum = parseInt(status)
+  
+  // 根据数字状态码返回颜色
+  switch(statusNum) {
+    case 0: return 'orange' // 待付款
+    case 1: return 'blue'   // 待发货
+    case 2: return 'cyan'   // 待收货
+    case 3: return 'green'  // 已完成
+    case 4: return 'red'    // 已取消
+    default: return 'default'
   }
-  return colors[status] || 'default'
 }
 
 const getStatusText = (status: string) => {
-  const texts: Record<string, string> = {
-    unpaid: '待付款',
-    paid: '已付款',
-    shipped: '已发货',
-    completed: '已完成',
-    cancelled: '已取消'
+  // 将字符串转为数字
+  const statusNum = parseInt(status)
+  
+  // 根据数字状态码返回文本
+  switch(statusNum) {
+    case 0: return '待付款'
+    case 1: return '待发货'
+    case 2: return '待收货'
+    case 3: return '已完成'
+    case 4: return '已取消'
+    default: return status
   }
-  return texts[status] || status
 }
 
 const handlePay = async (order: Order) => {

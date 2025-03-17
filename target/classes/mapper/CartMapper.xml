@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shop.online.mapper.CartMapper">
+    
+    <resultMap id="CartMap" type="com.shop.online.entity.Cart">
+        <id property="id" column="id" />
+        <result property="userId" column="user_id" />
+        <result property="productId" column="product_id" />
+        <result property="quantity" column="quantity" />
+        <result property="selected" column="selected" />
+        <result property="createdTime" column="created_time" />
+        <result property="updatedTime" column="updated_time" />
+        <result property="deleted" column="deleted" />
+    </resultMap>
+    
+    <select id="selectByUserId" resultMap="CartMap">
+        SELECT * FROM cart 
+        WHERE user_id = #{userId} AND deleted = 0
+    </select>
+    
+    <select id="selectById" resultMap="CartMap">
+        SELECT * FROM cart 
+        WHERE id = #{id} AND deleted = 0
+    </select>
+    
+    <select id="selectByUserIdAndProductId" resultMap="CartMap">
+        SELECT * FROM cart 
+        WHERE user_id = #{userId} AND product_id = #{productId} AND deleted = 0
+    </select>
+    
+    <insert id="insert" parameterType="com.shop.online.entity.Cart" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO cart (user_id, product_id, quantity, selected, created_time, updated_time, deleted)
+        VALUES (#{userId}, #{productId}, #{quantity}, #{selected}, #{createdTime}, #{updatedTime}, #{deleted})
+    </insert>
+    
+    <update id="update" parameterType="com.shop.online.entity.Cart">
+        UPDATE cart 
+        SET quantity = #{quantity}, 
+            selected = #{selected}, 
+            updated_time = #{updatedTime}
+        WHERE id = #{id}
+    </update>
+    
+    <update id="deleteById">
+        UPDATE cart 
+        SET deleted = 1, 
+            updated_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <update id="updateSelectedByUserId">
+        UPDATE cart 
+        SET selected = #{selected}, 
+            updated_time = NOW()
+        WHERE user_id = #{userId} AND deleted = 0
+    </update>
+    
+    <select id="countByUserId" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM cart 
+        WHERE user_id = #{userId} AND deleted = 0
+    </select>
+    
+</mapper> 

@@ -28,7 +28,10 @@
             @mouseenter="handleMenuMouseEnter"
           >
             <template v-for="category in categories" :key="'item-' + category.id">
-              <a-menu-item @mouseenter="() => handleCategoryHover(category)">
+              <a-menu-item 
+                @mouseenter="handleCategoryHover(category)" 
+                @click="handleCategoryClick(category)"
+              >
                 <component :is="getIcon(category.icon)" />
                 <span>{{ category.name }}</span>
                 <RightOutlined class="submenu-arrow" />
@@ -37,16 +40,20 @@
           </a-menu>
 
           <!-- 子分类弹出层 -->
-          <div v-if="showSubMenu && hoveredCategory" class="sub-categories" :style="subMenuStyle">
+          <div 
+            v-if="showSubMenu && hoveredCategory" 
+            class="sub-categories" 
+            @mouseleave="handleSubMenuMouseLeave"
+          >
             <div class="sub-category-content">
               <template v-if="hoveredCategory.children && hoveredCategory.children.length">
                 <div v-for="subCategory in hoveredCategory.children" :key="'sub-' + subCategory.id" class="sub-category-section">
-                  <h4>{{ subCategory.name }}</h4>
+                  <h4 @click="handleCategoryClick(subCategory)">{{ subCategory.name }}</h4>
                   <div class="sub-category-items">
                     <a 
                       v-for="item in subCategory.children" 
                       :key="'item-' + item.id"
-                      @click.stop="handleSubCategoryClick(item)"
+                      @click="handleCategoryClick(item)"
                       class="sub-category-link"
                     >
                       {{ item.name }}
@@ -113,12 +120,13 @@ import { ref, onMounted, h } from 'vue'
 import { message } from 'ant-design-vue'
 import { ShoppingCartOutlined, EyeOutlined, AppstoreOutlined, RightOutlined } from '@ant-design/icons-vue'
 import * as Icons from '@ant-design/icons-vue'
-import { getCategoryTree } from '@/api/category'
-import { searchProducts, getFeaturedProducts } from '@/api/product'
-import type { CategoryVO } from '@/types/category'
-import type { ProductVO } from '@/types/product'
+import { getCategoryTree } from '../api/category'
+import { searchProducts, getFeaturedProducts, getNewProducts, getHotProducts } from '../api/product'
+import { quickAddToCart } from '../api/cart'
+import type { CategoryVO } from '../types/category'
+import type { ProductVO } from '../types/product'
 import { useRouter } from 'vue-router'
-import { getImageUrl } from '@/utils/imageUtil'
+import { getImageUrl } from '../utils/imageUtil'
 
 const router = useRouter()
 const searchKeyword = ref('')
@@ -129,6 +137,9 @@ const currentPage = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
 const featuredProducts = ref<ProductVO[]>([])
+const newProducts = ref<ProductVO[]>([])
+const hotProducts = ref<ProductVO[]>([])
+const searchQuery = ref('')
 
 // 分类导航相关
 const showSubMenu = ref(false)
@@ -145,131 +156,73 @@ const getIcon = (iconName: string | undefined) => {
   return IconComponent ? h(IconComponent) : h(AppstoreOutlined)
 }
 
-// 定义API响应类型
-interface ApiResult<T> {
-  code: number;
-  message: string;
-  data: T;
-}
-
-interface PageResult<T> {
-  total: number;
-  list: T[];
-}
-
 // 获取分类树
 const loadCategories = async () => {
   try {
-    const res = await getCategoryTree()
-    // console.log('分类树响应:', res)
-    // 根据Result<List<CategoryVO>>格式处理响应
-    const responseData = res.data as any;
-    if (responseData && responseData.code === 200) {
-      // Result包装的数据在data.data中
-      categories.value = responseData.data || []
-    } else {
-      // console.warn('获取分类数据格式不符合预期:', responseData)
-      categories.value = []
-    }
+    const result = await getCategoryTree()
+    categories.value = result
   } catch (error) {
-    // console.error('获取分类失败:', error)
-    message.error('获取分类失败')
+    console.error('获取分类列表失败:', error)
+    message.error('获取分类列表失败')
   }
 }
 
 // 加载推荐商品
 const loadFeaturedProducts = async () => {
   try {
-    console.log('开始请求推荐商品...')
-    console.log('请求URL:', '/api/product/featured', '参数:', { page: 1, size: 5 })
-    const res = await getFeaturedProducts()
-    console.log('推荐商品响应状态:', res.status)
-    console.log('推荐商品响应头:', res.headers)
-    console.log('推荐商品原始响应:', res)
-    
-    // 根据PageResult<ProductVO>格式处理响应
-    const responseData = res.data as any;
-    console.log('响应数据结构:', responseData)
-    console.log('响应数据类型:', typeof responseData)
-    
-    if (responseData) {
-      // 如果是直接返回的PageResult
-      if (responseData.list) {
-        console.log('使用PageResult.list格式数据')
-        featuredProducts.value = responseData.list || []
-        console.log('处理后的推荐商品数量:', featuredProducts.value.length)
-        // 打印第一个商品的图片URL
-        if (featuredProducts.value.length > 0) {
-          for (let i = 0; i < Math.min(featuredProducts.value.length, 3); i++) {
-            const product = featuredProducts.value[i]
-            console.log(`商品${i+1}:`, {
-              id: product.id,
-              name: product.name,
-              mainImage: product.mainImage,
-              处理后的URL: getImageUrl(product.mainImage)
-            })
-          }
-          
-          // 渲染后检查DOM
-          setTimeout(() => {
-            console.log('轮播图容器:', document.querySelector('.carousel-section'))
-            console.log('轮播图项目数量:', document.querySelectorAll('.carousel-item').length)
-            const imgs = document.querySelectorAll('.carousel-image')
-            console.log('轮播图图片数量:', imgs.length)
-            if (imgs.length > 0) {
-              console.log('第一张图片src:', (imgs[0] as HTMLImageElement).src)
-              console.log('第一张图片complete:', (imgs[0] as HTMLImageElement).complete)
-            }
-          }, 1000)
-        } else {
-          console.warn('没有推荐商品数据')
-        }
-      } 
-      // 如果是Result包装的PageResult
-      else if (responseData.code === 200 && responseData.data && responseData.data.list) {
-        console.log('使用Result<PageResult>.data.list格式数据')
-        featuredProducts.value = responseData.data.list || []
-        console.log('处理后的推荐商品:', featuredProducts.value)
-      }
-      // 如果直接返回数组
-      else if (Array.isArray(responseData)) {
-        console.log('使用数组格式数据')
-        featuredProducts.value = responseData
-        console.log('处理后的推荐商品:', featuredProducts.value)
-      }
-      else {
-        console.warn('获取推荐商品数据格式不符合预期:', responseData)
-        featuredProducts.value = []
-      }
-    }
-  } catch (error: any) {
+    const result = await getFeaturedProducts()
+    featuredProducts.value = result.records
+  } catch (error) {
     console.error('获取推荐商品失败:', error)
-    console.error('错误详情:', {
-      status: error?.response?.status,
-      data: error?.response?.data,
-      message: error?.message
-    })
     message.error('获取推荐商品失败')
+  }
+}
+
+// 加载新品
+const loadNewProducts = async () => {
+  try {
+    const result = await getNewProducts()
+    newProducts.value = result.records
+  } catch (error) {
+    console.error('获取新品失败:', error)
+    message.error('获取新品失败')
+  }
+}
+
+// 加载热销商品
+const loadHotProducts = async () => {
+  try {
+    const result = await getHotProducts()
+    hotProducts.value = result.records
+  } catch (error) {
+    console.error('获取热销商品失败:', error)
+    message.error('获取热销商品失败')
   }
 }
 
 // 搜索商品
 const handleSearch = async () => {
+  if (!searchKeyword.value.trim()) {
+    message.warning('请输入搜索关键词')
+    return
+  }
   try {
-    const res = await searchProducts({
+    const result = await searchProducts({
       keyword: searchKeyword.value,
-      categoryId: selectedCategory.value[0] ? parseInt(selectedCategory.value[0].replace(/^(parent-|sub-|item-|sub-item-)/, '')) : undefined,
-      page: currentPage.value,
-      size: pageSize.value
+      page: 1,
+      size: 12
     })
-    if (res.data) {
-      products.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    products.value = result.records
+    total.value = result.total
   } catch (error) {
     console.error('搜索商品失败:', error)
     message.error('搜索商品失败')
   }
+}
+
+// 处理分类点击
+const handleCategoryClick = (category: CategoryVO) => {
+  router.push(`/category/${category.id}`)
 }
 
 // 处理分类悬停
@@ -280,17 +233,14 @@ const handleCategoryHover = (category: CategoryVO) => {
 
 // 处理菜单鼠标进入
 const handleMenuMouseEnter = () => {
-  showSubMenu.value = true
+  if (hoveredCategory.value) {
+    showSubMenu.value = true
+  }
 }
 
-// 选择分类
-const handleCategorySelect = (categoryId: string) => {
-  selectedCategory.value = [categoryId]
-  currentPage.value = 1
+// 处理子菜单鼠标离开
+const handleSubMenuMouseLeave = () => {
   showSubMenu.value = false
-  handleSearch()
-  // 阻止事件冒泡
-  event?.stopPropagation()
 }
 
 // 翻页
@@ -300,24 +250,20 @@ const handlePageChange = (page: number) => {
 }
 
 // 添加到购物车
-const addToCart = (product: ProductVO) => {
-  message.success('添加到购物车成功')
+const addToCart = async (product: ProductVO) => {
+  try {
+    // 使用快速添加API
+    await quickAddToCart(product.id)
+    message.success('添加到购物车成功')
+  } catch (error) {
+    console.error('添加到购物车失败:', error)
+    message.error('添加到购物车失败')
+  }
 }
 
 // 查看商品详情
 const viewProduct = (product: ProductVO) => {
   router.push(`/product/${product.id}`)
-}
-
-// 在script部分添加handleSubCategoryClick函数
-// 选择分类
-const handleSubCategoryClick = (category: CategoryVO) => {
-  selectedCategory.value = [`item-${category.id}`]
-  currentPage.value = 1
-  showSubMenu.value = false
-  handleSearch()
-  // 阻止事件冒泡
-  event?.stopPropagation()
 }
 
 onMounted(() => {
@@ -380,19 +326,34 @@ onMounted(() => {
 
 .category-nav .ant-menu {
   border-right: none;
+  height: 100%;
+}
+
+.submenu-arrow {
+  position: absolute;
+  right: 16px;
+  font-size: 12px;
 }
 
 .sub-categories {
   position: absolute;
   left: 200px;
+  width: 400px;
   top: 0;
-  min-width: 200px;
-  max-width: 300px;
-  min-height: 100%;
-  background: #fff;
+  bottom: 0;
+  overflow-y: auto;
+  background-color: white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  padding: 16px;
-  z-index: 99;
+  z-index: 1000;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sub-category-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .sub-category-section {
@@ -400,18 +361,26 @@ onMounted(() => {
 }
 
 .sub-category-section h4 {
-  font-size: 14px;
+  margin: 0;
+  padding: 8px;
+  cursor: pointer;
   color: #333;
-  margin-bottom: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  transition: all 0.3s;
+  font-weight: bold;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sub-category-section h4:hover {
+  color: #1890ff;
+  background-color: #f5f5f5;
 }
 
 .sub-category-items {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 8px;
+  padding: 0 8px;
 }
 
 .sub-category-items a {
@@ -423,10 +392,13 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100px;
+  transition: all 0.3s;
 }
 
 .sub-category-items a:hover {
   color: #1890ff;
+  background-color: #f5f5f5;
+  border-radius: 2px;
 }
 
 .carousel-section {
@@ -583,23 +555,17 @@ onMounted(() => {
   font-size: 16px;
 }
 
-.submenu-arrow {
-  margin-left: auto;
-}
-
 .sub-category-link {
-  display: inline-block;
-  color: #666;
-  font-size: 12px;
+  color: #333;
+  text-decoration: none;
   padding: 4px 8px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+  display: block;
+  transition: all 0.3s;
 }
 
 .sub-category-link:hover {
   color: #1890ff;
-  background: #e6f7ff;
+  background-color: #f5f5f5;
 }
 
 .carousel-content h3 {

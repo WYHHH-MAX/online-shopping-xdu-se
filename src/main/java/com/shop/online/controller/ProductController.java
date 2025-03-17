@@ -18,11 +18,12 @@ public class ProductController {
     private ProductService productService;
 
     @GetMapping("/category/{categoryId}")
-    public PageResult<ProductVO> getProductsByCategory(
-            @PathVariable Long categoryId,
+    public Result getProductsByCategory(
+            @PathVariable Integer categoryId,
             @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        return productService.getProductsByCategory(categoryId, page, size);
+            @RequestParam(defaultValue = "12") Integer size,
+            @RequestParam(required = false) String sortBy) {
+        return Result.success(productService.getProductsByCategory(categoryId, page, size, sortBy));
     }
 
     @GetMapping("/{id}")

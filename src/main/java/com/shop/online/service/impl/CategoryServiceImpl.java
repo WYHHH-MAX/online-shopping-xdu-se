@@ -9,6 +9,7 @@ import com.shop.online.mapper.CategoryMapper;
 import com.shop.online.service.CategoryService;
 import com.shop.online.vo.category.CategoryVO;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
+
+    @Autowired
+    private CategoryMapper categoryMapper;
 
     @Override
     public List<CategoryVO> tree() {
@@ -137,6 +141,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         return categories.stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public CategoryVO getCategoryById(Long id) {
+        Category category = categoryMapper.selectById(id);
+        if (category == null) {
+            return null;
+        }
+        return convertToVO(category);
     }
 
     private CategoryVO convertToVO(Category category) {

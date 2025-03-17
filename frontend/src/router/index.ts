@@ -28,9 +28,42 @@ const router = createRouter({
           component: () => import('@/views/Home.vue')
         },
         {
+          path: 'category/:id',
+          name: 'Category',
+          component: () => import('@/views/Category.vue'),
+          props: true
+        },
+        {
           path: 'cart',
           name: 'Cart',
-          component: () => import('@/views/Cart.vue')
+          component: () => import('@/views/cart/CartPage.vue')
+        },
+        {
+          path: 'checkout',
+          name: 'Checkout',
+          component: () => import('@/views/cart/Checkout.vue')
+        },
+        {
+          path: 'payment/:orderNo',
+          name: 'Payment',
+          component: () => import('@/views/cart/Payment.vue'),
+          props: true
+        },
+        {
+          path: 'payment-success',
+          name: 'PaymentSuccess',
+          component: () => import('@/views/cart/PaymentSuccess.vue')
+        },
+        {
+          path: 'orders',
+          name: 'OrderList',
+          component: () => import('@/views/order/OrderList.vue')
+        },
+        {
+          path: 'order/:id',
+          name: 'OrderDetail',
+          component: () => import('@/views/order/OrderDetail.vue'),
+          props: true
         },
         {
           path: 'profile',
@@ -42,11 +75,6 @@ const router = createRouter({
           name: 'ProductDetail',
           component: () => import('@/views/ProductDetail.vue'),
           props: true
-        },
-        {
-          path: 'checkout',
-          name: 'Checkout',
-          component: () => import('@/views/Checkout.vue')
         }
       ]
     }

@@ -6,7 +6,7 @@
         <a-card>
           <template #cover>
             <img
-              :src="userInfo.avatar || 'https://via.placeholder.com/200'"
+              :src="userInfo.avatar || 'https://placehold.co/200'"
               alt="avatar"
               class="avatar"
             />
@@ -32,17 +32,17 @@
             <a-tab-pane key="all" tab="全部订单">
               <order-list :status="null" />
             </a-tab-pane>
-            <a-tab-pane key="unpaid" tab="待付款">
-              <order-list status="unpaid" />
+            <a-tab-pane key="0" tab="待付款">
+              <order-list status="0" />
             </a-tab-pane>
-            <a-tab-pane key="paid" tab="已付款">
-              <order-list status="paid" />
+            <a-tab-pane key="1" tab="待发货">
+              <order-list status="1" />
             </a-tab-pane>
-            <a-tab-pane key="shipped" tab="已发货">
-              <order-list status="shipped" />
+            <a-tab-pane key="2" tab="待收货">
+              <order-list status="2" />
             </a-tab-pane>
-            <a-tab-pane key="completed" tab="已完成">
-              <order-list status="completed" />
+            <a-tab-pane key="3" tab="已完成">
+              <order-list status="3" />
             </a-tab-pane>
           </a-tabs>
         </a-card>

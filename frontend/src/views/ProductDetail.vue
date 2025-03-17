@@ -1,113 +1,119 @@
 <template>
   <div class="product-detail">
-    <!-- 添加面包屑导航 -->
-    <div class="breadcrumb">
-      <a-breadcrumb>
-        <a-breadcrumb-item>
-          <router-link to="/">首页</router-link>
-        </a-breadcrumb-item>
-        <a-breadcrumb-item>
-          <router-link :to="`/category/${product.categoryId}`">{{ getCategoryName(product.categoryId) }}</router-link>
-        </a-breadcrumb-item>
-        <a-breadcrumb-item>{{ product.name }}</a-breadcrumb-item>
-      </a-breadcrumb>
-    </div>
-    
-    <a-row :gutter="24" v-if="!loading">
-      <a-col :span="12">
-        <div class="product-images">
-          <!-- 图片放大镜组件 -->
-          <div class="magnifier-container">
-            <div 
-              class="product-image-container" 
-              ref="imageContainer"
-              @mousemove="handleMouseMove"
-              @mouseenter="showMagnifier = true"
-              @mouseleave="showMagnifier = false"
-            >
-              <img 
-                :src="getImageUrl(product.mainImage)" 
-                :alt="product.name" 
-                class="main-image" 
-                ref="mainImage"
-                @load="handleImageLoaded"
-              />
+    <!-- 加载中状态 -->
+    <a-spin :spinning="loading" tip="加载中...">
+      <!-- 添加面包屑导航 -->
+      <div class="breadcrumb" v-if="product">
+        <a-breadcrumb>
+          <a-breadcrumb-item>
+            <router-link to="/">首页</router-link>
+          </a-breadcrumb-item>
+          <a-breadcrumb-item v-if="productCategoryId">
+            <router-link :to="`/category/${productCategoryId}`">{{ getCategoryName(productCategoryId) }}</router-link>
+          </a-breadcrumb-item>
+          <a-breadcrumb-item>{{ productName }}</a-breadcrumb-item>
+        </a-breadcrumb>
+      </div>
+      
+      <a-row :gutter="24" v-if="product">
+        <a-col :span="12">
+          <div class="product-images">
+            <!-- 图片放大镜组件 -->
+            <div class="magnifier-container">
               <div 
-                v-show="showMagnifier" 
-                class="magnifier" 
-                :style="magnifierStyle"
-              ></div>
-              <div 
-                v-show="showMagnifier" 
-                class="zoomed-image" 
-                :style="zoomedImageStyle"
-              ></div>
+                class="product-image-container" 
+                ref="imageContainer"
+                @mousemove="handleMouseMove"
+                @mouseenter="showMagnifier = true"
+                @mouseleave="showMagnifier = false"
+              >
+                <img 
+                  :src="getImageUrl(productMainImage)" 
+                  :alt="productName" 
+                  class="main-image" 
+                  ref="mainImage"
+                  @load="handleImageLoaded"
+                />
+                <div 
+                  v-show="showMagnifier" 
+                  class="magnifier" 
+                  :style="magnifierStyle"
+                ></div>
+                <div 
+                  v-show="showMagnifier" 
+                  class="zoomed-image" 
+                  :style="zoomedImageStyle"
+                ></div>
+              </div>
+            </div>
+            
+            <div class="image-list">
+              <div
+                v-for="(image, index) in getImageUrls(productImages)"
+                :key="index"
+                :class="['image-item', { active: currentImageIndex === index }]"
+                @click="handleImageClick(index)"
+              >
+                <img :src="image" :alt="productName" />
+              </div>
             </div>
           </div>
-          
-          <div class="image-list">
-            <div
-              v-for="(image, index) in getImageUrls(product.images || [])"
-              :key="index"
-              class="thumbnail-wrapper"
-              @click="handleImageClick(index)"
-            >
-              <img 
-                :src="image" 
-                :alt="`${product.name} - 图片 ${index + 1}`"
-                class="thumbnail" 
-                :class="{ active: currentImageIndex === index }" 
-              />
+        </a-col>
+        
+        <!-- 商品信息部分 -->
+        <a-col :span="12">
+          <div class="product-info">
+            <h1 class="product-title">{{ productName }}</h1>
+            <div class="meta-info">
+              <span class="category" v-if="productCategoryId">分类: {{ getCategoryName(productCategoryId) }}</span>
+              <span class="seller" v-if="productSellerId">商家: {{ productSellerId }}</span>
             </div>
-          </div>
-        </div>
-      </a-col>
-      <a-col :span="12">
-        <div class="product-info">
-          <h1 class="product-title">{{ product.name }}</h1>
-          <div class="meta-info">
-            <span class="category" v-if="product.categoryId">分类: {{ getCategoryName(product.categoryId) }}</span>
-            <span class="seller">商家: {{ product.sellerId }}</span>
-          </div>
-          <div class="price">¥{{ product.price }}</div>
-          <div class="stats">
-            <div class="sales">销量: {{ product.sales }}</div>
-            <div class="stock" :class="{ 'low-stock': product.stock < 10 }">
-              库存: {{ product.stock }}
-              <span v-if="product.stock < 10" class="stock-warning">库存紧张</span>
+            <div class="price">¥{{ productPrice }}</div>
+            <div class="stats">
+              <div class="sales">销量: {{ productSales }}</div>
+              <div class="stock" :class="{ 'low-stock': isLowStock }">
+                库存: {{ productStock }}
+                <span v-if="isLowStock" class="stock-warning">库存紧张</span>
+              </div>
             </div>
-          </div>
-          <div class="divider"></div>
-          <div class="description">
-            <h3>商品描述</h3>
-            <p>{{ product.description }}</p>
-          </div>
-          <div class="actions">
-            <div class="quantity-control">
-              <span class="label">数量:</span>
-              <a-input-number
-                v-model:value="quantity"
-                :min="1"
-                :max="product.stock"
-                size="large"
-              />
+            <div class="divider"></div>
+            <div class="description">
+              <h3>商品描述</h3>
+              <p>{{ productDescription }}</p>
             </div>
-            <a-button type="primary" size="large" @click="handleAddToCart" :disabled="!product.stock">
-              <shopping-cart-outlined />
-              加入购物车
-            </a-button>
-            <a-button type="danger" size="large" @click="handleBuyNow" :disabled="!product.stock">
-              <dollar-outlined />
-              立即购买
-            </a-button>
+            <div class="actions">
+              <div class="quantity-control">
+                <span class="label">数量:</span>
+                <a-input-number
+                  v-model:value="quantity"
+                  :min="1"
+                  :max="productStock"
+                  size="large"
+                />
+              </div>
+              <a-button type="primary" size="large" @click="handleAddToCart" :disabled="isOutOfStock">
+                <shopping-cart-outlined />
+                加入购物车
+              </a-button>
+              <a-button type="danger" size="large" @click="handleBuyNow" :disabled="isOutOfStock">
+                <dollar-outlined />
+                立即购买
+              </a-button>
+            </div>
+            <div class="error-message" v-if="error">{{ error }}</div>
           </div>
-          <div class="error-message" v-if="error">{{ error }}</div>
-        </div>
-      </a-col>
-    </a-row>
-    <div class="loading-container" v-else>
-      <a-spin size="large" tip="加载商品信息中..." />
-    </div>
+        </a-col>
+      </a-row>
+      
+      <!-- 加载错误显示 -->
+      <div v-if="!loading && error" class="error-container">
+        <a-result status="error" :title="error">
+          <template #extra>
+            <a-button type="primary" @click="loadProductDetail">重新加载</a-button>
+          </template>
+        </a-result>
+      </div>
+    </a-spin>
     
     <!-- 推荐商品 -->
     <div class="recommended-products" v-if="!loading && recommendedProducts.length > 0">
@@ -119,10 +125,10 @@
           class="product-card"
           @click="navigateToProduct(item.id)"
         >
-          <img :src="getImageUrl(item.mainImage)" :alt="item.name" class="product-image" />
+          <img :src="getImageUrl(item.mainImage || '')" :alt="item.name || '商品图片'" class="product-image" />
           <div class="product-card-content">
-            <h3 class="product-name">{{ item.name }}</h3>
-            <p class="product-price">¥{{ item.price }}</p>
+            <h3 class="product-name">{{ item.name || '未知商品' }}</h3>
+            <p class="product-price">¥{{ item.price || 0 }}</p>
           </div>
         </div>
       </div>
@@ -131,23 +137,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, reactive } from 'vue';
+import { ref, onMounted, computed, reactive, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getProductDetail, getFeaturedProducts } from '@/api/product';
+import { getProductDetail, getFeaturedProducts } from '../api/product';
 import { message } from 'ant-design-vue';
-import { getImageUrl, getImageUrls } from '@/utils/imageUtil';
-import type { ProductVO } from '@/types/product';
+import { getImageUrl, getImageUrls } from '../utils/imageUtil';
+import type { ProductVO, PageResult } from '../types/product';
 import { ShoppingCartOutlined, DollarOutlined } from '@ant-design/icons-vue';
+import { addToCart, getCartCount } from '../api/cart';
+import { useUserStore } from '../stores/user';
+import { useCartStore } from '../stores/cart';
 
 const route = useRoute();
 const router = useRouter();
-const product = ref<ProductVO>({} as ProductVO);
+const product = ref<ProductVO | null>(null);
 const quantity = ref(1);
 const loading = ref(true);
 const error = ref('');
 const previewVisible = ref(false);
 const currentImageIndex = ref(0);
 const recommendedProducts = ref<ProductVO[]>([]);
+
+// 安全访问product属性的计算属性
+const safeProduct = computed(() => {
+  return product.value || {} as ProductVO;
+});
+
+// 安全的商品属性计算属性
+const productName = computed(() => safeProduct.value.name || '未知商品');
+const productCategoryId = computed(() => safeProduct.value.categoryId);
+const productMainImage = computed(() => safeProduct.value.mainImage || '');
+const productImages = computed(() => safeProduct.value.images || []);
+const productPrice = computed(() => safeProduct.value.price || 0);
+const productSales = computed(() => safeProduct.value.sales || 0);
+const productStock = computed(() => safeProduct.value.stock || 0);
+const productDescription = computed(() => safeProduct.value.description || '暂无描述');
+const productSellerId = computed(() => safeProduct.value.sellerId);
+const isLowStock = computed(() => productStock.value < 10);
+const isOutOfStock = computed(() => productStock.value <= 0);
 
 // 放大镜相关
 const imageContainer = ref<HTMLElement | null>(null);
@@ -166,23 +193,16 @@ const magnifierStyle = computed(() => {
 
 // 放大后的图片样式
 const zoomedImageStyle = computed(() => {
-  if (!mainImage.value) return {};
+  if (!product.value || !mainImage.value) return {};
   
-  const imgWidth = mainImage.value.naturalWidth || mainImage.value.width;
-  const imgHeight = mainImage.value.naturalHeight || mainImage.value.height;
-  
-  // 计算实际缩放比例
-  const scaleX = imgWidth / mainImage.value.width;
-  const scaleY = imgHeight / mainImage.value.height;
-  
-  // 计算放大后图片的背景位置
-  const x = magnifierPosition.x * scaleX * zoomFactor;
-  const y = magnifierPosition.y * scaleY * zoomFactor;
+  const backgroundImage = `url(${getImageUrl(productMainImage.value)})`;
+  const backgroundPosition = `-${magnifierPosition.x * zoomFactor}px -${magnifierPosition.y * zoomFactor}px`;
+  const backgroundSize = `${mainImage.value.width * zoomFactor}px ${mainImage.value.height * zoomFactor}px`;
   
   return {
-    backgroundImage: `url(${getImageUrl(product.value.mainImage)})`,
-    backgroundPosition: `-${x}px -${y}px`,
-    backgroundSize: `${imgWidth * zoomFactor}px ${imgHeight * zoomFactor}px`,
+    backgroundImage,
+    backgroundPosition,
+    backgroundSize,
   };
 });
 
@@ -223,70 +243,51 @@ const logImageDetails = () => {
   });
 };
 
-// 图片加载完成处理
+// 处理图片加载
 const handleImageLoaded = () => {
-  logImageDetails();
+  if (mainImage.value) {
+    console.log('主图加载完成:', mainImage.value.src);
+  }
 };
 
 const loadProductDetail = async () => {
   loading.value = true;
   error.value = '';
+  
   try {
-    const productId = parseInt(route.params.id as string);
-    console.log('加载商品详情, ID:', productId);
-    const res = await getProductDetail(productId);
-    console.log('获取到商品详情原始响应:', res);
-    
-    if (res && res.data) {
-      product.value = res.data;
-      console.log('处理后的商品详情:', {
-        id: product.value.id,
-        name: product.value.name,
-        price: product.value.price,
-        mainImage: product.value.mainImage,
-        处理后的主图URL: getImageUrl(product.value.mainImage),
-        图片数量: product.value.images?.length || 0
-      });
-      
-      // 加载推荐商品，但排除当前商品
-      loadRecommendedProducts(productId);
-      
-      // 在DOM更新后检查图片加载情况
-      setTimeout(logImageDetails, 1000);
-    } else {
-      error.value = '商品信息获取失败';
-      console.error('商品信息获取失败，返回数据:', res);
+    const productId = Number(route.params.id);
+    if (isNaN(productId)) {
+      throw new Error('无效的商品ID');
     }
+    
+    const result = await getProductDetail(productId);
+    product.value = result;
+    
+    // 加载推荐商品
+    await loadRecommendedProducts();
+    
+    console.log('商品详情:', product.value);
   } catch (err: any) {
-    console.error('获取商品详情失败:', err);
-    error.value = err.message || '获取商品详情失败';
-    message.error('获取商品详情失败');
+    console.error('加载商品详情失败:', err);
+    error.value = err.message || '加载商品详情失败';
   } finally {
     loading.value = false;
   }
 };
 
-const loadRecommendedProducts = async (currentProductId: number) => {
+// 加载推荐商品
+const loadRecommendedProducts = async () => {
   try {
-    const res = await getFeaturedProducts();
-    if (res && res.data) {
-      // 从响应中提取推荐商品列表
-      let products: ProductVO[] = [];
-      const responseData = res.data as any;
-      
-      if (responseData.list) {
-        products = responseData.list;
-      } else if (responseData.code === 200 && responseData.data && responseData.data.list) {
-        products = responseData.data.list;
-      } else if (Array.isArray(responseData)) {
-        products = responseData;
-      }
-      
+    const result = await getFeaturedProducts();
+    if (result && result.records) {
       // 过滤掉当前商品
-      recommendedProducts.value = products.filter(p => p.id !== currentProductId).slice(0, 4);
+      const currentProductId = product.value?.id;
+      recommendedProducts.value = result.records
+        .filter((p: ProductVO) => currentProductId ? p.id !== currentProductId : true)
+        .slice(0, 4);
     }
   } catch (error) {
-    console.error('获取推荐商品失败:', error);
+    console.error('加载推荐商品失败:', error);
   }
 };
 
@@ -297,19 +298,59 @@ const getCategoryName = (categoryId: number): string => {
 };
 
 const handleImageClick = (index: number) => {
+  if (!product.value) return;
+  
   currentImageIndex.value = index;
-  // 选择显示的主图
-  if (product.value.images && product.value.images.length > index) {
-    product.value.mainImage = product.value.images[index];
+  // 如果商品有图片，更新主图
+  if (product.value.images && product.value.images.length > 0) {
+    product.value = {
+      ...product.value,
+      mainImage: product.value.images[index]
+    };
   }
 };
 
-const handleAddToCart = () => {
-  // 处理加入购物车逻辑
-  message.success(`已添加 ${quantity.value} 件商品到购物车`);
+/**
+ * 添加到购物车
+ */
+const handleAddToCart = async () => {
+  if (!product.value) {
+    message.error('商品信息不存在');
+    return;
+  }
+  
+  try {
+    // 检查用户是否已登录
+    const userStore = useUserStore();
+    if (!userStore.isLoggedIn()) {
+      message.warning('请先登录');
+      router.push('/login');
+      return;
+    }
+    
+    // 添加到购物车
+    await addToCart(product.value.id, quantity.value);
+    
+    // 更新购物车数量
+    const cartCount = await getCartCount();
+    useCartStore().setCartCount(cartCount);
+    
+    message.success(`成功添加${quantity.value}件商品到购物车`);
+  } catch (error: any) {
+    console.error('添加到购物车失败:', error);
+    message.error(error.message || '添加到购物车失败');
+  }
 };
 
+/**
+ * 处理立即购买
+ */
 const handleBuyNow = () => {
+  if (!product.value) {
+    message.error('商品信息不存在');
+    return;
+  }
+  
   // 处理立即购买逻辑
   router.push({
     path: '/checkout',
@@ -415,7 +456,7 @@ onMounted(() => {
   justify-content: center;
 }
 
-.thumbnail-wrapper {
+.image-item {
   width: 80px;
   height: 80px;
   border: 2px solid transparent;
@@ -425,12 +466,12 @@ onMounted(() => {
   transition: all 0.3s;
 }
 
-.thumbnail-wrapper:hover, .thumbnail-wrapper:has(.active) {
+.image-item:hover, .image-item:has(.active) {
   border-color: #1890ff;
   transform: translateY(-2px);
 }
 
-.thumbnail {
+.image-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;

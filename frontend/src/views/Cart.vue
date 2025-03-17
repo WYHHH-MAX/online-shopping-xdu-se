@@ -24,7 +24,7 @@
             v-model:value="record.quantity"
             :min="1"
             :max="record.stock"
-            @change="(value) => handleQuantityChange(record, value)"
+            @change="(value: number) => handleQuantityChange(record, value)"
           />
         </template>
         
@@ -102,7 +102,7 @@ const cartItems = ref<CartItem[]>([
   {
     id: 1,
     name: '示例商品1',
-    image: 'https://via.placeholder.com/100',
+    image: 'https://placehold.co/100',
     price: 99.99,
     quantity: 1,
     stock: 10
@@ -110,7 +110,7 @@ const cartItems = ref<CartItem[]>([
   {
     id: 2,
     name: '示例商品2',
-    image: 'https://via.placeholder.com/100',
+    image: 'https://placehold.co/100',
     price: 199.99,
     quantity: 2,
     stock: 5

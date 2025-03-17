@@ -13,4 +13,9 @@ public interface UserService {
     User getCurrentUser();
     
     void checkUsernameUnique(String username);
+    
+    /**
+     * 根据用户ID获取用户信息
+     */
+    User getUserById(Long userId);
 } 

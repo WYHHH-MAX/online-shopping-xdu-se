@@ -1,18 +1,21 @@
 package com.shop.online.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shop.online.common.result.PageResult;
 import com.shop.online.dto.ProductQueryDTO;
 import com.shop.online.entity.Product;
 import com.shop.online.entity.ProductImage;
-import com.shop.online.mapper.ProductMapper;
 import com.shop.online.mapper.ProductImageMapper;
+import com.shop.online.mapper.ProductMapper;
 import com.shop.online.service.ProductService;
+import com.shop.online.utils.BeanCopyUtils;
 import com.shop.online.vo.ProductVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -29,32 +32,82 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Resource
     private ProductImageMapper productImageMapper;
 
+    @Autowired
+    private ProductMapper productMapper;
+
     @Override
     public PageResult<ProductVO> getProductsByCategory(Long categoryId, Integer page, Integer size) {
-        log.info("Getting products for category: {}, page: {}, size: {}", categoryId, page, size);
+        // 构建查询条件
+        LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Product::getCategoryId, categoryId)
+                .eq(Product::getDeleted, 0)  // 添加未删除条件
+                .eq(Product::getStatus, 1);  // 只查询上架商品
         
-        Page<Product> pageParam = new Page<>(page, size);
+        // 分页查询
+        Page<Product> productPage = new Page<>(page, size);
+        Page<Product> pageResult = baseMapper.selectPage(productPage, queryWrapper);
         
-        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Product::getCategoryId, categoryId)
-              .eq(Product::getStatus, 1)
-              .eq(Product::getDeleted, 0)  // 添加未删除条件
-              .orderByDesc(Product::getSales);
-        
-        Page<Product> productPage = this.page(pageParam, wrapper);
-        log.info("Found {} products in total", productPage.getTotal());
-        
+        // 转换为VO
         List<ProductVO> productVOList = new ArrayList<>();
-        for (Product product : productPage.getRecords()) {
-            log.info("Processing product: {}", product);
+        for (Product product : pageResult.getRecords()) {
             ProductVO vo = convertToVO(product);
-            List<String> images = getProductImages(product.getId());
-            log.info("Found {} images for product {}", images.size(), product.getId());
-            vo.setImages(images);
             productVOList.add(vo);
         }
         
-        return new PageResult<>(productPage.getTotal(), productVOList);
+        return new PageResult<>(pageResult.getTotal(), productVOList);
+    }
+
+    @Override
+    public PageResult<ProductVO> getProductsByCategoryWithSort(Long categoryId, Integer page, Integer size, String sortBy) {
+        // 构建查询条件
+        LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Product::getCategoryId, categoryId)
+                .eq(Product::getDeleted, 0)  // 添加未删除条件
+                .eq(Product::getStatus, 1);  // 只查询上架商品
+        
+        // 排序
+        if (StringUtils.hasText(sortBy)) {
+            switch (sortBy) {
+                case "price_asc":
+                    queryWrapper.orderByAsc(Product::getPrice);
+                    break;
+                case "price_desc":
+                    queryWrapper.orderByDesc(Product::getPrice);
+                    break;
+                case "sales_desc":
+                    queryWrapper.orderByDesc(Product::getSales);
+                    break;
+                case "rating_desc":
+                    // 替代rating排序，使用销量和创建时间排序
+                    queryWrapper.orderByDesc(Product::getSales)
+                            .orderByDesc(Product::getCreatedTime);
+                    break;
+                default:
+                    queryWrapper.orderByDesc(Product::getCreatedTime);
+                    break;
+            }
+        } else {
+            queryWrapper.orderByDesc(Product::getCreatedTime);
+        }
+        
+        // 分页查询
+        Page<Product> productPage = new Page<>(page, size);
+        Page<Product> pageResult = baseMapper.selectPage(productPage, queryWrapper);
+        
+        // 转换为VO
+        List<ProductVO> productVOList = new ArrayList<>();
+        for (Product product : pageResult.getRecords()) {
+            ProductVO vo = convertToVO(product);
+            productVOList.add(vo);
+        }
+        
+        return new PageResult<>(pageResult.getTotal(), productVOList);
+    }
+
+    @Override
+    public PageResult<ProductVO> getProductsByCategory(Integer categoryId, Integer page, Integer size, String sortBy) {
+        // 将Integer类型的categoryId转换为Long类型，然后调用已有的方法
+        return getProductsByCategoryWithSort(categoryId.longValue(), page, size, sortBy);
     }
 
     @Override
@@ -153,6 +206,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     private ProductVO convertToVO(Product product) {
         ProductVO vo = new ProductVO();
         BeanUtils.copyProperties(product, vo);
+        
+        // 加载商品图片
+        List<String> images = getProductImages(product.getId());
+        vo.setImages(images);
+        
         return vo;
     }
 } 

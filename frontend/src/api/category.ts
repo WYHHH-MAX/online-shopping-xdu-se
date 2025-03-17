@@ -14,47 +14,71 @@ export function getCategoryTree() {
 /**
  * 获取分类列表
  */
-export function getCategories(parentId?: number) {
+export function getCategoryList() {
   return request<CategoryVO[]>({
     url: '/public/category/list',
-    method: 'get',
-    params: { parentId }
-  })
-}
-
-export function getCategoriesByLevel(level: number) {
-  return request<CategoryVO[]>({
-    url: `/categories/level/${level}`,
     method: 'get'
   })
 }
 
-export function getCategoriesByParentId(parentId: number) {
-  return request<CategoryVO[]>({
-    url: `/categories/parent/${parentId}`,
+/**
+ * 获取分类详情
+ */
+export function getCategoryById(id: number) {
+  return request<CategoryVO>({
+    url: `/public/category/${id}`,
     method: 'get'
   })
 }
 
+/**
+ * 根据层级获取分类
+ */
+export const getCategoriesByLevel = (level: number) => {
+  return request<CategoryVO[]>({
+    url: `/public/category/level/${level}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 根据父ID获取分类
+ */
+export const getCategoriesByParentId = (parentId: number) => {
+  return request<CategoryVO[]>({
+    url: `/public/category/parent/${parentId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 创建分类
+ */
 export function createCategory(data: CategoryVO) {
   return request<void>({
-    url: '/categories',
+    url: '/public/category',
     method: 'post',
     data
   })
 }
 
+/**
+ * 更新分类
+ */
 export function updateCategory(data: CategoryVO) {
   return request<void>({
-    url: '/categories',
+    url: '/public/category',
     method: 'put',
     data
   })
 }
 
-export function deleteCategory(id: number) {
+/**
+ * 删除分类
+ */
+export const deleteCategory = (id: number) => {
   return request<void>({
-    url: `/categories/${id}`,
+    url: `/public/category/${id}`,
     method: 'delete'
   })
 } 

@@ -37,4 +37,6 @@ public interface CategoryService extends IService<Category> {
      * 获取指定父级的子分类
      */
     List<CategoryVO> listByParentId(Long parentId);
+
+    CategoryVO getCategoryById(Long id);
 } 

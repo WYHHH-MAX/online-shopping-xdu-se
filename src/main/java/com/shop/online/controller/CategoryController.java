@@ -51,4 +51,9 @@ public class CategoryController {
         categoryService.delete(id);
         return Result.success();
     }
+
+    @GetMapping("/{id}")
+    public Result<CategoryVO> getCategoryById(@PathVariable Long id) {
+        return Result.success(categoryService.getCategoryById(id));
+    }
 } 

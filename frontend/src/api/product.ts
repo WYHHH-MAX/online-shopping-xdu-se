@@ -1,10 +1,11 @@
 import request from '@/utils/request'
 import type { ProductVO, SearchProductsParams } from '@/types/product'
+import type { PageResult } from '../types/common'
 
 /**
  * 搜索商品
  */
-export const searchProducts = (params: SearchProductsParams) => {
+export function searchProducts(params: SearchProductsParams) {
   return request<{
     records: ProductVO[]
     total: number
@@ -29,15 +30,63 @@ export const getProductDetail = (id: number) => {
 }
 
 /**
- * 获取推荐商品
+ * 获取推荐商品列表
+ * @param page 页码
+ * @param size 每页大小
+ * @returns 推荐商品列表
  */
-export const getFeaturedProducts = () => {
-  return request<ProductVO[]>({
+export function getFeaturedProducts(page: number = 1, size: number = 8) {
+  return request<PageResult<ProductVO>>({
     url: '/product/featured',
     method: 'get',
+    params: { page, size }
+  })
+}
+
+/**
+ * 根据分类获取商品列表
+ */
+export const getProductsByCategory = (
+  categoryId: number,
+  page: number,
+  size: number,
+  sortBy?: string
+) => {
+  return request<PageResult<ProductVO>>({
+    url: `/product/category/${categoryId}`,
+    method: 'get',
     params: {
-      page: 1,
-      size: 5
+      page,
+      size,
+      sortBy
     }
+  })
+}
+
+/**
+ * 获取新品列表
+ * @param page 页码
+ * @param size 每页大小
+ * @returns 新品列表
+ */
+export function getNewProducts(page: number = 1, size: number = 8) {
+  return request<PageResult<ProductVO>>({
+    url: '/product/new',
+    method: 'get',
+    params: { page, size }
+  })
+}
+
+/**
+ * 获取热销商品列表
+ * @param page 页码
+ * @param size 每页大小
+ * @returns 热销商品列表
+ */
+export function getHotProducts(page: number = 1, size: number = 8) {
+  return request<PageResult<ProductVO>>({
+    url: '/product/hot',
+    method: 'get',
+    params: { page, size }
   })
 }

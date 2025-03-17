@@ -58,13 +58,15 @@ const formState = reactive<FormState>({
 const onFinish = async (values: FormState) => {
   try {
     console.log('发送登录请求:', values)
-    const res = await userStore.login(values)
+    const res = await login(values.username, values.password)
     if (res) {
+      userStore.setUserInfo(res)
       message.success('登录成功')
       router.push('/')
     }
   } catch (error: any) {
     console.error('登录错误:', error)
+    message.error(error.message || '登录失败，请检查用户名和密码')
   }
 }
 
