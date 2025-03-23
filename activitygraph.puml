@@ -1,7 +1,7 @@
 @startuml 商城系统活动图
 
 title 在线商城系统活动图
-
+scale max 2000*2000
 |#AntiqueWhite|用户|
 start
 :访问商城主页;
