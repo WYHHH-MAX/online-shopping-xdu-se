@@ -80,8 +80,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 添加图片资源处理
-        registry.addResourceHandler("/api/images/**")
-                .addResourceLocations("file:D:/upload/");
+        registry.addResourceHandler("/api/uploads/**")
+                .addResourceLocations("file:uploads/");
         logger.info("静态资源处理器配置完成");
     }
 } 

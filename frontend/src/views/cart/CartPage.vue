@@ -106,10 +106,27 @@ const loadCartItems = async () => {
   loading.value = true
   try {
     const result = await getCartItems()
-    cartItems.value = result
+    console.log('获取购物车数据:', result)
+    
+    // 处理不同的数据格式
+    if (result && Array.isArray(result)) {
+      // 如果直接返回数组
+      cartItems.value = result
+    } else if (result && (result as any).data && Array.isArray((result as any).data)) {
+      // 如果数据在data字段中
+      cartItems.value = (result as any).data
+    } else if (result && (result as any).list && Array.isArray((result as any).list)) {
+      // 如果数据在list字段中
+      cartItems.value = (result as any).list
+    } else {
+      console.error('购物车数据格式不正确:', result)
+      cartItems.value = []
+      message.error('获取购物车数据格式有误')
+    }
   } catch (error) {
     console.error('获取购物车数据失败:', error)
     message.error('获取购物车数据失败')
+    cartItems.value = []
   } finally {
     loading.value = false
   }

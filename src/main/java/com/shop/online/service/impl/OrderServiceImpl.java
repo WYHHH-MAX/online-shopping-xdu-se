@@ -59,71 +59,100 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      */
     @Override
     public PageResult<OrderVO> getOrders(OrderQueryDTO queryDTO) {
-        // 构建查询条件
-        LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+        // 打印请求参数
+        log.info("获取订单列表，查询参数: {}", queryDTO);
         
-        // 获取当前用户ID
-        Long userId = userService.getCurrentUser().getId();
-        queryWrapper.eq(Order::getUserId, userId);
-        
-        // 根据状态筛选
-        if (StringUtils.hasText(queryDTO.getStatus())) {
-            queryWrapper.eq(Order::getStatus, queryDTO.getStatus());
-        }
-        
-        // 只查询未删除的订单
-        queryWrapper.eq(Order::getDeleted, 0);
-        
-        // 按创建时间倒序
-        queryWrapper.orderByDesc(Order::getCreatedTime);
-        
-        // 分页查询
-        Page<Order> page = new Page<>(queryDTO.getPage(), queryDTO.getSize());
-        Page<Order> orderPage = baseMapper.selectPage(page, queryWrapper);
-        
-        if (CollectionUtils.isEmpty(orderPage.getRecords())) {
-            return PageResult.of(orderPage.getTotal(), new ArrayList<>());
-        }
-        
-        // 查询订单项
-        List<Long> orderIds = orderPage.getRecords().stream()
-                .map(Order::getId)
-                .collect(Collectors.toList());
-        
-        // 查询订单对应的订单项
-        List<OrderItemDTO> orderItems = orderItemMapper.selectByOrderIds(orderIds);
-        
-        // 按订单ID分组
-        Map<Long, List<OrderItemDTO>> orderItemMap = orderItems.stream()
-                .collect(Collectors.groupingBy(OrderItemDTO::getOrderId));
-        
-        // 转换VO
-        List<OrderVO> orderVOList = orderPage.getRecords().stream().map(order -> {
-            OrderVO orderVO = new OrderVO();
-            BeanUtils.copyProperties(order, orderVO);
+        try {
+            // 构建查询条件
+            LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
             
-            // 转换订单状态
-            orderVO.setStatus(order.getStatus().toString());
+            // 获取当前用户ID
+            log.info("尝试获取当前用户...");
+            com.shop.online.entity.User currentUser = userService.getCurrentUser();
             
-            // 封装订单商品
-            List<OrderItemDTO> items = orderItemMap.getOrDefault(order.getId(), new ArrayList<>());
+            if (currentUser == null) {
+                log.error("获取当前用户失败，返回空结果");
+                throw new BusinessException("获取当前用户信息失败，请重新登录");
+            }
             
-            List<OrderVO.OrderProductVO> productVOList = items.stream().map(item -> {
-                OrderVO.OrderProductVO productVO = new OrderVO.OrderProductVO();
-                productVO.setId(item.getProductId().intValue());
-                productVO.setName(item.getProductName());
-                productVO.setImage(item.getProductImage());
-                productVO.setPrice(item.getPrice());
-                productVO.setQuantity(item.getQuantity());
-                return productVO;
+            Long userId = currentUser.getId();
+            log.info("当前用户ID: {}, 用户名: {}", userId, currentUser.getUsername());
+            
+            queryWrapper.eq(Order::getUserId, userId);
+            
+            // 根据状态筛选
+            if (StringUtils.hasText(queryDTO.getStatus())) {
+                log.info("按状态筛选订单: {}", queryDTO.getStatus());
+                queryWrapper.eq(Order::getStatus, queryDTO.getStatus());
+            }
+            
+            // 只查询未删除的订单
+            queryWrapper.eq(Order::getDeleted, 0);
+            
+            // 按创建时间倒序
+            queryWrapper.orderByDesc(Order::getCreatedTime);
+            
+            // 分页查询
+            Page<Order> page = new Page<>(queryDTO.getPage(), queryDTO.getSize());
+            log.info("执行订单分页查询: 页码={}, 每页数量={}", queryDTO.getPage(), queryDTO.getSize());
+            Page<Order> orderPage = baseMapper.selectPage(page, queryWrapper);
+            
+            log.info("查询结果: 总条数={}, 记录数量={}", orderPage.getTotal(), orderPage.getRecords().size());
+            
+            if (CollectionUtils.isEmpty(orderPage.getRecords())) {
+                log.info("查询结果为空，返回空列表");
+                // 确保返回正确的格式
+                PageResult<OrderVO> emptyResult = PageResult.of(orderPage.getTotal(), new ArrayList<>());
+                log.info("返回空结果: {}", emptyResult);
+                return emptyResult;
+            }
+            
+            // 查询订单项
+            List<Long> orderIds = orderPage.getRecords().stream()
+                    .map(Order::getId)
+                    .collect(Collectors.toList());
+            
+            // 查询订单对应的订单项
+            List<OrderItemDTO> orderItems = orderItemMapper.selectByOrderIds(orderIds);
+            log.info("查询到订单项数量: {}", orderItems.size());
+            
+            // 按订单ID分组
+            Map<Long, List<OrderItemDTO>> orderItemMap = orderItems.stream()
+                    .collect(Collectors.groupingBy(OrderItemDTO::getOrderId));
+            
+            // 转换VO
+            List<OrderVO> orderVOList = orderPage.getRecords().stream().map(order -> {
+                OrderVO orderVO = new OrderVO();
+                BeanUtils.copyProperties(order, orderVO);
+                
+                // 转换订单状态
+                orderVO.setStatus(order.getStatus().toString());
+                
+                // 封装订单商品
+                List<OrderItemDTO> items = orderItemMap.getOrDefault(order.getId(), new ArrayList<>());
+                
+                List<OrderVO.OrderProductVO> productVOList = items.stream().map(item -> {
+                    OrderVO.OrderProductVO productVO = new OrderVO.OrderProductVO();
+                    productVO.setId(item.getProductId().intValue());
+                    productVO.setName(item.getProductName());
+                    productVO.setImage(item.getProductImage());
+                    productVO.setPrice(item.getPrice());
+                    productVO.setQuantity(item.getQuantity());
+                    return productVO;
+                }).collect(Collectors.toList());
+                
+                orderVO.setProducts(productVOList);
+                
+                return orderVO;
             }).collect(Collectors.toList());
             
-            orderVO.setProducts(productVOList);
-            
-            return orderVO;
-        }).collect(Collectors.toList());
-        
-        return PageResult.of(orderPage.getTotal(), orderVOList);
+            PageResult<OrderVO> result = PageResult.of(orderPage.getTotal(), orderVOList);
+            log.info("返回订单列表结果: 总数={}, 条目数={}", result.getTotal(), result.getList().size());
+            return result;
+        } catch (Exception e) {
+            log.error("获取订单列表时发生异常", e);
+            throw e;
+        }
     }
 
     /**
@@ -371,8 +400,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("订单不存在");
         }
         
-        if (order.getStatus() != 2) {
-            throw new BusinessException("只能确认待收货订单");
+        if (order.getStatus() != 1) {
+            throw new BusinessException("只能确认待发货订单");
         }
         
         // 更新订单状态
@@ -437,5 +466,164 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         int randomNum = random.nextInt(9000) + 1000;
         
         return dateTime + randomNum;
+    }
+    
+    /**
+     * 获取卖家订单列表
+     */
+    @Override
+    public PageResult<OrderVO> getSellerOrders(Map<String, Object> params) {
+        log.info("获取卖家订单列表，查询参数: {}", params);
+        
+        try {
+            // 获取参数
+            Long sellerId = Long.parseLong(params.get("sellerId").toString());
+            Integer page = Integer.parseInt(params.getOrDefault("page", 1).toString());
+            Integer size = Integer.parseInt(params.getOrDefault("size", 10).toString());
+            String status = (String) params.get("status");
+            
+            log.info("查询参数: sellerId={}, page={}, size={}, status={}", sellerId, page, size, status);
+            
+            // 构建查询条件
+            LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Order::getSellerId, sellerId);
+            queryWrapper.eq(Order::getDeleted, 0);  // 未删除
+            
+            // 按状态筛选
+            if (StringUtils.hasText(status)) {
+                queryWrapper.eq(Order::getStatus, Integer.parseInt(status));
+            }
+            
+            // 按创建时间倒序
+            queryWrapper.orderByDesc(Order::getCreatedTime);
+            
+            // 分页查询
+            Page<Order> pageParam = new Page<>(page, size);
+            log.info("执行订单分页查询: 页码={}, 每页数量={}", page, size);
+            Page<Order> orderPage = baseMapper.selectPage(pageParam, queryWrapper);
+            
+            log.info("查询结果: 总条数={}, 记录数量={}", orderPage.getTotal(), orderPage.getRecords().size());
+            
+            if (CollectionUtils.isEmpty(orderPage.getRecords())) {
+                log.info("查询结果为空，返回空列表");
+                return PageResult.of(orderPage.getTotal(), new ArrayList<>());
+            }
+            
+            // 查询订单项
+            List<Long> orderIds = orderPage.getRecords().stream()
+                    .map(Order::getId)
+                    .collect(Collectors.toList());
+            
+            List<OrderItemDTO> orderItems = orderItemMapper.selectByOrderIds(orderIds);
+            log.info("查询到订单项数量: {}", orderItems.size());
+            
+            // 按订单ID分组
+            Map<Long, List<OrderItemDTO>> orderItemMap = orderItems.stream()
+                    .collect(Collectors.groupingBy(OrderItemDTO::getOrderId));
+            
+            // 转换VO
+            List<OrderVO> orderVOList = orderPage.getRecords().stream().map(order -> {
+                OrderVO orderVO = new OrderVO();
+                BeanUtils.copyProperties(order, orderVO);
+                
+                // 转换订单状态
+                orderVO.setStatus(order.getStatus().toString());
+                
+                // 封装订单商品
+                List<OrderItemDTO> items = orderItemMap.getOrDefault(order.getId(), new ArrayList<>());
+                
+                List<OrderVO.OrderProductVO> productVOList = items.stream().map(item -> {
+                    OrderVO.OrderProductVO productVO = new OrderVO.OrderProductVO();
+                    productVO.setId(item.getProductId().intValue());
+                    productVO.setName(item.getProductName());
+                    productVO.setImage(item.getProductImage());
+                    productVO.setPrice(item.getPrice());
+                    productVO.setQuantity(item.getQuantity());
+                    return productVO;
+                }).collect(Collectors.toList());
+                
+                orderVO.setProducts(productVOList);
+                
+                return orderVO;
+            }).collect(Collectors.toList());
+            
+            PageResult<OrderVO> result = PageResult.of(orderPage.getTotal(), orderVOList);
+            log.info("返回卖家订单列表结果: 总数={}, 条目数={}", result.getTotal(), result.getList().size());
+            return result;
+            
+        } catch (Exception e) {
+            log.error("获取卖家订单列表时发生异常", e);
+            throw e;
+        }
+    }
+    
+    /**
+     * 卖家发货
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean shipOrder(String orderNo, Long sellerId) {
+        log.info("卖家发货: orderNo={}, sellerId={}", orderNo, sellerId);
+        
+        // 查询订单
+        LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Order::getOrderNo, orderNo);
+        queryWrapper.eq(Order::getSellerId, sellerId);
+        queryWrapper.eq(Order::getDeleted, 0);  // 未删除
+        Order order = baseMapper.selectOne(queryWrapper);
+        
+        if (order == null) {
+            log.error("订单不存在: {}", orderNo);
+            throw new BusinessException("订单不存在");
+        }
+        
+        if (order.getStatus() != 1) {  // 1-待发货
+            log.error("订单状态不正确, 当前状态: {}", order.getStatus());
+            throw new BusinessException("只能发货待发货状态的订单");
+        }
+        
+        // 更新订单状态
+        order.setStatus(2);  // 2-已发货
+        order.setUpdatedTime(LocalDateTime.now());
+        
+        int updated = baseMapper.updateById(order);
+        log.info("订单状态已更新为已发货: {}", orderNo);
+        
+        return updated > 0;
+    }
+    
+    /**
+     * 统计卖家指定状态的订单数量
+     */
+    @Override
+    public int countSellerOrdersByStatus(Long sellerId, Integer status) {
+        log.info("统计卖家订单数量: sellerId={}, status={}", sellerId, status);
+        
+        LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Order::getSellerId, sellerId);
+        queryWrapper.eq(Order::getStatus, status);
+        queryWrapper.eq(Order::getDeleted, 0);  // 未删除
+        
+        long count = baseMapper.selectCount(queryWrapper);
+        log.info("卖家订单数量统计结果: {}", count);
+        
+        return Math.toIntExact(count);
+    }
+    
+    /**
+     * 统计卖家订单总数
+     */
+    @Override
+    public int countSellerOrders(Long sellerId) {
+        log.info("统计卖家订单总数: sellerId={}", sellerId);
+        
+        LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Order::getSellerId, sellerId);
+        queryWrapper.eq(Order::getDeleted, 0);  // 未删除
+        
+        long count = baseMapper.selectCount(queryWrapper);
+        log.info("卖家订单总数统计结果: {}", count);
+        
+        return Math.toIntExact(count);
     }
 } 

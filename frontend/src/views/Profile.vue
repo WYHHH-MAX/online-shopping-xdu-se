@@ -5,18 +5,32 @@
       <a-col :span="8">
         <a-card>
           <template #cover>
-            <img
-              :src="userInfo.avatar || 'https://placehold.co/200'"
-              alt="avatar"
-              class="avatar"
-            />
+            <div class="avatar-container">
+              <img
+                :src="avatarUrl"
+                alt="avatar"
+                class="avatar"
+              />
+              <div class="avatar-overlay" @click="handleAvatarClick">
+                <a-upload
+                  :show-upload-list="false"
+                  :before-upload="beforeAvatarUpload"
+                  :customRequest="customAvatarUpload"
+                >
+                  <div class="upload-text">
+                    <i class="anticon anticon-camera"></i>
+                    <div>更换头像</div>
+                  </div>
+                </a-upload>
+              </div>
+            </div>
           </template>
-          <a-card-meta :title="userInfo.nickname">
+          <a-card-meta :title="displayName">
             <template #description>
               <div>用户名：{{ userInfo.username }}</div>
               <div>角色：{{ userInfo.role === 0 ? '买家' : '卖家' }}</div>
-              <div>手机：{{ userInfo.phone }}</div>
-              <div>邮箱：{{ userInfo.email }}</div>
+              <div>手机：{{ displayPhone }}</div>
+              <div>邮箱：{{ displayEmail }}</div>
             </template>
           </a-card-meta>
           <a-button type="primary" block style="margin-top: 16px" @click="showEditModal">
@@ -28,9 +42,9 @@
       <!-- 右侧订单信息 -->
       <a-col :span="16">
         <a-card title="我的订单">
-          <a-tabs v-model:activeKey="activeTab">
+          <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
             <a-tab-pane key="all" tab="全部订单">
-              <order-list :status="null" />
+              <order-list :status="''" />
             </a-tab-pane>
             <a-tab-pane key="0" tab="待付款">
               <order-list status="0" />
@@ -72,45 +86,175 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, onMounted, computed } from 'vue'
+import { message, Modal, UploadProps } from 'ant-design-vue'
 import { useUserStore } from '@/stores/user'
 import OrderList from '@/components/OrderList.vue'
+import { updateUserProfile, uploadAvatar, getCurrentUser } from '../api/user'
+import { getImageUrl } from '../utils/imageUtil'
 
 const userStore = useUserStore()
-const userInfo = userStore.$state
+const userInfo = computed(() => userStore)
 
 const activeTab = ref('all')
 const editModalVisible = ref(false)
 const editLoading = ref(false)
 
 const editForm = ref({
-  nickname: userInfo.nickname,
-  phone: userInfo.phone,
-  email: userInfo.email
+  nickname: userInfo.value.nickname || '',
+  phone: userInfo.value.phone || '',
+  email: userInfo.value.email || ''
 })
+
+// 头像默认值设置
+const avatarUrl = computed(() => {
+  if (!userInfo.value.avatar) {
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.value.username}`
+  }
+
+  // 确保avatar是字符串
+  const avatar = String(userInfo.value.avatar)
+
+  // 直接使用工具函数处理图片URL
+  return getImageUrl(avatar)
+})
+
+// 显示默认值或占位符
+const displayName = computed(() => userInfo.value.nickname || userInfo.value.username || '未设置')
+const displayPhone = computed(() => userInfo.value.phone || '未设置')
+const displayEmail = computed(() => userInfo.value.email || '未设置')
+
+// 从后端加载用户信息
+const loadUserInfo = async () => {
+  try {
+    const userData = await getCurrentUser() as any
+    console.log('从后端获取的用户信息:', userData)
+    
+    // 更新存储的用户信息
+    if (userData && userData.data) {
+      const user = userData.data
+      // 更新用户信息
+      userStore.$patch({
+        userId: user.id,
+        username: user.username,
+        nickname: user.nickname || '',
+        // 保留现有token，不从响应中更新
+        token: userStore.token,
+        role: user.role,
+        authenticated: true,
+        avatar: user.avatar || '',
+        phone: user.phone || '',
+        email: user.email || ''
+      })
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+  }
+}
+
+// 处理标签页切换
+const handleTabChange = (key: string) => {
+  console.log('标签页切换:', key);
+  activeTab.value = key;
+}
 
 const showEditModal = () => {
   editModalVisible.value = true
   editForm.value = {
-    nickname: userInfo.nickname,
-    phone: userInfo.phone,
-    email: userInfo.email
+    nickname: userInfo.value.nickname || '',
+    phone: userInfo.value.phone || '',
+    email: userInfo.value.email || ''
   }
 }
 
 const handleEditSubmit = async () => {
   try {
     editLoading.value = true
-    // TODO: 调用更新用户信息的API
+    
+    console.log('更新用户信息:', editForm.value)
+    
+    // 调用API更新用户信息
+    await updateUserProfile({
+      nickname: editForm.value.nickname,
+      phone: editForm.value.phone,
+      email: editForm.value.email
+    })
+    
+    // 更新成功后重新获取用户信息
+    await loadUserInfo()
+    
     message.success('更新成功')
     editModalVisible.value = false
   } catch (error) {
+    console.error('更新失败:', error)
     message.error('更新失败')
   } finally {
     editLoading.value = false
   }
 }
+
+// 处理头像上传前的校验
+const beforeAvatarUpload = (file: File) => {
+  // 检查文件类型
+  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/gif';
+  if (!isJpgOrPng) {
+    message.error('只能上传JPG/PNG/GIF图片!');
+    return false;
+  }
+  
+  // 检查文件大小
+  const isLt5M = file.size / 1024 / 1024 < 5;
+  if (!isLt5M) {
+    message.error('图片必须小于5MB!');
+    return false;
+  }
+  
+  return true;
+}
+
+// 点击头像显示上传区域
+const handleAvatarClick = () => {
+  console.log('点击了头像');
+}
+
+// 自定义上传实现
+const customAvatarUpload = async (options: any) => {
+  const { file, onSuccess, onError } = options;
+  
+  try {
+    // 上传头像
+    const avatarPath = await uploadAvatar(file);
+    console.log('头像上传成功，返回路径:', avatarPath)
+    
+    // 上传成功后，重新获取用户信息以确保头像URL最新
+    await loadUserInfo()
+    
+    message.success('头像上传成功');
+    onSuccess(avatarPath, file);
+  } catch (error) {
+    console.error('头像上传失败:', error);
+    message.error('头像上传失败');
+    onError(error);
+  }
+}
+
+// 初始化时加载用户信息
+onMounted(() => {
+  console.log('用户信息:', userInfo.value);
+  
+  // 从后端获取最新用户信息
+  loadUserInfo();
+  
+  // 检查URL参数，如果有tab参数，则切换到对应标签
+  const urlParams = new URLSearchParams(window.location.search)
+  const tab = urlParams.get('tab')
+  if (tab) {
+    console.log('从URL参数中读取标签:', tab);
+    activeTab.value = tab
+  }
+  
+  console.log('当前激活的标签页:', activeTab.value);
+})
 </script>
 
 <style scoped>
@@ -124,5 +268,37 @@ const handleEditSubmit = async () => {
   object-fit: cover;
   display: block;
   margin: 0 auto;
+}
+
+.avatar-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.avatar-container:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.upload-text {
+  color: #fff;
+  text-align: center;
+  font-size: 16px;
 }
 </style> 

@@ -5,50 +5,70 @@ import type { CategoryVO } from '@/types/category'
  * 获取分类树
  */
 export function getCategoryTree() {
-  return request<CategoryVO[]>({
+  return request<{
+    code: number;
+    message?: string;
+    data: any[];
+  }>({
     url: '/public/category/tree',
     method: 'get'
-  })
+  }).then(res => res.data)
 }
 
 /**
  * 获取分类列表
  */
 export function getCategoryList() {
-  return request<CategoryVO[]>({
+  return request<{
+    code: number;
+    message?: string;
+    data: any[];
+  }>({
     url: '/public/category/list',
     method: 'get'
-  })
+  }).then(res => res.data)
 }
 
 /**
  * 获取分类详情
  */
 export function getCategoryById(id: number) {
-  return request<CategoryVO>({
+  return request<{
+    code: number;
+    message?: string;
+    data: any;
+  }>({
     url: `/public/category/${id}`,
     method: 'get'
-  })
+  }).then(res => res.data)
 }
 
 /**
  * 根据层级获取分类
  */
 export const getCategoriesByLevel = (level: number) => {
-  return request<CategoryVO[]>({
+  return request<{
+    code: number;
+    message?: string;
+    data: any[];
+  }>({
     url: `/public/category/level/${level}`,
     method: 'get'
-  })
+  }).then(res => res.data)
 }
 
 /**
  * 根据父ID获取分类
  */
 export const getCategoriesByParentId = (parentId: number) => {
-  return request<CategoryVO[]>({
+  return request<{
+    code: number;
+    message?: string;
+    data: any[];
+  }>({
     url: `/public/category/parent/${parentId}`,
     method: 'get'
-  })
+  }).then(res => res.data)
 }
 
 /**

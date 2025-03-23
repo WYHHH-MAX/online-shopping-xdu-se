@@ -149,7 +149,19 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         if (category == null) {
             return null;
         }
-        return convertToVO(category);
+        
+        CategoryVO vo = convertToVO(category);
+        
+        // 如果不是顶级分类，获取父分类信息
+        if (category.getParentId() != 0L) {
+            Category parentCategory = categoryMapper.selectById(category.getParentId());
+            if (parentCategory != null) {
+                CategoryVO parentVO = convertToVO(parentCategory);
+                vo.setParent(parentVO);
+            }
+        }
+        
+        return vo;
     }
 
     private CategoryVO convertToVO(Category category) {

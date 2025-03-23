@@ -6,6 +6,7 @@ import com.shop.online.dto.CreateOrderDTO;
 import com.shop.online.dto.OrderQueryDTO;
 import com.shop.online.vo.OrderVO;
 import com.shop.online.common.PageResult;
+import java.util.Map;
 
 /**
  * 订单服务接口
@@ -50,4 +51,34 @@ public interface OrderService extends IService<Order> {
      * @return 订单详情
      */
     OrderVO getOrderDetail(String orderNo);
+
+    /**
+     * 获取卖家订单列表
+     * @param params 查询参数
+     * @return 订单列表
+     */
+    PageResult<OrderVO> getSellerOrders(Map<String, Object> params);
+
+    /**
+     * 卖家发货
+     * @param orderNo 订单号
+     * @param sellerId 卖家ID
+     * @return 是否成功
+     */
+    boolean shipOrder(String orderNo, Long sellerId);
+
+    /**
+     * 统计卖家指定状态的订单数量
+     * @param sellerId 卖家ID
+     * @param status 订单状态
+     * @return 订单数量
+     */
+    int countSellerOrdersByStatus(Long sellerId, Integer status);
+
+    /**
+     * 统计卖家订单总数
+     * @param sellerId 卖家ID
+     * @return 订单总数
+     */
+    int countSellerOrders(Long sellerId);
 } 

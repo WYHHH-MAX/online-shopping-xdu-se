@@ -17,6 +17,9 @@ export interface LoginResponse {
   nickname: string
   token: string
   role: number
+  avatar?: string
+  phone?: string
+  email?: string
 }
 
 export interface ApiResponse<T = any> {

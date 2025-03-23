@@ -22,6 +22,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
@@ -179,5 +180,92 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return null;
         }
         return getById(userId);
+    }
+
+    /**
+     * 更新用户个人资料
+     */
+    @Override
+    public void updateProfile(String nickname, String phone, String email) {
+        // 获取当前用户
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException("用户未登录");
+        }
+        
+        // 更新用户信息
+        User user = new User();
+        user.setId(currentUser.getId());
+        
+        if (nickname != null) {
+            user.setNickname(nickname);
+        }
+        
+        if (phone != null) {
+            user.setPhone(phone);
+        }
+        
+        if (email != null) {
+            user.setEmail(email);
+        }
+        
+        user.setUpdatedTime(LocalDateTime.now());
+        
+        // 更新数据库
+        updateById(user);
+        
+        logger.info("用户个人资料已更新，用户ID: {}", currentUser.getId());
+    }
+
+    /**
+     * 更新用户头像
+     */
+    @Override
+    public void updateAvatar(String avatarPath) {
+        // 获取当前用户
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException("用户未登录");
+        }
+        
+        // 获取用户原来的头像路径
+        String oldAvatarPath = currentUser.getAvatar();
+        
+        // 更新用户头像
+        User user = new User();
+        user.setId(currentUser.getId());
+        user.setAvatar(avatarPath);
+        user.setUpdatedTime(LocalDateTime.now());
+        
+        // 更新数据库
+        updateById(user);
+        
+        logger.info("用户头像已更新，用户ID: {}, 旧头像路径: {}, 新头像路径: {}", 
+                    currentUser.getId(), oldAvatarPath, avatarPath);
+    }
+
+    @Override
+    public boolean updateUserRole(Long userId, Integer role) {
+        if (userId == null || role == null) {
+            logger.error("更新用户角色参数不完整: userId={}, role={}", userId, role);
+            return false;
+        }
+        
+        User user = getById(userId);
+        if (user == null) {
+            logger.error("用户不存在: userId={}", userId);
+            return false;
+        }
+        
+        // 只允许有效的角色值：0-买家，1-卖家，2-管理员
+        if (role < 0 || role > 2) {
+            logger.error("无效的角色值: {}", role);
+            return false;
+        }
+        
+        user.setRole(role);
+        user.setUpdatedTime(LocalDateTime.now());
+        
+        return updateById(user);
     }
 } 

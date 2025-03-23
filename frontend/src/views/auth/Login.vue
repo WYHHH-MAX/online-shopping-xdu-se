@@ -60,9 +60,22 @@ const onFinish = async (values: FormState) => {
     console.log('发送登录请求:', values)
     const res = await login(values.username, values.password)
     if (res) {
+      console.log('登录响应:', res)
       userStore.setUserInfo(res)
       message.success('登录成功')
-      router.push('/')
+      
+      // 根据用户角色跳转到不同页面
+      const userRole = res.role || 0
+      if (userRole === 2) {
+        // 管理员
+        router.push('/admin')
+      } else if (userRole === 1) {
+        // 卖家
+        router.push('/seller')
+      } else {
+        // 买家
+        router.push('/')
+      }
     }
   } catch (error: any) {
     console.error('登录错误:', error)

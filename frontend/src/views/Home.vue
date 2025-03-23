@@ -171,7 +171,15 @@ const loadCategories = async () => {
 const loadFeaturedProducts = async () => {
   try {
     const result = await getFeaturedProducts()
-    featuredProducts.value = result.records
+    console.log("推荐商品数据:", result)
+    if (result && 'list' in result && Array.isArray(result.list)) {
+      featuredProducts.value = result.list
+    } else if (Array.isArray(result)) {
+      featuredProducts.value = result
+    } else {
+      console.error('推荐商品数据格式有误:', result)
+      featuredProducts.value = []
+    }
   } catch (error) {
     console.error('获取推荐商品失败:', error)
     message.error('获取推荐商品失败')
@@ -182,7 +190,15 @@ const loadFeaturedProducts = async () => {
 const loadNewProducts = async () => {
   try {
     const result = await getNewProducts()
-    newProducts.value = result.records
+    console.log("新品数据:", result)
+    if (result && 'list' in result && Array.isArray(result.list)) {
+      newProducts.value = result.list
+    } else if (Array.isArray(result)) {
+      newProducts.value = result
+    } else {
+      console.error('新品数据格式有误:', result)
+      newProducts.value = []
+    }
   } catch (error) {
     console.error('获取新品失败:', error)
     message.error('获取新品失败')
@@ -193,7 +209,15 @@ const loadNewProducts = async () => {
 const loadHotProducts = async () => {
   try {
     const result = await getHotProducts()
-    hotProducts.value = result.records
+    console.log("热销商品数据:", result)
+    if (result && 'list' in result && Array.isArray(result.list)) {
+      hotProducts.value = result.list
+    } else if (Array.isArray(result)) {
+      hotProducts.value = result
+    } else {
+      console.error('热销商品数据格式有误:', result)
+      hotProducts.value = []
+    }
   } catch (error) {
     console.error('获取热销商品失败:', error)
     message.error('获取热销商品失败')

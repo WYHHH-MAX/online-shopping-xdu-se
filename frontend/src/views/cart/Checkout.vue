@@ -144,8 +144,31 @@ const loadSelectedItems = async () => {
       return
     }
     
-    const allCartItems = await getCartItems()
-    cartItems.value = allCartItems.filter(item => selectedIds.includes(item.id))
+    // 获取购物车商品
+    const result = await getCartItems()
+    console.log('获取购物车商品数据:', result)
+    
+    // 处理不同的数据格式
+    let items: CartItemVO[] = []
+    
+    if (result && Array.isArray(result)) {
+      // 如果直接返回数组
+      items = result
+    } else if (result && (result as any).data && Array.isArray((result as any).data)) {
+      // 如果数据在data字段中
+      items = (result as any).data
+    } else if (result && (result as any).list && Array.isArray((result as any).list)) {
+      // 如果数据在list字段中
+      items = (result as any).list
+    } else {
+      console.error('购物车数据格式不正确:', result)
+      message.error('获取购物车数据格式有误')
+      router.push('/cart')
+      return
+    }
+    
+    // 筛选选中的商品
+    cartItems.value = items.filter(item => selectedIds.includes(item.id))
     
     if (cartItems.value.length === 0) {
       message.error('未找到选中的商品')
@@ -278,11 +301,13 @@ const completePayment = async () => {
     
     // 关闭模态框并跳转到支付成功页面
     paymentModalVisible.value = false
+    
+    // 跳转到支付成功页面，带上订单号和金额参数
     router.push({
       path: '/payment-success',
       query: {
         orderNo: currentOrderNo.value,
-        amount: totalPrice.value.toString()
+        amount: totalPrice.value.toFixed(2)
       }
     })
   } catch (error) {

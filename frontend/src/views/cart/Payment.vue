@@ -89,7 +89,7 @@ const handlePay = async (payMethod: 'wechat' | 'alipay') => {
 
 // 跳转到订单列表
 const goToOrderList = () => {
-  router.push('/user/orders')
+  router.push('/profile')
 }
 
 // 返回首页

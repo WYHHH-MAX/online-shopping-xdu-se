@@ -30,6 +30,11 @@ export function getImageUrl(url: string): string {
     return url;
   }
 
+  // 处理特定的文件夹路径
+  if (url.startsWith('/uploads/')) {
+    return `${BASE_IMAGE_URL}${API_PREFIX}${url}`;
+  }
+
   // 如果是相对路径，添加基础路径和API前缀
   if (url.startsWith('/')) {
     return `${BASE_IMAGE_URL}${API_PREFIX}${url}`;

@@ -7,4 +7,5 @@ export interface PageResult<T> {
   size: number
   current: number
   pages: number
+  list?: T[]
 } 

@@ -9,4 +9,5 @@ export interface CategoryVO {
   updatedTime?: string
   deleted?: number
   children?: CategoryVO[]
+  parent?: CategoryVO
 } 

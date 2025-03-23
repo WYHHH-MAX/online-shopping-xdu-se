@@ -36,7 +36,10 @@ export const getProductDetail = (id: number) => {
  * @returns 推荐商品列表
  */
 export function getFeaturedProducts(page: number = 1, size: number = 8) {
-  return request<PageResult<ProductVO>>({
+  return request<{
+    total: number;
+    list: ProductVO[];
+  }>({
     url: '/product/featured',
     method: 'get',
     params: { page, size }
@@ -52,7 +55,7 @@ export const getProductsByCategory = (
   size: number,
   sortBy?: string
 ) => {
-  return request<PageResult<ProductVO>>({
+  return request<any>({
     url: `/product/category/${categoryId}`,
     method: 'get',
     params: {
@@ -60,6 +63,13 @@ export const getProductsByCategory = (
       size,
       sortBy
     }
+  }).then(res => {
+    // 处理返回数据结构
+    if (res && res.data) {
+      // 如果数据包裹在data字段中
+      return res.data;
+    }
+    return res;
   })
 }
 
@@ -70,7 +80,10 @@ export const getProductsByCategory = (
  * @returns 新品列表
  */
 export function getNewProducts(page: number = 1, size: number = 8) {
-  return request<PageResult<ProductVO>>({
+  return request<{
+    total: number;
+    list: ProductVO[];
+  }>({
     url: '/product/new',
     method: 'get',
     params: { page, size }
@@ -84,7 +97,10 @@ export function getNewProducts(page: number = 1, size: number = 8) {
  * @returns 热销商品列表
  */
 export function getHotProducts(page: number = 1, size: number = 8) {
-  return request<PageResult<ProductVO>>({
+  return request<{
+    total: number;
+    list: ProductVO[];
+  }>({
     url: '/product/hot',
     method: 'get',
     params: { page, size }

@@ -180,7 +180,28 @@ const loadOrderDetail = async () => {
     const result = await getOrders({})
     console.log('订单列表加载成功:', result);
     
-    const orderDetail = result.records.find((item: any) => item.id === orderId.value)
+    // 处理不同的响应格式，获取订单数组
+    let orderList: any[] = [];
+    
+    if (result && result.records) {
+      orderList = result.records;
+    } else if (result && result.list) {
+      orderList = result.list;
+    } else if (result && (result as any).data) {
+      const data = (result as any).data;
+      if (Array.isArray(data)) {
+        orderList = data;
+      } else if (data.records) {
+        orderList = data.records;
+      } else if (data.list) {
+        orderList = data.list;
+      }
+    } else if (Array.isArray(result)) {
+      orderList = result;
+    }
+    
+    // 筛选订单详情
+    const orderDetail = orderList.find((item: any) => item.id === orderId.value)
     console.log('筛选出的订单详情:', orderDetail);
     
     if (orderDetail) {

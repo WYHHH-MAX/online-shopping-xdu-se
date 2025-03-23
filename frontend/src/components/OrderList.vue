@@ -16,7 +16,7 @@
             <!-- 商品列表 -->
             <div class="order-items">
               <div v-for="product in item.products" :key="product.id" class="order-item">
-                <img :src="product.image" :alt="product.name" class="product-image" />
+                <img :src="getProductImageUrl(product.image)" :alt="product.name" class="product-image" />
                 <div class="product-info">
                   <div class="product-name">{{ product.name }}</div>
                   <div class="product-price">¥{{ product.price.toFixed(2) }} × {{ product.quantity }}</div>
@@ -31,20 +31,20 @@
               </div>
               <div class="order-actions">
                 <a-button
-                  v-if="item.status === 'unpaid'"
+                  v-if="parseInt(item.status) === 0"
                   type="primary"
                   @click="handlePay(item)"
                 >
                   立即支付
                 </a-button>
                 <a-button
-                  v-if="item.status === 'unpaid'"
+                  v-if="parseInt(item.status) === 0"
                   @click="handleCancel(item)"
                 >
                   取消订单
                 </a-button>
                 <a-button
-                  v-if="item.status === 'shipped'"
+                  v-if="parseInt(item.status) === 1"
                   type="primary"
                   @click="handleConfirm(item)"
                 >
@@ -68,6 +68,9 @@ const props = defineProps<{
   status: string | null
 }>()
 
+// 添加调试日志，监控status属性
+console.log('OrderList初始化，接收到的status参数:', props.status, typeof props.status);
+
 interface OrderProduct {
   id: number
   name: string
@@ -87,15 +90,96 @@ interface Order {
 const orders = ref<Order[]>([])
 const loading = ref(false)
 
+// 添加加载标志，确保组件能正确加载数据
+const isLoaded = ref(false)
+
 const loadOrders = async () => {
   try {
-    loading.value = true
-    const res = await getOrders({ status: props.status })
-    orders.value = res.records || []
+    loading.value = true;
+    
+    // 构建请求参数
+    const params: any = { 
+      page: 1, 
+      size: 10 
+    };
+    
+    // 只有在status不为null且不为undefined和空字符串时才添加到请求参数
+    if (props.status !== null && props.status !== undefined && props.status !== '') {
+      params.status = props.status;
+      console.log(`正在按状态 [${props.status}] (类型: ${typeof props.status}) 加载订单`);
+    } else {
+      console.log('加载所有状态的订单');
+    }
+    
+    console.log('正在加载订单，请求URL: /orders，参数:', params, '参数类型:', 
+      Object.entries(params).map(([k, v]) => `${k}: ${typeof v}`).join(', '));
+    
+    // 发送请求
+    const res = await getOrders(params);
+    console.log('获取订单API响应:', res);
+    
+    // 处理响应数据
+    if (res && res.list) {
+      // 使用list字段
+      orders.value = res.list;
+      console.log('成功获取订单列表，数量:', orders.value.length);
+      
+      // DEBUG: 打印每个订单信息
+      orders.value.forEach((order, index) => {
+        console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
+      });
+    } else if (res && res.records) {
+      // 使用records字段
+      orders.value = res.records;
+      console.log('成功获取订单列表（从records字段），数量:', orders.value.length);
+      
+      orders.value.forEach((order, index) => {
+        console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
+      });
+    } else if (res && (res as any).data) {
+      // 数据在data字段中
+      const data = (res as any).data;
+      if (Array.isArray(data)) {
+        // data直接是数组
+        orders.value = data;
+      } else if (data.list && Array.isArray(data.list)) {
+        // data.list是数组
+        orders.value = data.list;
+      } else if (data.records && Array.isArray(data.records)) {
+        // data.records是数组
+        orders.value = data.records;
+      } else {
+        console.error('订单数据格式异常，data字段结构不符合预期:', data);
+        orders.value = [];
+      }
+      
+      if (orders.value.length > 0) {
+        console.log('成功获取订单列表（从data字段），数量:', orders.value.length);
+        orders.value.forEach((order, index) => {
+          console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
+        });
+      }
+    } else {
+      console.error('订单数据格式异常，没有list、records或data字段:', res);
+      // 尝试直接使用响应，可能返回的就是数组
+      if (Array.isArray(res)) {
+        console.log('响应是数组格式，直接使用');
+        orders.value = res;
+        orders.value.forEach((order, index) => {
+          console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
+        });
+      } else {
+        orders.value = [];
+      }
+    }
+    
+    isLoaded.value = true;
   } catch (error) {
-    message.error('获取订单列表失败')
+    console.error('加载订单失败:', error);
+    message.error('加载订单失败');
+    orders.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -159,13 +243,38 @@ const handleConfirm = async (order: Order) => {
   }
 }
 
-watch(() => props.status, () => {
-  loadOrders()
-})
+// 监听status变化，重新加载订单
+watch(() => props.status, (newStatus) => {
+  console.log('订单状态参数变化:', newStatus);
+  loadOrders();
+}, { immediate: true }); // 添加immediate: true确保组件初始化时就加载数据
 
+// 初始化时也加载一次，确保status为null时也能加载数据
 onMounted(() => {
-  loadOrders()
-})
+  console.log('OrderList组件已挂载，status=', props.status, '类型:', typeof props.status);
+  // 增加调试信息，检查空字符串状态
+  if (props.status === '') {
+    console.log('检测到空字符串状态，这应该触发加载全部订单');
+  }
+  if (!isLoaded.value) {
+    loadOrders();
+  }
+});
+
+const getProductImageUrl = (imagePath: string) => {
+  // 如果已经是完整URL，直接返回
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // 如果是相对路径，添加基础URL前缀
+  if (imagePath.startsWith('/')) {
+    return `${import.meta.env.VITE_API_BASE_URL || '/api'}${imagePath}`;
+  }
+  
+  // 如果没有/前缀，添加完整路径
+  return `${import.meta.env.VITE_API_BASE_URL || '/api'}/images/products/${imagePath}`;
+}
 </script>
 
 <style scoped>

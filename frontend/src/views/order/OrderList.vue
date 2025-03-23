@@ -166,14 +166,50 @@ const loadOrders = async () => {
     
     console.log('订单列表加载成功:', result);
     
-    // 明确指定result的类型
-    orders.value = result.records || [];
-    total.value = result.total || 0;
-    
-    // 检查数据结构
-    if (!result.records) {
-      console.warn('API返回的数据格式不符合预期, 缺少records字段:', result);
+    // 处理不同的响应格式
+    if (result && result.records) {
+      // 原始格式，包含records字段
+      orders.value = result.records;
+      total.value = result.total || 0;
+    } else if (result && result.list) {
+      // 包含list字段的格式
+      orders.value = result.list;
+      total.value = result.total || 0;
+    } else if (result && (result as any).data) {
+      // 数据在data字段中
+      const data = (result as any).data;
+      if (Array.isArray(data)) {
+        // data直接是数组
+        orders.value = data;
+        total.value = data.length;
+      } else if (data.records) {
+        // data.records是数组
+        orders.value = data.records;
+        total.value = data.total || data.records.length;
+      } else if (data.list) {
+        // data.list是数组
+        orders.value = data.list;
+        total.value = data.total || data.list.length;
+      } else {
+        console.error('订单数据格式异常，data字段结构不符合预期:', data);
+        orders.value = [];
+        total.value = 0;
+      }
+    } else if (Array.isArray(result)) {
+      // 直接返回数组
+      orders.value = result;
+      total.value = result.length;
+    } else {
+      console.warn('API返回的数据格式不符合预期:', result);
+      orders.value = [];
+      total.value = 0;
     }
+    
+    console.log('处理后的订单列表数据:', {
+      length: orders.value.length,
+      total: total.value,
+      sample: orders.value.length > 0 ? orders.value[0] : null
+    });
   } catch (error: any) {
     console.error('获取订单列表失败:', {
       message: error.message,
@@ -188,6 +224,9 @@ const loadOrders = async () => {
     } else {
       message.error(error.message || '获取订单列表失败');
     }
+    
+    orders.value = [];
+    total.value = 0;
   } finally {
     loading.value = false
   }

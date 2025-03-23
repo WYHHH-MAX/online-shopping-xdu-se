@@ -1,0 +1,281 @@
+@startuml 商城系统活动图
+
+title 在线商城系统活动图
+
+|#AntiqueWhite|用户|
+start
+:访问商城主页;
+
+|#LightBlue|身份验证系统|
+:JwtAuthenticationFilter拦截请求;
+if (有效Token?) then (是)
+  :验证通过;
+  :加载用户信息;
+else (否)
+  if (公共页面?) then (是)
+    :允许访问;
+  else (否)
+    :返回未授权状态码;
+    :重定向到登录页面;
+  endif
+endif
+
+|#AntiqueWhite|用户|
+partition "用户管理" {
+  if (已登录?) then (是)
+    :查看个人资料;
+    fork
+      :编辑个人信息;
+      :'/api/users/profile';
+    fork again
+      :上传头像;
+      :'/api/users/avatar';
+    fork again
+      :查看历史订单;
+      :'/api/orders';
+    end fork
+  else (否)
+    :选择登录或注册;
+    fork
+      :填写登录表单;
+      :提交登录信息;
+      :'/api/auth/login';
+      if (验证通过?) then (是)
+        :获取Token;
+        :存储用户信息;
+      else (否)
+        :显示错误信息;
+        stop
+      endif
+    fork again
+      :填写注册表单;
+      :提交注册信息;
+      :'/api/auth/register';
+      if (注册成功?) then (是)
+        :自动登录;
+        :获取用户Token;
+      else (否)
+        :显示错误信息;
+        stop
+      endif
+    end fork
+  endif
+}
+
+:进入商城主页;
+
+partition "商品浏览" {
+  fork
+    :按分类浏览商品;
+    :'/api/product/category/{categoryId}';
+  fork again
+    :搜索商品;
+    :'/api/product/search';
+  fork again
+    :查看推荐商品;
+    :'/api/product/featured';
+  fork again
+    :查看商品详情;
+    :'/api/product/{id}';
+    fork
+      :查看商品评价;
+      :查看相关商品;
+    fork again
+      :添加到购物车;
+      :'/api/cart/add';
+    fork again
+      :立即购买;
+    end fork
+  end fork
+}
+
+partition "购物车管理" {
+  :查看购物车;
+  :'/api/cart/list';
+  fork
+    :修改数量;
+    :'/api/cart/update';
+  fork again
+    :删除商品;
+    :'/api/cart/delete/{id}';
+  fork again
+    :选中/取消选中;
+    :'/api/cart/select';
+  fork again
+    :清空购物车;
+    :'/api/cart/clear';
+  end fork
+  :结算购物车;
+}
+
+partition "订单管理" {
+  :创建订单;
+  :'/api/orders/create';
+  :选择支付方式;
+  :支付订单;
+  :'/api/orders/pay';
+  
+  fork
+    :查看订单列表;
+    :'/api/orders';
+    :按状态筛选订单;
+  fork again
+    :查看订单详情;
+    :'/api/orders/{orderNo}';
+    fork
+      :取消订单;
+      :'/api/orders/{orderNo}/cancel';
+    fork again
+      :申请退款;
+      :'/api/orders/{orderNo}/refund';
+    fork again
+      :确认收货;
+      :'/api/orders/{orderNo}/confirm';
+    fork again
+      :评价商品;
+      :'/api/orders/{orderNo}/review';
+    end fork
+  end fork
+}
+
+|#LightGreen|卖家系统|
+partition "卖家功能" {
+  :申请成为卖家;
+  :'/api/seller/apply';
+  :上传商家资质;
+  :'/api/seller/upload/{fileType}';
+  
+  if (审核通过?) then (是)
+    fork
+      :管理店铺信息;
+      :'/api/seller/info';
+      :修改店铺信息;
+      :'/api/seller/update';
+    fork again
+      :管理商品;
+      fork
+        :添加商品;
+        :'/api/seller/products';
+        :上传商品图片;
+        :'/api/seller/products/image';
+      fork again
+        :编辑商品;
+        :'/api/seller/products/{id}';
+      fork again
+        :删除商品;
+        :'/api/seller/products/{id}';
+      fork again
+        :上/下架商品;
+        :'/api/seller/products/{id}/status';
+      fork again
+        :更新库存;
+        :'/api/seller/products/{id}/stock';
+      end fork
+    fork again
+      :管理订单;
+      fork
+        :查看订单列表;
+        :'/api/seller/orders';
+        :按状态筛选订单;
+      fork again
+        :查看订单详情;
+        :'/api/seller/orders/{orderNo}';
+      fork again
+        :处理发货;
+        :'/api/seller/orders/{orderNo}/ship';
+      fork again
+        :处理退款;
+        :'/api/seller/orders/{orderNo}/refund/process';
+      end fork
+    fork again
+      :查看统计数据;
+      :'/api/seller/dashboard';
+      fork
+        :查看销售额;
+      fork again
+        :查看订单数;
+      fork again
+        :查看商品销量;
+      end fork
+    end fork
+  else (否)
+    :显示审核失败信息;
+    :查看拒绝原因;
+    :重新提交申请;
+  endif
+}
+
+|#Pink|管理员系统|
+partition "管理员功能" {
+  :登录管理后台;
+  :'/api/admin/login';
+  
+  fork
+    :用户管理;
+    :'/api/admin/users';
+    fork
+      :查看用户列表;
+    fork again
+      :禁用/启用用户;
+      :'/api/admin/users/{id}/status';
+    fork again
+      :重置用户密码;
+      :'/api/admin/users/{id}/resetPassword';
+    end fork
+  fork again
+    :商家管理;
+    :'/api/admin/sellers';
+    fork
+      :查看商家申请;
+      :'/api/admin/sellers/applications';
+    fork again
+      :审核商家申请;
+      :'/api/admin/sellers/applications/{id}/audit';
+    fork again
+      :禁用/启用商家;
+      :'/api/admin/sellers/{id}/status';
+    end fork
+  fork again
+    :商品管理;
+    :'/api/admin/products';
+    fork
+      :查看商品列表;
+    fork again
+      :审核商品;
+      :'/api/admin/products/{id}/audit';
+    fork again
+      :下架违规商品;
+      :'/api/admin/products/{id}/offline';
+    end fork
+  fork again
+    :分类管理;
+    :'/api/admin/categories';
+    fork
+      :查看分类列表;
+    fork again
+      :添加分类;
+      :'/api/admin/categories';
+    fork again
+      :编辑分类;
+      :'/api/admin/categories/{id}';
+    fork again
+      :删除分类;
+      :'/api/admin/categories/{id}';
+    end fork
+  fork again
+    :订单管理;
+    :'/api/admin/orders';
+    :查看订单列表;
+    :处理订单投诉;
+  fork again
+    :系统设置;
+    :'/api/admin/settings';
+    :更新系统配置;
+  end fork
+}
+
+|#AntiqueWhite|用户|
+:退出系统;
+stop
+
+@enduml

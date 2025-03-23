@@ -28,9 +28,38 @@ public class OrderController {
      * 获取订单列表
      */
     @GetMapping
-    public Result getOrders(OrderQueryDTO queryDTO) {
-        log.info("获取订单列表, 参数: {}", queryDTO);
-        return Result.success(orderService.getOrders(queryDTO));
+    public Result getOrders(OrderQueryDTO queryDTO, HttpServletRequest request) {
+        log.info("========== 获取订单列表请求开始 ==========");
+        log.info("请求URL: {}", request.getRequestURI());
+        log.info("请求方法: {}", request.getMethod());
+        log.info("请求参数: {}", queryDTO);
+        
+        // 打印请求头
+        log.info("请求头信息:");
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            log.info("{}: {}", headerName, request.getHeader(headerName));
+        }
+        
+        // 特别检查Authorization头
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            log.info("JWT Token存在: {}", authHeader.substring(0, Math.min(20, authHeader.length())) + "...");
+        } else {
+            log.warn("Authorization头不存在或格式不正确");
+        }
+        
+        try {
+            Object result = orderService.getOrders(queryDTO);
+            log.info("订单列表获取成功");
+            log.info("========== 获取订单列表请求结束 ==========");
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("订单列表获取失败", e);
+            log.info("========== 获取订单列表请求失败 ==========");
+            return Result.error(e.getMessage());
+        }
     }
 
     /**

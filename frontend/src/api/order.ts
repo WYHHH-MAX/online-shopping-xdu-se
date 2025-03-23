@@ -12,7 +12,7 @@ export interface OrderProduct {
 export interface Order {
   id: number
   orderNo: string
-  status: string
+  status: string // 后端返回的是字符串表示的数字
   totalAmount: number
   products: OrderProduct[]
   createdTime?: string
@@ -20,7 +20,7 @@ export interface Order {
 }
 
 export interface OrderQuery {
-  status?: string | null
+  status?: string | null // 传递给后端的状态参数
   page?: number
   size?: number
 }
@@ -34,6 +34,7 @@ export interface CreateOrderResult {
  * 获取订单列表
  */
 export function getOrders(params: OrderQuery) {
+  console.log('调用获取订单列表API, 参数:', params);
   return request<PageResult<Order>>({
     url: '/orders',
     method: 'get',

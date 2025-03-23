@@ -6,6 +6,11 @@
         <a-breadcrumb-item>
           <router-link to="/">首页</router-link>
         </a-breadcrumb-item>
+        <template v-if="parentCategory">
+          <a-breadcrumb-item>
+            <router-link :to="`/category/${parentCategory.id}`">{{ parentCategory.name }}</router-link>
+          </a-breadcrumb-item>
+        </template>
         <a-breadcrumb-item>{{ categoryName }}</a-breadcrumb-item>
       </a-breadcrumb>
     </div>
@@ -79,13 +84,31 @@ const currentPage = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
 const sortBy = ref('default')
+const parentCategory = ref<CategoryVO | null>(null)
 
 // 加载分类信息
 const loadCategory = async () => {
   try {
     const result = await getCategoryById(Number(route.params.id))
+    console.log('分类信息:', result)
+    
     categoryId.value = result.id
     categoryName.value = result.name
+    
+    // 设置父分类信息
+    if (result.parent) {
+      parentCategory.value = result.parent
+      console.log('找到父分类:', result.parent.name)
+    } else if (result.parentId && result.parentId !== 0) {
+      // 如果没有直接提供parent对象但有parentId，尝试加载父分类
+      try {
+        const parentData = await getCategoryById(result.parentId)
+        parentCategory.value = parentData
+        console.log('加载父分类成功:', parentData.name)
+      } catch (err) {
+        console.error('加载父分类失败:', err)
+      }
+    }
   } catch (error) {
     console.error('获取分类信息失败:', error)
     message.error('获取分类信息失败')
@@ -102,11 +125,40 @@ const loadProducts = async () => {
       pageSize.value,
       sortBy.value
     )
-    products.value = result.records
-    total.value = result.total
+    
+    console.log("分类商品数据:", result)
+    
+    // 处理不同的数据格式
+    if (result && result.list && Array.isArray(result.list)) {
+      products.value = result.list
+      total.value = result.total || result.list.length
+    } else if (result && Array.isArray(result)) {
+      products.value = result
+      total.value = result.length
+    } else if (result && (result as any).data) {
+      // 处理数据在data字段中的情况
+      const data = (result as any).data
+      if (Array.isArray(data)) {
+        products.value = data
+        total.value = data.length
+      } else if (data.list && Array.isArray(data.list)) {
+        products.value = data.list
+        total.value = data.total || data.list.length
+      } else {
+        console.error('无法解析data字段中的商品数据:', data)
+        products.value = []
+        total.value = 0
+      }
+    } else {
+      console.error('分类商品数据格式有误:', result)
+      products.value = []
+      total.value = 0
+    }
   } catch (error) {
     console.error('获取商品列表失败:', error)
     message.error('获取商品列表失败')
+    products.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }

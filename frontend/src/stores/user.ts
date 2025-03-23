@@ -12,6 +12,9 @@ interface UserState {
   token: string
   role: number | null
   authenticated: boolean
+  avatar: string
+  phone: string
+  email: string
 }
 
 export const useUserStore = defineStore('user', {
@@ -22,6 +25,9 @@ export const useUserStore = defineStore('user', {
     const username = localStorage.getItem('username')
     const nickname = localStorage.getItem('nickname')
     const role = localStorage.getItem('role')
+    const avatar = localStorage.getItem('avatar')
+    const phone = localStorage.getItem('phone')
+    const email = localStorage.getItem('email')
     
     return {
       userId: userId ? parseInt(userId) : null,
@@ -29,27 +35,41 @@ export const useUserStore = defineStore('user', {
       nickname: nickname || '',
       token: token || '',
       role: role ? parseInt(role) : null,
-      authenticated: !!token
+      authenticated: !!token,
+      avatar: avatar || '',
+      phone: phone || '',
+      email: email || ''
     }
   },
   
   actions: {
     setUserInfo(userInfo: LoginResponse) {
-      this.userId = userInfo.userId
-      this.username = userInfo.username
-      this.nickname = userInfo.nickname
-      this.token = userInfo.token
-      this.role = userInfo.role
-      this.authenticated = true
+      if (!userInfo) {
+        console.error('用户信息为空，无法设置');
+        return;
+      }
+      
+      this.userId = userInfo.userId || null;
+      this.username = userInfo.username || '';
+      this.nickname = userInfo.nickname || '';
+      this.token = userInfo.token || '';
+      this.role = userInfo.role || null;
+      this.authenticated = !!userInfo.token;
+      this.avatar = userInfo.avatar || '';
+      this.phone = userInfo.phone || '';
+      this.email = userInfo.email || '';
       
       // 保存到localStorage
-      localStorage.setItem('token', userInfo.token)
-      localStorage.setItem('userId', userInfo.userId.toString())
-      localStorage.setItem('username', userInfo.username)
-      localStorage.setItem('nickname', userInfo.nickname || '')
-      localStorage.setItem('role', userInfo.role.toString())
+      if (userInfo.token) localStorage.setItem('token', userInfo.token);
+      if (userInfo.userId) localStorage.setItem('userId', String(userInfo.userId));
+      if (userInfo.username) localStorage.setItem('username', userInfo.username);
+      if (userInfo.nickname) localStorage.setItem('nickname', userInfo.nickname);
+      if (userInfo.role !== undefined && userInfo.role !== null) localStorage.setItem('role', String(userInfo.role));
+      if (userInfo.avatar) localStorage.setItem('avatar', userInfo.avatar);
+      if (userInfo.phone) localStorage.setItem('phone', userInfo.phone);
+      if (userInfo.email) localStorage.setItem('email', userInfo.email);
       
-      console.log('用户信息已保存，token:', userInfo.token)
+      console.log('用户信息已保存，token:', userInfo.token);
     },
     
     clearUserInfo() {
@@ -59,6 +79,9 @@ export const useUserStore = defineStore('user', {
       this.token = ''
       this.role = null
       this.authenticated = false
+      this.avatar = ''
+      this.phone = ''
+      this.email = ''
       
       // 清除localStorage
       localStorage.removeItem('token')
@@ -66,6 +89,9 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('username')
       localStorage.removeItem('nickname')
       localStorage.removeItem('role')
+      localStorage.removeItem('avatar')
+      localStorage.removeItem('phone')
+      localStorage.removeItem('email')
       
       console.log('用户信息已清除')
     },

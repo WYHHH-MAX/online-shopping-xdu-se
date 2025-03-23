@@ -1,21 +1,15 @@
 export interface ProductVO {
   id: number
+  sellerId: number
+  categoryId: number
   name: string
   description: string
   price: number
-  mainImage: string
-  sales: number
-  categoryId: number
-  categoryName?: string
-  sellerId: number
-  sellerName?: string
   stock: number
   status: number
-  isFeatured: number
-  featuredSort: number
-  createdTime?: string
-  updatedTime?: string
-  images: string[]
+  sales: number
+  mainImage: string
+  images?: string[]
 }
 
 export interface ProductQueryParams {

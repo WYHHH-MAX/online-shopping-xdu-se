@@ -66,7 +66,7 @@
             <h1 class="product-title">{{ productName }}</h1>
             <div class="meta-info">
               <span class="category" v-if="productCategoryId">分类: {{ getCategoryName(productCategoryId) }}</span>
-              <span class="seller" v-if="productSellerId">商家: {{ productSellerId }}</span>
+              <span class="seller" v-if="productSellerId">商家: {{ sellerName }}</span>
             </div>
             <div class="price">¥{{ productPrice }}</div>
             <div class="stats">
@@ -140,6 +140,8 @@
 import { ref, onMounted, computed, reactive, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getProductDetail, getFeaturedProducts } from '../api/product';
+import { getCategoryById } from '../api/category';
+import { getSellerInfo } from '../api/seller';
 import { message } from 'ant-design-vue';
 import { getImageUrl, getImageUrls } from '../utils/imageUtil';
 import type { ProductVO, PageResult } from '../types/product';
@@ -250,6 +252,10 @@ const handleImageLoaded = () => {
   }
 };
 
+// 分类和商家信息
+const categoryName = ref('');
+const sellerName = ref('');
+
 const loadProductDetail = async () => {
   loading.value = true;
   error.value = '';
@@ -263,6 +269,16 @@ const loadProductDetail = async () => {
     const result = await getProductDetail(productId);
     product.value = result;
     
+    // 加载分类信息
+    if (result.categoryId) {
+      loadCategoryInfo(result.categoryId);
+    }
+    
+    // 加载商家信息
+    if (result.sellerId) {
+      loadSellerInfo(result.sellerId);
+    }
+    
     // 加载推荐商品
     await loadRecommendedProducts();
     
@@ -275,26 +291,53 @@ const loadProductDetail = async () => {
   }
 };
 
+// 加载分类信息
+const loadCategoryInfo = async (categoryId: number) => {
+  try {
+    const result = await getCategoryById(categoryId);
+    if (result) {
+      categoryName.value = result.name || `分类${categoryId}`;
+    }
+  } catch (error) {
+    console.error('加载分类信息失败:', error);
+    categoryName.value = `分类${categoryId}`;
+  }
+};
+
+// 加载商家信息
+const loadSellerInfo = async (sellerId: number) => {
+  try {
+    // 这里应该调用获取特定商家信息的API
+    // 由于当前API似乎只支持获取当前商家信息，暂时使用ID直接显示
+    sellerName.value = `商家${sellerId}`;
+  } catch (error) {
+    console.error('加载商家信息失败:', error);
+    sellerName.value = `商家${sellerId}`;
+  }
+};
+
+// 获取分类名称
+const getCategoryName = (categoryId: number): string => {
+  if (categoryId === productCategoryId.value) {
+    return categoryName.value || `分类${categoryId}`;
+  }
+  return `分类${categoryId}`;
+};
+
 // 加载推荐商品
 const loadRecommendedProducts = async () => {
   try {
     const result = await getFeaturedProducts();
-    if (result && result.records) {
+    if (result && result.list) {
       // 过滤掉当前商品
       const currentProductId = product.value?.id;
-      recommendedProducts.value = result.records
+      recommendedProducts.value = result.list
         .filter((p: ProductVO) => currentProductId ? p.id !== currentProductId : true)
         .slice(0, 4);
     }
   } catch (error) {
     console.error('加载推荐商品失败:', error);
   }
-};
-
-const getCategoryName = (categoryId: number): string => {
-  // 这里可以根据分类ID获取分类名称
-  // 如果有分类缓存或者全局状态，可以从中获取
-  return `分类${categoryId}`;
 };
 
 const handleImageClick = (index: number) => {

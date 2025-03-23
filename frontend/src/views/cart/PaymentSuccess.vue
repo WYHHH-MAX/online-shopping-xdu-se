@@ -42,7 +42,7 @@ onMounted(() => {
 
 // 查看订单
 const viewOrder = () => {
-  router.push('/orders')
+  router.push('/profile')
 }
 
 // 继续购物

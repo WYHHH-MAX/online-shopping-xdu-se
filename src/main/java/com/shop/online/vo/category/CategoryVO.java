@@ -56,4 +56,9 @@ public class CategoryVO {
      * 子分类列表
      */
     private List<CategoryVO> children;
+
+    /**
+     * 父分类对象
+     */
+    private CategoryVO parent;
 } 

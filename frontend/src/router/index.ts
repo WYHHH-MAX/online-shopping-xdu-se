@@ -7,74 +7,165 @@ const router = createRouter({
     {
       path: '/login',
       name: 'Login',
-      component: () => import('@/views/auth/Login.vue'),
+      component: () => import('../views/auth/Login.vue'),
       meta: { requiresAuth: false }
     },
     {
       path: '/register',
       name: 'Register',
-      component: () => import('@/views/auth/Register.vue'),
+      component: () => import('../views/auth/Register.vue'),
       meta: { requiresAuth: false }
     },
     {
       path: '/',
       name: 'Layout',
-      component: () => import('@/components/Layout.vue'),
+      component: () => import('../components/Layout.vue'),
       meta: { requiresAuth: true },
       children: [
         {
           path: '',
           name: 'Home',
-          component: () => import('@/views/Home.vue')
+          component: () => import('../views/Home.vue')
         },
         {
           path: 'category/:id',
           name: 'Category',
-          component: () => import('@/views/Category.vue'),
+          component: () => import('../views/Category.vue'),
           props: true
         },
         {
           path: 'cart',
           name: 'Cart',
-          component: () => import('@/views/cart/CartPage.vue')
+          component: () => import('../views/cart/CartPage.vue')
         },
         {
           path: 'checkout',
           name: 'Checkout',
-          component: () => import('@/views/cart/Checkout.vue')
+          component: () => import('../views/cart/Checkout.vue')
         },
         {
           path: 'payment/:orderNo',
           name: 'Payment',
-          component: () => import('@/views/cart/Payment.vue'),
+          component: () => import('../views/cart/Payment.vue'),
           props: true
         },
         {
           path: 'payment-success',
           name: 'PaymentSuccess',
-          component: () => import('@/views/cart/PaymentSuccess.vue')
+          component: () => import('../views/cart/PaymentSuccess.vue')
         },
         {
           path: 'orders',
           name: 'OrderList',
-          component: () => import('@/views/order/OrderList.vue')
+          component: () => import('../views/order/OrderList.vue')
         },
         {
           path: 'order/:id',
           name: 'OrderDetail',
-          component: () => import('@/views/order/OrderDetail.vue'),
+          component: () => import('../views/order/OrderDetail.vue'),
           props: true
         },
         {
           path: 'profile',
           name: 'Profile',
-          component: () => import('@/views/Profile.vue')
+          component: () => import('../views/Profile.vue')
         },
         {
           path: 'product/:id',
           name: 'ProductDetail',
-          component: () => import('@/views/ProductDetail.vue'),
+          component: () => import('../views/ProductDetail.vue'),
           props: true
+        }
+      ]
+    },
+    {
+      path: '/seller',
+      name: 'SellerLayout',
+      component: () => import('../components/SellerLayout.vue'),
+      meta: { requiresAuth: true, sellerOnly: true },
+      children: [
+        {
+          path: '',
+          name: 'SellerDashboard',
+          component: () => import('../views/seller/Dashboard.vue')
+        },
+        {
+          path: 'products',
+          name: 'SellerProducts',
+          component: () => import('../views/seller/Products.vue')
+        },
+        {
+          path: 'products/add',
+          name: 'AddProduct',
+          component: () => import('../views/seller/ProductForm.vue')
+        },
+        {
+          path: 'products/edit/:id',
+          name: 'EditProduct',
+          component: () => import('../views/seller/ProductForm.vue'),
+          props: true
+        },
+        {
+          path: 'orders',
+          name: 'SellerOrders',
+          component: () => import('../views/seller/Orders.vue')
+        },
+        {
+          path: 'inventory',
+          name: 'Inventory',
+          component: () => import('../views/seller/Inventory.vue')
+        },
+        {
+          path: 'profile',
+          name: 'SellerProfile',
+          component: () => import('../views/seller/Profile.vue')
+        }
+      ]
+    },
+    {
+      path: '/apply-seller',
+      name: 'ApplySeller',
+      component: () => import('../views/seller/Apply.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/admin',
+      name: 'AdminLayout',
+      component: () => import('@/components/AdminLayout.vue'),
+      meta: { 
+        requiresAuth: true,
+        roles: [2] // 只允许管理员访问
+      },
+      children: [
+        {
+          path: '',
+          name: 'AdminDashboard',
+          component: () => import('@/views/admin/Dashboard.vue'),
+          meta: { title: '管理控制台' }
+        },
+        {
+          path: 'seller-requests',
+          name: 'SellerRequests',
+          component: () => import('@/views/admin/SellerRequests.vue'),
+          meta: { title: '卖家申请管理' }
+        },
+        {
+          path: 'seller-management',
+          name: 'SellerManagement',
+          component: () => import('@/views/admin/SellerManagement.vue'),
+          meta: { title: '卖家管理' }
+        },
+        {
+          path: 'users',
+          name: 'UserManagement',
+          component: () => import('@/views/admin/UserManagement.vue'),
+          meta: { title: '用户管理' }
+        },
+        {
+          path: 'products',
+          name: 'ProductManagement',
+          component: () => import('@/views/admin/ProductManagement.vue'),
+          meta: { title: '商品管理' }
         }
       ]
     }
@@ -83,10 +174,38 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  const userStore = useUserStore()
+  const isLoggedIn = localStorage.getItem('token')
+  const userRole = localStorage.getItem('role') ? parseInt(localStorage.getItem('role') as string) : null
   
-  if (to.meta.requiresAuth && !userStore.token) {
-    next('/login')
+  // 检查是否是卖家申请路径，如果是则跳过登录检查
+  if (to.path === '/apply-seller') {
+    // 允许未登录用户访问卖家申请页面
+    return next()
+  }
+  
+  // 检查是否需要登录
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!isLoggedIn) {
+      next('/login')
+    } else {
+      // 检查角色权限
+      const hasRequiredRole = to.matched.some(record => {
+        const roles = record.meta.roles as number[] | undefined
+        return !roles || (userRole !== null && roles.includes(userRole))
+      })
+      
+      if (hasRequiredRole) {
+        next()
+      } else if (to.path.startsWith('/admin') && userRole !== 2) {
+        // 如果尝试访问管理员路由但不是管理员角色
+        next('/')
+      } else if (to.path.startsWith('/seller') && userRole !== 1) {
+        // 如果尝试访问卖家路由但不是卖家角色
+        next('/')
+      } else {
+        next()
+      }
+    }
   } else {
     next()
   }

@@ -74,6 +74,9 @@ import {
   deleteCategory
 } from '@/api/category'
 
+// 定义一个包含可能有id的类型
+type CategoryForm = Partial<CategoryVO> & { id?: number };
+
 const columns = [
   {
     title: '分类名称',
@@ -104,7 +107,7 @@ const categoryOptions = ref<CategoryVO[]>([])
 const modalVisible = ref(false)
 const modalTitle = ref('')
 const formRef = ref<FormInstance>()
-const formData = ref<CategoryVO>({
+const formData = ref<CategoryForm>({
   parentId: 0,
   name: '',
   level: 1,
@@ -123,7 +126,15 @@ const fetchData = async () => {
   try {
     const data = await getCategoryTree()
     categoryTree.value = data
-    categoryOptions.value = [{ id: 0, parentId: -1, name: '顶级分类', level: 0 }, ...data]
+    // 添加一个顶级分类选项
+    const rootCategory: CategoryVO = {
+      id: 0,
+      parentId: -1,
+      name: '顶级分类',
+      level: 0,
+      sort: 0
+    }
+    categoryOptions.value = [rootCategory, ...data]
   } catch (error) {
     message.error('获取分类列表失败')
   } finally {
@@ -159,13 +170,20 @@ const handleModalOk = async () => {
   
   try {
     await formRef.value.validate()
-    if (formData.value.id) {
-      await updateCategory(formData.value)
+    
+    const formValues = { ...formData.value }
+    
+    if (formValues.id) {
+      // 更新分类
+      await updateCategory(formValues as CategoryVO)
       message.success('更新成功')
     } else {
-      await createCategory(formData.value)
+      // 创建分类时移除id字段
+      delete formValues.id
+      await createCategory(formValues as CategoryVO)
       message.success('创建成功')
     }
+    
     modalVisible.value = false
     fetchData()
   } catch (error) {
