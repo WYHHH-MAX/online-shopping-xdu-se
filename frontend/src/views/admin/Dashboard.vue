@@ -23,21 +23,23 @@
         </a-card>
       </a-col>
       
-      <a-col :span="6">
-        <a-card hoverable @click="navigateTo('users')">
-          <template #cover>
-            <div class="stats-icon sellers">
-              <shop-outlined />
-            </div>
-          </template>
-          <a-card-meta>
-            <template #title>管理卖家</template>
-            <template #description>
-              <div class="stats-value">{{ stats.sellerCount }}</div>
-            </template>
-          </a-card-meta>
-        </a-card>
-      </a-col>
+<!--      &lt;!&ndash; 注释掉卖家管理卡片-->
+<!--      <a-col :span="6">-->
+<!--        <a-card hoverable @click="navigateTo('users')">-->
+<!--          <template #cover>-->
+<!--            <div class="stats-icon sellers">-->
+<!--              <shop-outlined />-->
+<!--            </div>-->
+<!--          </template>-->
+<!--          <a-card-meta>-->
+<!--            <template #title>管理卖家</template>-->
+<!--            <template #description>-->
+<!--              <div class="stats-value">{{ stats.sellerCount }}</div>-->
+<!--            </template>-->
+<!--          </a-card-meta>-->
+<!--        </a-card>-->
+<!--      </a-col>-->
+<!--      &ndash;&gt;-->
       
       <a-col :span="6">
         <a-card hoverable @click="navigateTo('seller-requests')">

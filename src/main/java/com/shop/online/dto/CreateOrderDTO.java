@@ -14,4 +14,19 @@ public class CreateOrderDTO {
      * 购物车商品ID列表
      */
     private List<Integer> cartItemIds;
+    
+    /**
+     * 是否直接购买
+     */
+    private Boolean directBuy;
+    
+    /**
+     * 直接购买的商品ID
+     */
+    private Integer productId;
+    
+    /**
+     * 直接购买的商品数量
+     */
+    private Integer quantity;
 } 

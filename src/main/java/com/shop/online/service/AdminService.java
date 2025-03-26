@@ -83,4 +83,12 @@ public interface AdminService {
      * 删除卖家
      */
     boolean deleteSeller(Long id);
+
+    /**
+     * 设置商品为推荐/取消推荐
+     * @param id 商品ID
+     * @param featured 推荐状态：1-推荐，0-取消推荐
+     * @return 是否操作成功
+     */
+    boolean setProductFeatured(Long id, Integer featured);
 } 

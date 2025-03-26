@@ -34,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         // 静态资源不处理
-        if (path.contains("/api/images/") || path.contains("/api/static/")) {
+        if (path.contains("/api/images/") || path.contains("/api/static/") || path.contains("/api/uploads/")) {
             return true;
         }
         // 打印请求路径和方法

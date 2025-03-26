@@ -38,7 +38,7 @@
           <template v-if="column.dataIndex === 'mainImage'">
             <a-image
               :width="64"
-              :src="record.mainImage"
+              :src="getImageUrl(record.mainImage)"
               :fallback="defaultImage"
               alt="商品图片"
             />
@@ -53,6 +53,13 @@
           <template v-if="column.dataIndex === 'status'">
             <a-tag :color="record.status === 1 ? 'green' : 'red'">
               {{ record.status === 1 ? '已上架' : '已下架' }}
+            </a-tag>
+          </template>
+
+          <!-- 推荐 -->
+          <template v-if="column.dataIndex === 'isFeatured'">
+            <a-tag :color="record.isFeatured === 1 ? 'success' : 'default'">
+              {{ record.isFeatured === 1 ? '已推荐' : '未推荐' }}
             </a-tag>
           </template>
 
@@ -76,6 +83,24 @@
               >
                 <stop-outlined />
                 下架
+              </a-button>
+              <a-button 
+                v-if="record.isFeatured === 0"
+                type="primary"
+                size="small"
+                @click="handleSetFeatured(record.id, 1)"
+              >
+                <star-outlined />
+                设为推荐
+              </a-button>
+              <a-button 
+                v-if="record.isFeatured === 1"
+                type="primary"
+                size="small"
+                @click="handleSetFeatured(record.id, 0)"
+              >
+                <star-filled />
+                取消推荐
               </a-button>
               <a-button 
                 danger 
@@ -102,11 +127,40 @@ import {
   RedoOutlined,
   CheckOutlined,
   StopOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  StarOutlined,
+  StarFilled
 } from '@ant-design/icons-vue'
-import { getAdminProducts, updateProductStatus, deleteProduct } from '@/api/admin'
+import { getAdminProducts, updateProductStatus, deleteProduct, setProductFeatured } from '@/api/admin'
+import { getImageUrl } from '@/utils/imageUtil'
 // 导入默认图片
-import defaultImage from '@/assets/placeholder.png'
+import defaultImage from '@/assets/logo.png'
+
+// 定义API响应类型接口
+interface ApiResponse<T> {
+  code: number
+  msg: string
+  data?: T
+  list?: any[]
+  total?: number
+  current?: number
+  pageSize?: number
+}
+
+interface Product {
+  id: number
+  name: string
+  description: string
+  price: number
+  stock: number
+  salesCount: number
+  status: number
+  mainImage: string
+  sellerId: number
+  sellerName: string
+  createdTime: string
+  updatedTime: string
+}
 
 // 定义表格列
 const columns = [
@@ -146,6 +200,11 @@ const columns = [
     ]
   },
   {
+    title: '推荐',
+    dataIndex: 'isFeatured',
+    width: 100
+  },
+  {
     title: '卖家',
     dataIndex: 'sellerName',
     ellipsis: true
@@ -153,7 +212,7 @@ const columns = [
   {
     title: '操作',
     dataIndex: 'action',
-    width: 160
+    width: 200
   }
 ]
 
@@ -175,37 +234,6 @@ const pagination = reactive({
   showTotal: (total: number) => `共 ${total} 条记录`
 })
 
-// 定义API响应类型
-interface ApiResponse<T> {
-  code: number
-  msg: string
-  data: T
-  list?: any[]
-  total?: number
-  current?: number
-  pageSize?: number
-}
-
-interface PageResult<T> {
-  total: number
-  list: T[]
-}
-
-interface Product {
-  id: number
-  name: string
-  description: string
-  price: number
-  stock: number
-  salesCount: number
-  status: number
-  mainImage: string
-  sellerId: number
-  sellerName: string
-  createdTime: string
-  updatedTime: string
-}
-
 // 加载商品数据
 const loadProducts = async () => {
   loading.value = true
@@ -222,7 +250,7 @@ const loadProducts = async () => {
     console.log('商品列表API响应:', res)
     
     // 更加灵活的响应处理逻辑
-    if (res.code === 200 || res.code === 1) {
+    if (res && (res.code === 200 || res.code === 1)) {
       console.log('响应成功, 数据结构:', res)
       
       if (res.data && typeof res.data === 'object') {
@@ -284,10 +312,6 @@ const handleTableChange = (pag: any, filters: any, sorter: any) => {
   pagination.current = pag.current
   pagination.pageSize = pag.pageSize
   // 处理排序和筛选
-  if (sorter && sorter.field) {
-    // 在此处可以添加排序逻辑
-  }
-  
   loadProducts()
 }
 
@@ -295,7 +319,7 @@ const handleTableChange = (pag: any, filters: any, sorter: any) => {
 const handleUpdateStatus = async (id: number, status: number) => {
   try {
     const res = await updateProductStatus(id, status) as ApiResponse<boolean>
-    if (res.code === 1) {
+    if (res && res.code === 1) {
       message.success(`商品已${status === 1 ? '上架' : '下架'}`)
       loadProducts()
     } else {
@@ -304,6 +328,22 @@ const handleUpdateStatus = async (id: number, status: number) => {
   } catch (error) {
     console.error('更新商品状态错误:', error)
     message.error('更新商品状态失败，请稍后再试')
+  }
+}
+
+// 设置商品推荐状态
+const handleSetFeatured = async (id: number, featured: number) => {
+  try {
+    const res = await setProductFeatured(id, featured) as ApiResponse<boolean>
+    if (res && res.code === 1) {
+      message.success(`商品已${featured === 1 ? '设为推荐' : '取消推荐'}`)
+      loadProducts()
+    } else {
+      message.error(res.msg || '设置商品推荐状态失败')
+    }
+  } catch (error) {
+    console.error('设置商品推荐状态错误:', error)
+    message.error('设置商品推荐状态失败，请稍后再试')
   }
 }
 
@@ -317,7 +357,7 @@ const handleDelete = (id: number) => {
     onOk: async () => {
       try {
         const res = await deleteProduct(id) as ApiResponse<boolean>
-        if (res.code === 1) {
+        if (res && res.code === 1) {
           message.success('商品已删除')
           loadProducts()
         } else {

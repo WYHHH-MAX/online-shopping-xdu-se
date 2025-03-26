@@ -73,8 +73,8 @@ public class FileUtil {
         Path filePath = uploadPath.resolve(filename);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
         
-        // 返回相对路径
-        return "/" + UPLOAD_DIR + "/" + AVATAR_DIR + "/" + filename;
+        // 返回相对路径（新路径格式，对应于static资源目录）
+        return "/images/avatars/" + filename;
     }
     
     /**
@@ -105,19 +105,21 @@ public class FileUtil {
         Path filePath = uploadPath.resolve(filename);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
         
-        // 返回相对路径
-        return "/" + UPLOAD_DIR + "/" + SELLER_DIR + "/" + filename;
+        // 返回相对路径（添加/api前缀）
+        return "/api" + "/" + UPLOAD_DIR + "/" + SELLER_DIR + "/" + filename;
     }
     
     /**
      * 上传商品图片
      *
      * @param file 图片文件
-     * @param sellerId 商家ID
+     * @param sellerId 卖家ID
+     * @param productId 商品ID，如果为null表示临时图片
+     * @param imageIndex 图片序号，如果为null将使用时间戳
      * @return 图片相对路径
      * @throws IOException 文件上传异常
      */
-    public static String uploadProductImage(MultipartFile file, Long sellerId) throws IOException {
+    public static String uploadProductImage(MultipartFile file, Long sellerId, Long productId, Integer imageIndex) throws IOException {
         // 验证文件是否为图片
         validateImageFile(file);
         
@@ -125,26 +127,44 @@ public class FileUtil {
         String originalFilename = file.getOriginalFilename();
         String extension = StringUtils.getFilenameExtension(originalFilename);
         
-        // 生成文件名：product_商家ID_时间戳.扩展名
-        String timestamp = String.valueOf(System.currentTimeMillis() / 1000);
-        String filename = String.format("product_%d_%s.%s", sellerId, timestamp, extension);
+        // 生成文件名
+        String filename;
+        if (productId != null && imageIndex != null) {
+            // 使用商品ID和序号命名格式：productId_imageIndex.extension
+            filename = String.format("%d_%d.%s", productId, imageIndex, extension);
+        } else {
+            // 临时文件使用时间戳命名：temp_sellerId_timestamp.extension
+            String timestamp = String.valueOf(System.currentTimeMillis() / 1000);
+            filename = String.format("temp_%d_%s.%s", sellerId, timestamp, extension);
+        }
         
-        // 创建上传目录
-        Path uploadPath = getProductUploadPath();
+        // 保存目录路径
+        String relativePath = "/images/products/";
+        
+        // 获取项目根路径
+        String projectRoot = System.getProperty("user.dir");
+        String staticDir = projectRoot + "/src/main/resources/static";
+        Path productsDir = Paths.get(staticDir + relativePath);
+        
+        // 确保目录存在
+        if (!Files.exists(productsDir)) {
+            Files.createDirectories(productsDir);
+        }
         
         // 保存文件
-        Path filePath = uploadPath.resolve(filename);
+        Path filePath = productsDir.resolve(filename);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
         
         // 返回相对路径
-        return "/" + UPLOAD_DIR + "/" + PRODUCT_DIR + "/" + filename;
+        return relativePath + filename;
     }
     
     /**
      * 获取头像上传路径
      */
     private static Path getAvatarUploadPath() throws IOException {
-        Path uploadDir = Paths.get(UPLOAD_DIR);
+        // 使用新的路径：D:/java/spm2/src/main/resources/static/images/avatars
+        Path uploadDir = Paths.get("D:/java/spm2/src/main/resources/static/images");
         Path avatarDir = uploadDir.resolve(AVATAR_DIR);
         
         // 创建目录（如果不存在）

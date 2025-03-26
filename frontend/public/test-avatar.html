@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>头像测试页面 (更新版)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .test-card h3 {
+            margin-top: 0;
+        }
+        img {
+            max-width: 200px;
+            border: 1px solid #ccc;
+            display: block;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .img-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .img-info {
+            margin-left: 15px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 5px 10px;
+        }
+        .note {
+            background-color: #fffbe6;
+            padding: 10px;
+            border-left: 4px solid #ffe58f;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>头像测试页面 (更新版)</h1>
+    <div class="note">
+        <p><strong>注意:</strong> 这个测试页面已更新，考虑到Spring Boot配置中的context-path设置为/api。</p>
+        <p>确保后端服务器正在运行，并且已经应用了最新的控制器代码。</p>
+    </div>
+    
+    <div class="test-card">
+        <h3>1. 原始路径 (可能失败)</h3>
+        <p>URL: <code>http://localhost:8080/api/uploads/avatars/user_13.png</code></p>
+        <div class="img-container">
+            <img src="http://localhost:8080/api/uploads/avatars/user_13.png" alt="Avatar (Direct)" id="img1">
+            <div class="img-info">
+                <p>状态: <span id="status1">检查中...</span></p>
+            </div>
+        </div>
+        <button onclick="openInNewTab('http://localhost:8080/api/uploads/avatars/user_13.png')">在新标签中打开</button>
+    </div>
+
+    <div class="test-card">
+        <h3>2. 新的控制器路径 (推荐)</h3>
+        <p>URL: <code>http://localhost:8080/api/avatar/13</code></p>
+        <div class="img-container">
+            <img src="http://localhost:8080/api/avatar/13" alt="Avatar (New Controller)" id="img2">
+            <div class="img-info">
+                <p>状态: <span id="status2">检查中...</span></p>
+            </div>
+        </div>
+        <button onclick="openInNewTab('http://localhost:8080/api/avatar/13')">在新标签中打开</button>
+    </div>
+
+    <div class="test-card">
+        <h3>3. 带时间戳的新路径</h3>
+        <p>URL: <code id="timestampUrl"></code></p>
+        <div class="img-container">
+            <img id="timestampImage" alt="Avatar (With Timestamp)">
+            <div class="img-info">
+                <p>状态: <span id="status3">检查中...</span></p>
+            </div>
+        </div>
+        <button id="openTimestampBtn">在新标签中打开</button>
+    </div>
+
+    <div class="test-card">
+        <h3>4. 服务器状态检查</h3>
+        <p>检查服务器是否正常运行:</p>
+        <div id="pingResult">测试中...</div>
+        <button onclick="testPing()">重新测试</button>
+    </div>
+
+    <script>
+        // 设置带时间戳的图片
+        const timestamp = new Date().getTime();
+        const timestampUrl = `http://localhost:8080/api/avatar/13?t=${timestamp}`;
+        document.getElementById('timestampUrl').textContent = timestampUrl;
+        const timestampImg = document.getElementById('timestampImage');
+        timestampImg.src = timestampUrl;
+        document.getElementById('openTimestampBtn').onclick = function() {
+            openInNewTab(timestampUrl);
+        };
+
+        // 检查图片是否加载成功
+        function checkImage(img, statusId) {
+            img.onload = function() {
+                document.getElementById(statusId).textContent = "✅ 图片加载成功!";
+                document.getElementById(statusId).className = "success";
+            };
+            img.onerror = function() {
+                document.getElementById(statusId).textContent = "❌ 图片加载失败!";
+                document.getElementById(statusId).className = "error";
+            };
+        }
+
+        // 在新标签中打开URL
+        function openInNewTab(url) {
+            window.open(url, '_blank');
+        }
+
+        // 测试ping服务
+        function testPing() {
+            document.getElementById('pingResult').textContent = "测试中...";
+            fetch('http://localhost:8080/api/test/ping')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('pingResult').innerHTML = 
+                        `<span class="success">✅ 服务器在线! 响应: ${data}</span>`;
+                })
+                .catch(error => {
+                    document.getElementById('pingResult').innerHTML = 
+                        `<span class="error">❌ 服务器离线或路径错误! 错误: ${error.message}</span>`;
+                });
+        }
+
+        // 测试所有功能
+        window.onload = function() {
+            // 检查图片加载状态
+            checkImage(document.getElementById('img1'), 'status1');
+            checkImage(document.getElementById('img2'), 'status2');
+            checkImage(document.getElementById('timestampImage'), 'status3');
+
+            // 测试ping
+            testPing();
+        };
+    </script>
+</body>
+</html> 

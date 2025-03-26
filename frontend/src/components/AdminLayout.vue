@@ -81,12 +81,6 @@ const menuItems = reactive([
     icon: SolutionOutlined 
   },
   { 
-    key: 'seller-management', 
-    path: '/admin/seller-management', 
-    title: '卖家管理', 
-    icon: ShopOutlined 
-  },
-  { 
     key: 'users', 
     path: '/admin/users', 
     title: '用户管理', 

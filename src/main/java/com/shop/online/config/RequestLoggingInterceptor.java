@@ -19,7 +19,9 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (!request.getRequestURI().contains("/api/images/") && !request.getRequestURI().contains("/api/static/")) {
+        if (!request.getRequestURI().contains("/api/images/") && 
+            !request.getRequestURI().contains("/api/static/") && 
+            !request.getRequestURI().contains("/api/uploads/")) {
             logger.info("===== 请求开始处理: {} {} =====", request.getMethod(), request.getRequestURI());
         }
         return true;
@@ -27,7 +29,9 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        if (!request.getRequestURI().contains("/api/images/") && !request.getRequestURI().contains("/api/static/")) {
+        if (!request.getRequestURI().contains("/api/images/") && 
+            !request.getRequestURI().contains("/api/static/") && 
+            !request.getRequestURI().contains("/api/uploads/")) {
             logger.info("===== 请求处理完成: {} {} - 状态码: {} =====", 
                     request.getMethod(), request.getRequestURI(), response.getStatus());
         }

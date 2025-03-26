@@ -21,21 +21,39 @@ export function getImageUrl(url: string): string {
 
   // 如果URL已经是完整的URL（以http或https开头），直接返回
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    // 但如果是无效的示例域名，替换为本地路径
-    if (url.includes('example.com')) {
-      // 从URL中提取文件名
-      const fileName = url.substring(url.lastIndexOf('/') + 1);
-      return `${BASE_IMAGE_URL}${API_PREFIX}/images/products/${fileName}`;
-    }
     return url;
   }
 
-  // 处理特定的文件夹路径
-  if (url.startsWith('/uploads/')) {
-    return `${BASE_IMAGE_URL}${API_PREFIX}${url}`;
+  // 处理商品图片路径
+  if (url.startsWith('/images/products/')) {
+    // 添加API前缀和时间戳以防止缓存问题
+    const timestamp = new Date().getTime();
+    return `${BASE_IMAGE_URL}${API_PREFIX}${url}?t=${timestamp}`;
   }
 
-  // 如果是相对路径，添加基础路径和API前缀
+  // 处理特定的文件夹路径，比如头像路径
+  if (url.startsWith('/uploads/') || url.startsWith('/api/uploads/')) {
+    // 确保URL格式正确
+    const apiUrl = url.startsWith('/api') ? url : `/api${url}`;
+    const formattedUrl = `${BASE_IMAGE_URL}${apiUrl}`;
+    
+    // 添加时间戳以防止缓存问题
+    const timestamp = new Date().getTime();
+    return `${formattedUrl}?t=${timestamp}`;
+  }
+  
+  // 处理新的头像路径格式 (/images/avatars/...)
+  if (url.startsWith('/images/avatars/')) {
+    // 检查URL是否已包含时间戳，如果有则保留，否则添加新的
+    if (url.includes('?t=')) {
+      return `${BASE_IMAGE_URL}${API_PREFIX}${url}`;
+    } else {
+      const timestamp = new Date().getTime();
+      return `${BASE_IMAGE_URL}${API_PREFIX}${url}?t=${timestamp}`;
+    }
+  }
+
+  // 如果是相对路径，添加基础路径
   if (url.startsWith('/')) {
     return `${BASE_IMAGE_URL}${API_PREFIX}${url}`;
   }

@@ -624,4 +624,44 @@ public class AdminServiceImpl implements AdminService {
             return dto;
         }
     }
+
+    @Override
+    @Transactional
+    public boolean setProductFeatured(Long id, Integer featured) {
+        log.info("设置商品推荐状态, 商品ID: {}, 推荐状态: {}", id, featured);
+        
+        try {
+            if (id == null || featured == null) {
+                log.error("参数错误: ID或推荐状态为空");
+                throw new IllegalArgumentException("参数错误: ID或推荐状态为空");
+            }
+            
+            // 验证状态值
+            if (featured != 0 && featured != 1) {
+                log.error("推荐状态值无效: {}", featured);
+                throw new IllegalArgumentException("推荐状态值无效，必须是0或1");
+            }
+            
+            // 查询商品是否存在
+            Product product = productMapper.selectById(id);
+            if (product == null) {
+                log.error("商品不存在, ID: {}", id);
+                throw new RuntimeException("商品不存在");
+            }
+            
+            // 更新推荐状态
+            Product updateProduct = new Product();
+            updateProduct.setId(id);
+            updateProduct.setIsFeatured(featured);
+            updateProduct.setUpdatedTime(LocalDateTime.now());
+            
+            int result = productMapper.updateById(updateProduct);
+            log.info("更新商品推荐状态结果: {}", result > 0);
+            
+            return result > 0;
+        } catch (Exception e) {
+            log.error("设置商品推荐状态失败: {}", e.getMessage(), e);
+            throw new RuntimeException("设置商品推荐状态失败: " + e.getMessage(), e);
+        }
+    }
 } 

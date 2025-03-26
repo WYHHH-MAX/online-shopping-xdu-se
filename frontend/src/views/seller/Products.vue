@@ -49,8 +49,9 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { message } from 'ant-design-vue';
+import { message, Table, Button, Modal, Form, Input, InputNumber, Select, Upload } from 'ant-design-vue';
 import { getSellerProducts, deleteProduct } from '@/api/seller';
+import { getImageUrl } from '@/utils/imageUtil';
 import type { ProductVO } from '@/types/product';
 
 const router = useRouter();
@@ -107,14 +108,37 @@ const columns = [
 const fetchProducts = async () => {
   loading.value = true;
   try {
-    const res = await getSellerProducts({
+    const params = {
       page: pagination.current,
       size: pagination.pageSize
-    });
-    products.value = res.list;
-    total.value = res.total;
+    };
+    
+    console.log('获取商品列表，参数:', params);
+    const res = await getSellerProducts(params);
+    console.log('获取到的商品数据:', res);
+    
+    if (!res.list || res.list.length === 0) {
+      console.warn('没有获取到商品数据');
+      products.value = [];
+      pagination.total = 0;
+      return;
+    }
+    
+    // 处理商品数据，确保图片正确显示
+    const processedProducts = res.list.map(product => ({
+      ...product,
+      mainImage: product.mainImage ? getImageUrl(product.mainImage) : '/images/placeholder.jpg',
+      images: Array.isArray(product.images) 
+        ? product.images.map(img => getImageUrl(img))
+        : []
+    }));
+    
+    console.log('处理后的商品数据:', processedProducts);
+    
+    products.value = processedProducts;
     pagination.total = res.total;
   } catch (error: any) {
+    console.error('获取商品列表失败:', error);
     message.error('获取商品列表失败: ' + error.message);
   } finally {
     loading.value = false;

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,9 +41,26 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public PageResult<ProductVO> getProductsByCategory(Long categoryId, Integer page, Integer size) {
+        log.info("根据分类ID查询商品: categoryId={}, page={}, size={}", categoryId, page, size);
+        
+        // 判断是否为一级分类 (parent_id = 0)
+        boolean isPrimaryCategory = isPrimaryCategory(categoryId);
+        log.info("分类 {} 是否为一级分类: {}", categoryId, isPrimaryCategory);
+        
+        // 如果是一级分类，获取其所有子分类ID
+        List<Long> categoryIds = new ArrayList<>();
+        categoryIds.add(categoryId); // 包含自身
+
+        if (isPrimaryCategory) {
+            // 查询该一级分类下的所有二级分类
+            List<Long> subCategoryIds = getSubCategoryIds(categoryId);
+            log.info("一级分类 {} 的子分类IDs: {}", categoryId, subCategoryIds);
+            categoryIds.addAll(subCategoryIds);
+        }
+        
         // 构建查询条件
         LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Product::getCategoryId, categoryId)
+        queryWrapper.in(Product::getCategoryId, categoryIds)
                 .eq(Product::getDeleted, 0)  // 添加未删除条件
                 .eq(Product::getStatus, 1);  // 只查询上架商品
         
@@ -62,9 +80,26 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public PageResult<ProductVO> getProductsByCategoryWithSort(Long categoryId, Integer page, Integer size, String sortBy) {
+        log.info("根据分类ID查询商品(带排序): categoryId={}, page={}, size={}, sortBy={}", categoryId, page, size, sortBy);
+        
+        // 判断是否为一级分类 (parent_id = 0)
+        boolean isPrimaryCategory = isPrimaryCategory(categoryId);
+        log.info("分类 {} 是否为一级分类: {}", categoryId, isPrimaryCategory);
+        
+        // 如果是一级分类，获取其所有子分类ID
+        List<Long> categoryIds = new ArrayList<>();
+        categoryIds.add(categoryId); // 包含自身
+
+        if (isPrimaryCategory) {
+            // 查询该一级分类下的所有二级分类
+            List<Long> subCategoryIds = getSubCategoryIds(categoryId);
+            log.info("一级分类 {} 的子分类IDs: {}", categoryId, subCategoryIds);
+            categoryIds.addAll(subCategoryIds);
+        }
+        
         // 构建查询条件
         LambdaQueryWrapper<Product> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Product::getCategoryId, categoryId)
+        queryWrapper.in(Product::getCategoryId, categoryIds)
                 .eq(Product::getDeleted, 0)  // 添加未删除条件
                 .eq(Product::getStatus, 1);  // 只查询上架商品
         
@@ -115,12 +150,38 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public PageResult<ProductVO> getProductsByCondition(ProductQueryDTO queryDTO) {
+        log.info("根据条件查询商品: {}", queryDTO);
+        
         Page<Product> pageParam = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        // 添加查询条件
-        wrapper.eq(queryDTO.getCategoryId() != null, Product::getCategoryId, queryDTO.getCategoryId())
-              .like(StringUtils.hasText(queryDTO.getKeyword()), Product::getName, queryDTO.getKeyword())
+        
+        // 处理分类ID查询
+        if (queryDTO.getCategoryId() != null) {
+            // 判断是否为一级分类
+            boolean isPrimaryCategory = isPrimaryCategory(queryDTO.getCategoryId());
+            log.info("分类 {} 是否为一级分类: {}", queryDTO.getCategoryId(), isPrimaryCategory);
+            
+            if (isPrimaryCategory) {
+                // 获取所有子分类ID
+                List<Long> categoryIds = new ArrayList<>();
+                categoryIds.add(queryDTO.getCategoryId());  // 包含自身
+                
+                // 查询该一级分类下的所有二级分类
+                List<Long> subCategoryIds = getSubCategoryIds(queryDTO.getCategoryId());
+                log.info("一级分类 {} 的子分类IDs: {}", queryDTO.getCategoryId(), subCategoryIds);
+                categoryIds.addAll(subCategoryIds);
+                
+                // 使用IN查询
+                wrapper.in(Product::getCategoryId, categoryIds);
+            } else {
+                // 二级分类直接精确查询
+                wrapper.eq(Product::getCategoryId, queryDTO.getCategoryId());
+            }
+        }
+        
+        // 添加其他查询条件
+        wrapper.like(StringUtils.hasText(queryDTO.getKeyword()), Product::getName, queryDTO.getKeyword())
               .ge(queryDTO.getMinPrice() != null, Product::getPrice, queryDTO.getMinPrice())
               .le(queryDTO.getMaxPrice() != null, Product::getPrice, queryDTO.getMaxPrice())
               .eq(Product::getStatus, 1);
@@ -219,9 +280,69 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         this.save(product);
         log.info("商品保存成功, id={}", product.getId());
         
-        // 保存商品图片
+        // 处理商品图片
         if (product.getImages() != null && !product.getImages().isEmpty()) {
-            saveProductImages(product.getId(), product.getImages());
+            // 获取临时图片列表
+            List<String> tempImages = product.getImages();
+            log.info("商品临时图片列表: {}", tempImages);
+            
+            // 处理图片路径，将临时图片改名为正式格式 (productId_index.jpg)
+            List<String> formalImages = new ArrayList<>();
+            for (int i = 0; i < tempImages.size(); i++) {
+                String tempPath = tempImages.get(i);
+                
+                // 是否已经是规范格式
+                if (tempPath.matches(".*/"+product.getId()+"_\\d+\\..*")) {
+                    log.info("图片已经是规范格式: {}", tempPath);
+                    formalImages.add(tempPath);
+                    continue;
+                }
+                
+                String extension = tempPath.substring(tempPath.lastIndexOf("."));
+                // 构建新的图片路径
+                String newFileName = product.getId() + "_" + (i + 1) + extension;
+                String newPath = "/images/products/" + newFileName;
+                
+                // 移动文件
+                try {
+                    String projectRoot = System.getProperty("user.dir");
+                    String staticDir = projectRoot + "/src/main/resources/static";
+                    
+                    File sourceFile = new File(staticDir + tempPath);
+                    File targetFile = new File(staticDir + newPath);
+                    
+                    // 确保目标目录存在
+                    if (!targetFile.getParentFile().exists()) {
+                        targetFile.getParentFile().mkdirs();
+                    }
+                    
+                    if (sourceFile.exists()) {
+                        boolean renamed = sourceFile.renameTo(targetFile);
+                        log.info("重命名文件 {} 为 {}, 结果: {}", tempPath, newPath, renamed);
+                        
+                        // 添加到正式图片列表
+                        formalImages.add(newPath);
+                    } else {
+                        log.warn("源文件不存在: {}", staticDir + tempPath);
+                        formalImages.add(tempPath); // 如果源文件不存在，使用原路径
+                    }
+                } catch (Exception e) {
+                    log.error("重命名文件时发生错误: {}", e.getMessage(), e);
+                    formalImages.add(tempPath); // 发生错误时使用原路径
+                }
+            }
+            
+            // 设置第一张图片为主图
+            if (!formalImages.isEmpty()) {
+                product.setMainImage(formalImages.get(0));
+                log.info("设置商品主图: {}", product.getMainImage());
+            }
+            
+            // 更新商品主图
+            this.updateById(product);
+            
+            // 保存图片关联关系
+            saveProductImages(product.getId(), formalImages);
         }
         
         // 返回VO
@@ -248,17 +369,85 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         // 设置更新时间
         product.setUpdatedTime(LocalDateTime.now());
         
-        // 更新商品
-        this.updateById(product);
-        log.info("商品更新成功, id={}", product.getId());
-        
         // 如果有图片，更新商品图片
         if (product.getImages() != null && !product.getImages().isEmpty()) {
-            // 删除旧图片
+            // 获取临时图片列表
+            List<String> tempImages = product.getImages();
+            log.info("商品更新临时图片列表: {}", tempImages);
+            
+            // 处理图片路径，将临时图片改名为正式格式 (productId_index.jpg)
+            List<String> formalImages = new ArrayList<>();
+            
+            // 获取当前图片数量（用于确定新序号）
+            int currentImageCount = getProductImageCount(product.getId());
+            log.info("当前商品图片数量: {}", currentImageCount);
+            
+            // 处理现有的图片路径
+            for (int i = 0; i < tempImages.size(); i++) {
+                String tempPath = tempImages.get(i);
+                
+                // 检查是否已经是规范格式
+                if (tempPath.matches(".*/"+product.getId()+"_\\d+\\..*")) {
+                    log.info("图片已经是规范格式: {}", tempPath);
+                    formalImages.add(tempPath);
+                    continue;
+                }
+                
+                // 处理新上传的图片，需要重命名
+                String extension = tempPath.substring(tempPath.lastIndexOf("."));
+                // 构建新的图片路径，新图片序号从现有数量+1开始
+                String newFileName = product.getId() + "_" + (currentImageCount + i + 1) + extension;
+                String newPath = "/images/products/" + newFileName;
+                
+                // 移动文件
+                try {
+                    String projectRoot = System.getProperty("user.dir");
+                    String staticDir = projectRoot + "/src/main/resources/static";
+                    
+                    File sourceFile = new File(staticDir + tempPath);
+                    File targetFile = new File(staticDir + newPath);
+                    
+                    // 确保目标目录存在
+                    if (!targetFile.getParentFile().exists()) {
+                        targetFile.getParentFile().mkdirs();
+                    }
+                    
+                    if (sourceFile.exists()) {
+                        boolean renamed = sourceFile.renameTo(targetFile);
+                        log.info("重命名文件 {} 为 {}, 结果: {}", tempPath, newPath, renamed);
+                        
+                        // 添加到正式图片列表
+                        formalImages.add(newPath);
+                    } else {
+                        log.warn("源文件不存在: {}", staticDir + tempPath);
+                        formalImages.add(tempPath); // 如果源文件不存在，使用原路径
+                    }
+                } catch (Exception e) {
+                    log.error("重命名文件时发生错误: {}", e.getMessage(), e);
+                    formalImages.add(tempPath); // 发生错误时使用原路径
+                }
+            }
+            
+            // 设置第一张图片为主图
+            if (!formalImages.isEmpty()) {
+                product.setMainImage(formalImages.get(0));
+                log.info("更新商品主图: {}", product.getMainImage());
+            }
+            
+            // 更新商品
+            this.updateById(product);
+            
+            // 更新商品图片关联
+            // 先删除旧图片
             deleteProductImages(product.getId());
             // 保存新图片
-            saveProductImages(product.getId(), product.getImages());
+            saveProductImages(product.getId(), formalImages);
+        } else {
+            // 更新商品基本信息
+            this.updateById(product);
         }
+        
+        log.info("商品更新成功, id={}", product.getId());
         
         // 返回VO
         return convertToVO(product);
@@ -399,6 +588,19 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public int getProductImageCount(Long productId) {
+        if (productId == null) {
+            return 0;
+        }
+        
+        LambdaQueryWrapper<ProductImage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProductImage::getProductId, productId)
+               .eq(ProductImage::getDeleted, 0);
+               
+        return Math.toIntExact(productImageMapper.selectCount(wrapper));
+    }
+
     private ProductVO convertToVO(Product product) {
         ProductVO vo = new ProductVO();
         BeanUtils.copyProperties(product, vo);
@@ -408,5 +610,21 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         vo.setImages(images);
         
         return vo;
+    }
+
+    /**
+     * 判断是否为一级分类
+     */
+    private boolean isPrimaryCategory(Long categoryId) {
+        Integer count = baseMapper.isCategoryPrimary(categoryId);
+        return count != null && count > 0;
+    }
+
+    /**
+     * 获取一级分类下的所有二级分类ID
+     */
+    private List<Long> getSubCategoryIds(Long parentId) {
+        List<Long> subCategoryIds = baseMapper.getSubCategoryIds(parentId);
+        return subCategoryIds != null ? subCategoryIds : new ArrayList<>();
     }
 } 

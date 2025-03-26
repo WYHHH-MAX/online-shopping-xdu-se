@@ -72,11 +72,15 @@ const handlePay = async (payMethod: 'wechat' | 'alipay') => {
     // 模拟支付延迟
     message.loading({ content: `正在使用${payMethod === 'wechat' ? '微信' : '支付宝'}支付...`, duration: 2 })
     
+    // 确保订单号是字符串类型
+    const orderNoStr = String(orderNo.value);
+    console.log('准备支付订单, 订单号(字符串):', orderNoStr);
+    
     // 延迟1.5秒模拟支付过程
     await new Promise(resolve => setTimeout(resolve, 1500))
     
     // 调用支付API
-    await payOrder(orderNo.value)
+    await payOrder(orderNoStr)
     
     // 更新支付状态
     payStatus.value = 'success'

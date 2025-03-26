@@ -45,8 +45,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { message } from 'ant-design-vue';
+import { message, Table, InputNumber, Button } from 'ant-design-vue';
 import { getSellerProducts, updateProductStock, batchUpdateProductStock } from '@/api/seller';
+import { getImageUrl } from '@/utils/imageUtil';
 import type { ProductVO } from '@/types/product';
 
 const loading = ref(false);
@@ -96,16 +97,38 @@ const fetchProducts = async () => {
       size: pagination.pageSize
     };
     
+    console.log('获取库存数据，参数:', params);
     const res = await getSellerProducts(params);
-    products.value = res.list;
+    console.log('获取到的库存数据:', res);
+    
+    if (!res.list || res.list.length === 0) {
+      console.warn('没有获取到商品数据');
+      products.value = [];
+      pagination.total = 0;
+      return;
+    }
+    
+    // 处理商品数据，确保图片正确显示
+    const processedProducts = res.list.map(product => ({
+      ...product,
+      mainImage: product.mainImage ? getImageUrl(product.mainImage) : '/images/placeholder.jpg',
+      images: Array.isArray(product.images) 
+        ? product.images.map(img => getImageUrl(img))
+        : []
+    }));
+    
+    console.log('处理后的库存数据:', processedProducts);
+    
+    products.value = processedProducts;
     pagination.total = res.total;
     
     // 初始化库存映射
-    res.list.forEach((product: ProductVO) => {
+    processedProducts.forEach((product: ProductVO) => {
       stockMap.value[product.id] = product.stock;
       originalStockMap.value[product.id] = product.stock;
     });
   } catch (error: any) {
+    console.error('获取商品列表失败:', error);
     message.error('获取商品列表失败: ' + error.message);
   } finally {
     loading.value = false;

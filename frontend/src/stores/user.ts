@@ -29,12 +29,25 @@ export const useUserStore = defineStore('user', {
     const phone = localStorage.getItem('phone')
     const email = localStorage.getItem('email')
     
+    console.log('初始化用户store, 从localStorage读取角色:', role, '类型:', typeof role)
+    
+    // 确保role是数字类型
+    let roleNumber: number | null = null
+    if (role !== null) {
+      try {
+        roleNumber = parseInt(role)
+        console.log('解析角色为数字:', roleNumber)
+      } catch (e) {
+        console.error('角色解析失败:', e)
+      }
+    }
+    
     return {
       userId: userId ? parseInt(userId) : null,
       username: username || '',
       nickname: nickname || '',
       token: token || '',
-      role: role ? parseInt(role) : null,
+      role: roleNumber,
       authenticated: !!token,
       avatar: avatar || '',
       phone: phone || '',
@@ -49,6 +62,8 @@ export const useUserStore = defineStore('user', {
         return;
       }
       
+      console.log('设置用户信息, 角色:', userInfo.role, '类型:', typeof userInfo.role);
+      
       this.userId = userInfo.userId || null;
       this.username = userInfo.username || '';
       this.nickname = userInfo.nickname || '';
@@ -59,17 +74,21 @@ export const useUserStore = defineStore('user', {
       this.phone = userInfo.phone || '';
       this.email = userInfo.email || '';
       
-      // 保存到localStorage
+      // 保存到localStorage，强制类型转换确保一致性
       if (userInfo.token) localStorage.setItem('token', userInfo.token);
       if (userInfo.userId) localStorage.setItem('userId', String(userInfo.userId));
       if (userInfo.username) localStorage.setItem('username', userInfo.username);
       if (userInfo.nickname) localStorage.setItem('nickname', userInfo.nickname);
-      if (userInfo.role !== undefined && userInfo.role !== null) localStorage.setItem('role', String(userInfo.role));
+      if (userInfo.role !== undefined && userInfo.role !== null) {
+        const roleStr = String(userInfo.role);
+        localStorage.setItem('role', roleStr);
+        console.log('存储用户角色到localStorage:', roleStr);
+      }
       if (userInfo.avatar) localStorage.setItem('avatar', userInfo.avatar);
       if (userInfo.phone) localStorage.setItem('phone', userInfo.phone);
       if (userInfo.email) localStorage.setItem('email', userInfo.email);
       
-      console.log('用户信息已保存，token:', userInfo.token);
+      console.log('用户信息已保存，token:', userInfo.token, '角色:', this.role);
     },
     
     clearUserInfo() {

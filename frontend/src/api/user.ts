@@ -1,4 +1,6 @@
 import request from '@/utils/request'
+import { useUserStore } from '@/stores/user'
+import { ApiResponse } from '@/types/auth'
 
 export interface UserProfileData {
   nickname?: string
@@ -46,8 +48,64 @@ export const uploadAvatar = (file: File) => {
  * @returns 用户信息
  */
 export const getCurrentUser = () => {
+  console.log('调用获取当前用户API')
   return request({
     url: '/users/current',
     method: 'get'
+  }).catch(error => {
+    console.error('获取当前用户API失败:', error)
+    return null
   })
+}
+
+/**
+ * 获取当前用户信息并更新store
+ * 用于确保用户信息同步最新
+ */
+export const refreshCurrentUser = async () => {
+  try {
+    console.log('刷新当前用户信息')
+    const response = await getCurrentUser() as ApiResponse<any>
+    console.log('获取到用户信息响应:', response)
+    
+    if (!response) {
+      console.error('响应为空')
+      return null
+    }
+    
+    if (response.code !== 1 && response.code !== 200) {
+      console.error('响应code不正确:', response.code)
+      return null
+    }
+    
+    if (!response.data) {
+      console.error('响应data为空')
+      return null
+    }
+    
+    // 导入store并更新用户信息
+    const userStore = useUserStore()
+    
+    // 打印详细的响应数据结构
+    console.log('用户数据结构:', Object.keys(response.data))
+    
+    // 构建LoginResponse格式对象，安全地访问属性
+    const userData = {
+      userId: response.data.id || 0,
+      username: response.data.username || '',
+      nickname: response.data.nickname || '',
+      token: userStore.token || '', // 保留现有token
+      role: typeof response.data.role === 'number' ? response.data.role : 0,
+      avatar: response.data.avatar || '',
+      phone: response.data.phone || '',
+      email: response.data.email || ''
+    }
+    
+    console.log('准备更新用户信息，角色:', userData.role)
+    userStore.setUserInfo(userData)
+    return userData
+  } catch (error) {
+    console.error('刷新用户信息失败，详细错误:', error)
+    return null
+  }
 } 

@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -123,10 +124,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             // 转换VO
             List<OrderVO> orderVOList = orderPage.getRecords().stream().map(order -> {
                 OrderVO orderVO = new OrderVO();
-                BeanUtils.copyProperties(order, orderVO);
                 
-                // 转换订单状态
+                // 不要使用BeanUtils复制，因为字段名不一致，直接设置
+                orderVO.setId(order.getId().intValue());
+                orderVO.setOrderNo(order.getOrderNo());
                 orderVO.setStatus(order.getStatus().toString());
+                orderVO.setTotalAmount(order.getTotalAmount());
+                
+                // 显式设置创建时间和更新时间
+                if (order.getCreatedTime() != null) {
+                    orderVO.setCreateTime(order.getCreatedTime());
+                    log.info("订单创建时间设置: {} -> {}", order.getOrderNo(), order.getCreatedTime());
+                } else {
+                    LocalDateTime now = LocalDateTime.now();
+                    orderVO.setCreateTime(now);
+                    log.warn("订单 {} 创建时间为null，设置为当前时间: {}", order.getOrderNo(), now);
+                }
+                
+                if (order.getUpdatedTime() != null) {
+                    orderVO.setUpdateTime(order.getUpdatedTime());
+                } else {
+                    orderVO.setUpdateTime(LocalDateTime.now());
+                }
                 
                 // 封装订单商品
                 List<OrderItemDTO> items = orderItemMap.getOrDefault(order.getId(), new ArrayList<>());
@@ -163,72 +182,127 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     public OrderVO createOrder(CreateOrderDTO createOrderDTO) {
         log.info("开始创建订单: {}", createOrderDTO);
         
-        // 验证参数
-        List<Integer> cartItemIds = createOrderDTO.getCartItemIds();
-        if (CollectionUtils.isEmpty(cartItemIds)) {
-            log.error("购物车项为空");
-            throw new BusinessException("请选择要购买的商品");
-        }
-        
         try {
             // 获取当前用户
             Long userId = userService.getCurrentUser().getId();
             log.info("当前用户ID: {}", userId);
             
-            // 查询购物车项
-            LambdaQueryWrapper<Cart> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.in(Cart::getId, cartItemIds.stream().map(Integer::longValue).collect(Collectors.toList()));
-            queryWrapper.eq(Cart::getUserId, userId);
-            queryWrapper.eq(Cart::getDeleted, 0); // 只查询未删除的购物车项
-            List<Cart> cartItems = cartMapper.selectList(queryWrapper);
-            log.info("查询到的购物车项: {}", cartItems);
+            // 判断是否是直接购买
+            boolean isDirectBuy = createOrderDTO.getDirectBuy() != null && createOrderDTO.getDirectBuy();
+            log.info("订单类型: {}", isDirectBuy ? "直接购买" : "购物车结算");
             
-            if (CollectionUtils.isEmpty(cartItems) || cartItems.size() != cartItemIds.size()) {
-                log.error("部分商品不在购物车中, 预期数量: {}, 实际数量: {}", 
-                         cartItemIds.size(), cartItems != null ? cartItems.size() : 0);
-                throw new BusinessException("部分商品不在购物车中");
-            }
-            
-            // 查询商品信息
-            List<Long> productIds = cartItems.stream()
-                    .map(Cart::getProductId)
-                    .collect(Collectors.toList());
-            log.info("查询商品信息, 商品IDs: {}", productIds);
-            
-            List<Product> products = productMapper.selectBatchIds(productIds);
-            log.info("查询到的商品: {}", products);
-            
-            Map<Long, Product> productMap = products.stream()
-                    .collect(Collectors.toMap(Product::getId, p -> p));
-            
-            // 计算总金额
+            List<Cart> cartItems;
+            Map<Long, Product> productMap;
             BigDecimal totalAmount = BigDecimal.ZERO;
-            // 确保有卖家信息（这里简单处理，假设所有商品来自同一卖家，取第一个商品的卖家）
             Long sellerId = null;
             
-            for (Cart cartItem : cartItems) {
-                Product product = productMap.get(cartItem.getProductId());
+            if (isDirectBuy) {
+                // 直接购买模式
+                if (createOrderDTO.getProductId() == null || createOrderDTO.getQuantity() == null) {
+                    log.error("直接购买参数不完整: productId={}, quantity={}", 
+                            createOrderDTO.getProductId(), createOrderDTO.getQuantity());
+                    throw new BusinessException("直接购买参数不完整");
+                }
+                
+                // 查询商品信息
+                Long productId = createOrderDTO.getProductId().longValue();
+                Integer quantity = createOrderDTO.getQuantity();
+                
+                log.info("直接购买商品, 商品ID: {}, 数量: {}", productId, quantity);
+                
+                Product product = productMapper.selectById(productId);
                 if (product == null) {
-                    log.error("商品不存在, 商品ID: {}", cartItem.getProductId());
+                    log.error("商品不存在, 商品ID: {}", productId);
                     throw new BusinessException("商品不存在");
                 }
                 
-                if (product.getStock() < cartItem.getQuantity()) {
+                // 检查库存
+                if (product.getStock() < quantity) {
                     log.error("商品库存不足, 商品: {}, 库存: {}, 需要: {}", 
-                             product.getName(), product.getStock(), cartItem.getQuantity());
+                            product.getName(), product.getStock(), quantity);
                     throw new BusinessException(product.getName() + "库存不足");
                 }
                 
-                // 累加金额
-                BigDecimal itemAmount = product.getPrice().multiply(new BigDecimal(cartItem.getQuantity()));
-                totalAmount = totalAmount.add(itemAmount);
-                log.debug("商品: {}, 单价: {}, 数量: {}, 小计: {}", 
-                        product.getName(), product.getPrice(), cartItem.getQuantity(), itemAmount);
+                // 计算总金额
+                totalAmount = product.getPrice().multiply(new BigDecimal(quantity));
+                log.info("商品总金额: {}", totalAmount);
                 
-                // 获取卖家ID（简化处理，实际可能需要按卖家拆分订单）
-                if (sellerId == null) {
-                    sellerId = product.getSellerId();
-                    log.info("订单卖家ID: {}", sellerId);
+                // 获取卖家ID
+                sellerId = product.getSellerId();
+                log.info("订单卖家ID: {}", sellerId);
+                
+                // 创建临时购物车项用于后续处理
+                Cart tempCart = new Cart();
+                tempCart.setProductId(productId);
+                tempCart.setQuantity(quantity);
+                tempCart.setUserId(userId);
+                tempCart.setSelected(1); // 选中状态
+                tempCart.setCreatedTime(LocalDateTime.now());
+                tempCart.setUpdatedTime(LocalDateTime.now());
+                tempCart.setDeleted(0);
+                
+                cartItems = Collections.singletonList(tempCart);
+                productMap = Collections.singletonMap(productId, product);
+            } else {
+                // 购物车模式
+                // 验证参数
+                List<Integer> cartItemIds = createOrderDTO.getCartItemIds();
+                if (CollectionUtils.isEmpty(cartItemIds)) {
+                    log.error("购物车项为空");
+                    throw new BusinessException("请选择要购买的商品");
+                }
+                
+                // 查询购物车项
+                LambdaQueryWrapper<Cart> queryWrapper = new LambdaQueryWrapper<>();
+                queryWrapper.in(Cart::getId, cartItemIds.stream().map(Integer::longValue).collect(Collectors.toList()));
+                queryWrapper.eq(Cart::getUserId, userId);
+                queryWrapper.eq(Cart::getDeleted, 0); // 只查询未删除的购物车项
+                cartItems = cartMapper.selectList(queryWrapper);
+                log.info("查询到的购物车项: {}", cartItems);
+                
+                if (CollectionUtils.isEmpty(cartItems) || cartItems.size() != cartItemIds.size()) {
+                    log.error("部分商品不在购物车中, 预期数量: {}, 实际数量: {}", 
+                            cartItemIds.size(), cartItems != null ? cartItems.size() : 0);
+                    throw new BusinessException("部分商品不在购物车中");
+                }
+                
+                // 查询商品信息
+                List<Long> productIds = cartItems.stream()
+                        .map(Cart::getProductId)
+                        .collect(Collectors.toList());
+                log.info("查询商品信息, 商品IDs: {}", productIds);
+                
+                List<Product> products = productMapper.selectBatchIds(productIds);
+                log.info("查询到的商品: {}", products);
+                
+                productMap = products.stream()
+                        .collect(Collectors.toMap(Product::getId, p -> p));
+                
+                // 计算总金额和确保有卖家信息
+                for (Cart cartItem : cartItems) {
+                    Product product = productMap.get(cartItem.getProductId());
+                    if (product == null) {
+                        log.error("商品不存在, 商品ID: {}", cartItem.getProductId());
+                        throw new BusinessException("商品不存在");
+                    }
+                    
+                    if (product.getStock() < cartItem.getQuantity()) {
+                        log.error("商品库存不足, 商品: {}, 库存: {}, 需要: {}", 
+                                product.getName(), product.getStock(), cartItem.getQuantity());
+                        throw new BusinessException(product.getName() + "库存不足");
+                    }
+                    
+                    // 累加金额
+                    BigDecimal itemAmount = product.getPrice().multiply(new BigDecimal(cartItem.getQuantity()));
+                    totalAmount = totalAmount.add(itemAmount);
+                    log.debug("商品: {}, 单价: {}, 数量: {}, 小计: {}", 
+                            product.getName(), product.getPrice(), cartItem.getQuantity(), itemAmount);
+                    
+                    // 获取卖家ID（简化处理，实际可能需要按卖家拆分订单）
+                    if (sellerId == null) {
+                        sellerId = product.getSellerId();
+                        log.info("订单卖家ID: {}", sellerId);
+                    }
                 }
             }
             
@@ -275,12 +349,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             log.info("保存订单项, 数量: {}", orderItems.size());
             orderItemMapper.insertBatch(orderItems);
             
-            // 删除购物车项
-            List<Long> longCartItemIds = cartItemIds.stream()
-                    .map(Integer::longValue)
-                    .collect(Collectors.toList());
-            log.info("删除购物车项, IDs: {}", longCartItemIds);
-            cartMapper.deleteBatchIds(longCartItemIds);
+            // 如果是购物车模式，需要删除购物车项
+            if (!isDirectBuy && createOrderDTO.getCartItemIds() != null) {
+                List<Long> longCartItemIds = createOrderDTO.getCartItemIds().stream()
+                        .map(Integer::longValue)
+                        .collect(Collectors.toList());
+                log.info("删除购物车项, IDs: {}", longCartItemIds);
+                cartMapper.deleteBatchIds(longCartItemIds);
+            }
             
             // 返回订单信息
             OrderVO orderVO = new OrderVO();
@@ -313,29 +389,81 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void payOrder(String orderNo) {
-        // 获取当前用户
-        Long userId = userService.getCurrentUser().getId();
+        log.info("开始处理支付订单请求，订单号: {}", orderNo);
         
-        // 查询订单
-        LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Order::getOrderNo, orderNo);
-        queryWrapper.eq(Order::getUserId, userId);
-        queryWrapper.eq(Order::getDeleted, 0); // 只查询未删除订单
-        Order order = baseMapper.selectOne(queryWrapper);
-        
-        if (order == null) {
-            throw new BusinessException("订单不存在");
+        if (orderNo == null || orderNo.trim().isEmpty()) {
+            log.error("订单号为空，无法支付");
+            throw new BusinessException("订单号不能为空");
         }
         
-        if (order.getStatus() != 0) {
-            throw new BusinessException("订单状态不正确");
+        try {
+            // 清理订单号（防止前端传入错误格式）
+            String cleanOrderNo = orderNo.trim();
+            // 去除可能的URL部分
+            if (cleanOrderNo.contains("?") || cleanOrderNo.contains("/")) {
+                log.warn("订单号包含特殊字符，尝试清理: {}", cleanOrderNo);
+                String[] parts = cleanOrderNo.split("[?/]");
+                cleanOrderNo = parts[parts.length - 1];
+                log.info("清理后的订单号: {}", cleanOrderNo);
+            }
+            
+            // 获取当前用户
+            com.shop.online.entity.User currentUser = userService.getCurrentUser();
+            if (currentUser == null) {
+                log.error("获取当前用户失败，无法支付订单");
+                throw new BusinessException("请先登录再支付订单");
+            }
+            Long userId = currentUser.getId();
+            log.info("当前用户ID: {}", userId);
+            
+            // 查询订单
+            log.info("查询订单信息，订单号: {}, 用户ID: {}", cleanOrderNo, userId);
+            LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Order::getOrderNo, cleanOrderNo);
+            queryWrapper.eq(Order::getUserId, userId);
+            queryWrapper.eq(Order::getDeleted, 0); // 只查询未删除订单
+            Order order = baseMapper.selectOne(queryWrapper);
+            
+            // 如果找不到订单，尝试只用订单号再查询一次（可能是因为userId不匹配）
+            if (order == null) {
+                log.warn("未找到订单（基于用户ID查询），尝试仅使用订单号查询，订单号: {}", cleanOrderNo);
+                LambdaQueryWrapper<Order> orderNoQuery = new LambdaQueryWrapper<>();
+                orderNoQuery.eq(Order::getOrderNo, cleanOrderNo);
+                orderNoQuery.eq(Order::getDeleted, 0);
+                order = baseMapper.selectOne(orderNoQuery);
+                
+                if (order != null) {
+                    log.warn("找到订单，但不属于当前用户，订单用户ID: {}, 当前用户ID: {}", order.getUserId(), userId);
+                    throw new BusinessException("订单不存在或不属于当前用户");
+                }
+            }
+            
+            if (order == null) {
+                log.error("订单不存在，订单号: {}", cleanOrderNo);
+                throw new BusinessException("订单不存在，请重新提交订单");
+            }
+            
+            log.info("找到订单: ID={}, 订单号={}, 状态={}", order.getId(), order.getOrderNo(), order.getStatus());
+            
+            if (order.getStatus() != 0) {
+                log.error("订单状态不正确，当前状态: {}, 需要状态: 0", order.getStatus());
+                throw new BusinessException("订单状态不正确，只能支付待付款订单");
+            }
+            
+            // 更新订单状态
+            order.setStatus(1); // 待发货
+            order.setUpdatedTime(LocalDateTime.now());
+            
+            log.info("更新订单状态: 待付款(0) -> 待发货(1)");
+            baseMapper.updateById(order);
+            log.info("订单支付成功，订单号: {}", cleanOrderNo);
+        } catch (BusinessException e) {
+            log.error("支付订单业务异常: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("支付订单失败", e);
+            throw new BusinessException("支付订单失败: " + e.getMessage());
         }
-        
-        // 更新订单状态
-        order.setStatus(1); // 待发货
-        order.setUpdatedTime(LocalDateTime.now());
-        
-        baseMapper.updateById(order);
     }
 
     /**
@@ -400,8 +528,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("订单不存在");
         }
         
-        if (order.getStatus() != 1) {
-            throw new BusinessException("只能确认待发货订单");
+        // 修改判断条件，应该是待收货(状态2)的订单才能确认收货
+        if (order.getStatus() != 2) {
+            throw new BusinessException("只能确认待收货订单");
         }
         
         // 更新订单状态
@@ -409,6 +538,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setUpdatedTime(LocalDateTime.now());
         
         baseMapper.updateById(order);
+        
+        log.info("订单确认收货成功: {}", orderNo);
     }
 
     /**
@@ -528,6 +659,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 
                 // 转换订单状态
                 orderVO.setStatus(order.getStatus().toString());
+                
+                // 确保时间字段不为null
+                if (order.getCreatedTime() != null) {
+                    // 设置创建时间（这里是使用LocalDateTime类型）
+                    orderVO.setCreateTime(order.getCreatedTime());
+                    log.debug("订单创建时间设置成功: {}", order.getCreatedTime());
+                } else {
+                    // 如果为null，设置为当前时间
+                    orderVO.setCreateTime(LocalDateTime.now());
+                    log.warn("订单创建时间为null，设置为当前时间");
+                }
                 
                 // 封装订单商品
                 List<OrderItemDTO> items = orderItemMap.getOrDefault(order.getId(), new ArrayList<>());

@@ -1,25 +1,29 @@
 package com.shop.online.controller;
 
 import com.shop.online.common.PageResult;
+import com.shop.online.vo.Result;
 import com.shop.online.dto.ProductDTO;
 import com.shop.online.dto.SellerApplyDTO;
 import com.shop.online.entity.Order;
 import com.shop.online.entity.Product;
 import com.shop.online.entity.Seller;
+import com.shop.online.exception.BusinessException;
 import com.shop.online.service.OrderService;
 import com.shop.online.service.ProductService;
 import com.shop.online.service.SellerService;
+import com.shop.online.service.UserService;
 import com.shop.online.util.FileUtil;
 import com.shop.online.vo.OrderVO;
 import com.shop.online.vo.ProductVO;
-import com.shop.online.vo.Result;
 import com.shop.online.vo.SellerVO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -134,15 +138,31 @@ public class SellerController {
      */
     @PostMapping("/products")
     public Result<ProductVO> addProduct(@RequestBody ProductDTO productDTO) {
-        log.info("添加商品: {}", productDTO);
+        log.info("添加商品请求数据: {}", productDTO);
         try {
+            // 验证必要字段
+            if (productDTO.getCategoryId() == null) {
+                return Result.error("商品分类不能为空");
+            }
+            
+            // 验证图片数据
+            if (productDTO.getImages() != null && !productDTO.getImages().isEmpty()) {
+                log.info("商品图片数量: {}", productDTO.getImages().size());
+                // 设置第一张图片为主图
+                productDTO.setMainImage(productDTO.getImages().get(0));
+            } else {
+                return Result.error("请至少上传一张商品图片");
+            }
+            
             Seller seller = sellerService.getCurrentSeller();
             // 转换DTO为实体
             Product product = new Product();
+            BeanUtils.copyProperties(productDTO, product);
             // 设置卖家ID
             product.setSellerId(seller.getId());
             // 保存商品
             ProductVO productVO = productService.saveProduct(product);
+            log.info("商品添加成功: {}", productVO);
             return Result.success(productVO);
         } catch (Exception e) {
             log.error("添加商品失败", e);
@@ -155,8 +175,21 @@ public class SellerController {
      */
     @PutMapping("/products/{id}")
     public Result<ProductVO> updateProduct(@PathVariable Long id, @RequestBody ProductDTO productDTO) {
-        log.info("更新商品: id={}, dto={}", id, productDTO);
+        log.info("更新商品请求数据: id={}, dto={}", id, productDTO);
         try {
+            // 验证必要字段
+            if (productDTO.getCategoryId() == null) {
+                return Result.error("商品分类不能为空");
+            }
+            
+            // 验证图片数据
+            if (productDTO.getImages() != null) {
+                log.info("商品图片数量: {}", productDTO.getImages().size());
+                for (String image : productDTO.getImages()) {
+                    log.debug("图片URL: {}", image);
+                }
+            }
+            
             Seller seller = sellerService.getCurrentSeller();
             
             // 检查商品是否属于当前卖家
@@ -171,11 +204,13 @@ public class SellerController {
             
             // 更新商品
             Product product = new Product();
+            BeanUtils.copyProperties(productDTO, product);
             product.setId(id);
             // 保留卖家ID不变
             product.setSellerId(seller.getId());
             // 更新商品
             ProductVO productVO = productService.updateProduct(product);
+            log.info("商品更新成功: {}", productVO);
             return Result.success(productVO);
         } catch (Exception e) {
             log.error("更新商品失败", e);
@@ -216,22 +251,23 @@ public class SellerController {
      * 上传商品图片
      */
     @PostMapping("/products/image")
-    public Result<String> uploadProductImage(@RequestParam("file") MultipartFile file) {
-        log.info("上传商品图片, 文件名: {}, 大小: {}", file.getOriginalFilename(), file.getSize());
+    public Result<String> uploadProductImage(
+            @RequestParam("file") MultipartFile file, 
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) Integer imageIndex) {
+        log.info("上传商品图片, 文件名: {}, 大小: {}, 商品ID: {}, 图片序号: {}", 
+                 file.getOriginalFilename(), file.getSize(), productId, imageIndex);
         
         try {
             Seller seller = sellerService.getCurrentSeller();
             
-            // 上传文件并获取路径
-            String filePath = FileUtil.uploadProductImage(file, seller.getId());
+            // 使用FileUtil上传图片，提供更全面的参数
+            String relativePath = FileUtil.uploadProductImage(file, seller.getId(), productId, imageIndex);
+            log.info("商品图片上传成功，路径: {}", relativePath);
             
-            // 返回完整URL
-            String fullUrl = "/api" + filePath;
-            log.info("商品图片上传成功，路径: {}", fullUrl);
-            
-            return Result.success(fullUrl);
+            return Result.success(relativePath);
         } catch (IOException e) {
-            log.error("商品图片上传失败", e);
+            log.error("商品图片上传失败: {}", e.getMessage(), e);
             return Result.error("商品图片上传失败: " + e.getMessage());
         }
     }
@@ -244,22 +280,47 @@ public class SellerController {
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
-        log.info("获取卖家订单列表, status={}, page={}, size={}", status, page, size);
+        log.info("获取卖家订单列表: status={}, page={}, size={}", status, page, size);
         try {
+            // 获取当前卖家信息
             Seller seller = sellerService.getCurrentSeller();
+            if (seller == null) {
+                log.error("获取卖家信息失败");
+                return Result.error("获取卖家信息失败，请重新登录");
+            }
+            
+            log.info("卖家信息: id={}, shopName={}", seller.getId(), seller.getShopName());
             
             // 构建查询参数
             Map<String, Object> params = new HashMap<>();
             params.put("sellerId", seller.getId());
-            if (status != null) {
-                params.put("status", status);
-            }
             params.put("page", page);
             params.put("size", size);
             
-            // 查询订单列表
-            PageResult<OrderVO> orders = orderService.getSellerOrders(params);
-            return Result.success(orders);
+            if (status != null && status >= 0) {
+                log.info("按状态 {} 筛选订单", status);
+                params.put("status", status.toString());
+            }
+            
+            // 调用服务查询订单
+            PageResult<OrderVO> result = orderService.getSellerOrders(params);
+            log.info("查询结果: 总数={}, 订单数={}", result.getTotal(), result.getList().size());
+            
+            // 检查订单中的时间是否正确
+            if (result.getList() != null && !result.getList().isEmpty()) {
+                boolean hasNullTime = false;
+                for (OrderVO order : result.getList()) {
+                    if (order.getCreateTime() == null) {
+                        hasNullTime = true;
+                        log.warn("订单 {} 创建时间为null", order.getOrderNo());
+                    }
+                }
+                if (hasNullTime) {
+                    log.warn("部分订单创建时间为null，但已处理为当前时间");
+                }
+            }
+            
+            return Result.success(result);
         } catch (Exception e) {
             log.error("获取卖家订单列表失败", e);
             return Result.error(e.getMessage());
@@ -271,16 +332,39 @@ public class SellerController {
      */
     @PostMapping("/orders/{orderNo}/ship")
     public Result<Boolean> shipOrder(@PathVariable String orderNo) {
-        log.info("卖家发货: orderNo={}", orderNo);
+        log.info("卖家发货请求: orderNo={}", orderNo);
         try {
-            Seller seller = sellerService.getCurrentSeller();
+            // 参数校验
+            if (orderNo == null || orderNo.trim().isEmpty()) {
+                log.error("订单号为空");
+                return Result.error("订单号不能为空");
+            }
             
-            // 发货
+            // 获取当前卖家信息
+            Seller seller = sellerService.getCurrentSeller();
+            if (seller == null) {
+                log.error("获取卖家信息失败");
+                return Result.error("获取卖家信息失败，请重新登录");
+            }
+            
+            log.info("卖家 [{}] 正在为订单 [{}] 执行发货操作", seller.getId(), orderNo);
+            
+            // 执行发货操作
             boolean shipped = orderService.shipOrder(orderNo, seller.getId());
-            return Result.success(shipped);
-        } catch (Exception e) {
-            log.error("卖家发货失败", e);
+            
+            if (shipped) {
+                log.info("订单 [{}] 发货成功", orderNo);
+                return Result.success(true);
+            } else {
+                log.warn("订单 [{}] 发货失败，可能状态不正确或已被更新", orderNo);
+                return Result.error("发货失败，请刷新页面重试");
+            }
+        } catch (BusinessException e) {
+            log.error("卖家发货业务异常: {}", e.getMessage());
             return Result.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("卖家发货系统异常", e);
+            return Result.error("发货失败: " + e.getMessage());
         }
     }
 

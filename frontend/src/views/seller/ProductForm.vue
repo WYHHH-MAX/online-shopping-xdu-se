@@ -22,6 +22,11 @@
           :options="categoryOptions"
           :field-names="{ label: 'name', value: 'id', children: 'children' }"
           placeholder="请选择商品分类"
+          @change="handleCategoryChange"
+          :show-search="{ 
+            filter: (inputValue: string, path: any[]) => 
+              path.some(option => option.name.toLowerCase().indexOf(inputValue.toLowerCase()) > -1) 
+          }"
         />
       </a-form-item>
       
@@ -138,7 +143,18 @@ const categoryOptions = ref<any[]>([]);
 const fetchCategories = async () => {
   try {
     const data = await getCategoryTree();
-    categoryOptions.value = data;
+    // 处理分类数据，确保显示名称
+    categoryOptions.value = data.map(category => ({
+      ...category,
+      label: category.name,
+      value: category.id,
+      children: category.children?.map(child => ({
+        ...child,
+        label: child.name,
+        value: child.id
+      }))
+    }));
+    console.log('处理后的分类数据:', categoryOptions.value);
   } catch (error: any) {
     message.error('获取分类数据失败: ' + error.message);
   }
@@ -190,18 +206,35 @@ const customUpload = async (options: any) => {
   try {
     const url = await uploadProductImage(file);
     
+    // 验证URL是否有效
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+      throw new Error('上传图片返回的URL无效');
+    }
+    
     // 如果是第一张图片，设置为主图
     if (fileList.value.length === 0) {
       formState.mainImage = url;
     }
     
-    // 添加到图片列表
+    // 添加到图片列表，确保url是有效的字符串
     formState.images.push(url);
     
     onSuccess(url, file);
+    console.log('图片上传成功，URL:', url);
   } catch (error: any) {
+    console.error('上传图片失败:', error, '文件信息:', file.name, file.size);
     message.error('上传图片失败: ' + error.message);
     onError(error);
+  }
+};
+
+// 添加处理分类选择的方法
+const handleCategoryChange = (value: number[]) => {
+  if (value && value.length > 0) {
+    // 使用最后一个选中的分类ID
+    formState.categoryId = value[value.length - 1];
+  } else {
+    formState.categoryId = null;
   }
 };
 
@@ -224,13 +257,44 @@ const handleSubmit = async () => {
       return;
     }
     
+    // 确保mainImage不为空
+    if (!formState.mainImage || formState.mainImage.trim() === '') {
+      if (formState.images.length > 0) {
+        formState.mainImage = formState.images[0];
+        console.log('自动设置第一张图片为主图:', formState.mainImage);
+      } else {
+        message.error('请上传至少一张图片作为主图');
+        return;
+      }
+    }
+    
     submitting.value = true;
+    
+    // 过滤和处理图片URL
+    const validImages = formState.images
+      .filter(url => url && typeof url === 'string' && url.trim() !== '')
+      .map(url => url.trim());
+    
+    if (validImages.length === 0) {
+      message.error('没有有效的商品图片');
+      submitting.value = false;
+      return;
+    }
     
     // 构建请求数据对象，过滤掉可能为null的属性
     const productData = {
       ...formState,
-      categoryId: formState.categoryId as number
+      categoryId: formState.categoryId as number,
+      price: Number(formState.price),
+      stock: Number(formState.stock),
+      status: Number(formState.status),
+      // 确保mainImage是有效的字符串
+      mainImage: formState.mainImage.trim(),
+      // 使用验证过的图片数组
+      images: validImages
     };
+    
+    console.log('提交的商品数据:', productData);
     
     if (isEdit.value) {
       // 编辑商品
@@ -245,6 +309,7 @@ const handleSubmit = async () => {
     // 返回商品列表
     router.push('/seller/products');
   } catch (error: any) {
+    console.error('提交失败:', error);
     message.error('提交失败: ' + error.message);
   } finally {
     submitting.value = false;

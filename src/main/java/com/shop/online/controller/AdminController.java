@@ -285,4 +285,22 @@ public class AdminController {
             return Result.error("删除卖家失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 设置商品为推荐/取消推荐
+     */
+    @PostMapping("/products/featured/{id}")
+    public Result<Boolean> setProductFeatured(
+            @PathVariable Long id,
+            @RequestParam Integer featured) {
+        log.info("收到设置商品推荐状态请求, 商品ID: {}, 推荐状态: {}", id, featured);
+        try {
+            boolean result = adminService.setProductFeatured(id, featured);
+            log.info("设置商品推荐状态成功, 商品ID: {}", id);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("设置商品推荐状态失败, 商品ID: {}, 错误: {}", id, e.getMessage(), e);
+            return Result.error("设置商品推荐状态失败: " + e.getMessage());
+        }
+    }
 } 

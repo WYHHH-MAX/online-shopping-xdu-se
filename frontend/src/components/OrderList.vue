@@ -44,7 +44,7 @@
                   取消订单
                 </a-button>
                 <a-button
-                  v-if="parseInt(item.status) === 1"
+                  v-if="parseInt(item.status) === 2"
                   type="primary"
                   @click="handleConfirm(item)"
                 >
@@ -63,6 +63,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { getOrders, payOrder, cancelOrder, confirmOrder } from '@/api/order'
+import { getImageUrl } from '@/utils/imageUtil'
 
 const props = defineProps<{
   status: string | null
@@ -261,19 +262,8 @@ onMounted(() => {
   }
 });
 
-const getProductImageUrl = (imagePath: string) => {
-  // 如果已经是完整URL，直接返回
-  if (imagePath.startsWith('http')) {
-    return imagePath;
-  }
-  
-  // 如果是相对路径，添加基础URL前缀
-  if (imagePath.startsWith('/')) {
-    return `${import.meta.env.VITE_API_BASE_URL || '/api'}${imagePath}`;
-  }
-  
-  // 如果没有/前缀，添加完整路径
-  return `${import.meta.env.VITE_API_BASE_URL || '/api'}/images/products/${imagePath}`;
+const getProductImageUrl = (url: string) => {
+  return getImageUrl(url);
 }
 </script>
 

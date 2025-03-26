@@ -42,6 +42,12 @@ instance.interceptors.request.use(
 // 响应拦截器
 instance.interceptors.response.use(
   (response: AxiosResponse) => {
+    // 记录成功响应
+    console.log(`[API成功] ${response.config.url}`, {
+      status: response.status,
+      data: response.data
+    });
+    
     // 从响应中获取数据
     const res = response.data
     
@@ -74,6 +80,16 @@ instance.interceptors.response.use(
     }
   },
   (error) => {
+    // 记录错误详情
+    console.error('[API错误]', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      errorData: error.response?.data,
+      errorMessage: error.message
+    });
+    
     // 确保不使用模拟数据
     console.error('响应错误', error)
     
@@ -96,6 +112,9 @@ instance.interceptors.response.use(
         message.error('登录状态已过期，请重新登录')
       } else if (status === 404) {
         message.error('请求的资源不存在')
+      } else if (status === 500) {
+        console.error('服务器内部错误详情:', error.response.data);
+        message.error('服务器内部错误，请联系管理员')
       } else {
         message.error(error.response.data?.message || error.response.data?.msg || '请求失败')
       }

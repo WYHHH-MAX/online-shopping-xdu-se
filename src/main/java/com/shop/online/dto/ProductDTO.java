@@ -1,7 +1,8 @@
 package com.shop.online.dto;
 
 import lombok.Data;
-
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Min;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -18,6 +19,7 @@ public class ProductDTO {
     /**
      * 商品名称
      */
+    @NotNull(message = "商品名称不能为空")
     private String name;
     
     /**
@@ -28,16 +30,21 @@ public class ProductDTO {
     /**
      * 商品价格
      */
+    @NotNull(message = "商品价格不能为空")
+    @Min(value = 0, message = "商品价格不能小于0")
     private BigDecimal price;
     
     /**
      * 商品库存
      */
+    @NotNull(message = "商品库存不能为空")
+    @Min(value = 0, message = "商品库存不能小于0")
     private Integer stock;
     
     /**
      * 分类ID
      */
+    @NotNull(message = "商品分类不能为空")
     private Long categoryId;
     
     /**

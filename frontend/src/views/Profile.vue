@@ -109,14 +109,20 @@ const editForm = ref({
 // 头像默认值设置
 const avatarUrl = computed(() => {
   if (!userInfo.value.avatar) {
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.value.username}`
+    console.log('用户没有头像，使用默认头像');
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.value.username}`;
   }
 
   // 确保avatar是字符串
-  const avatar = String(userInfo.value.avatar)
+  const avatar = String(userInfo.value.avatar);
+  console.log('用户头像路径:', avatar);
 
-  // 直接使用工具函数处理图片URL
-  return getImageUrl(avatar)
+  // 使用工具函数处理图片URL - 新路径格式 /images/avatars/user_X.png
+  // 如果头像路径中没有时间戳，则添加一个唯一标识符
+  const url = getImageUrl(avatar);
+  console.log('处理后的头像URL:', url);
+  
+  return url;
 })
 
 // 显示默认值或占位符
@@ -226,8 +232,20 @@ const customAvatarUpload = async (options: any) => {
     const avatarPath = await uploadAvatar(file);
     console.log('头像上传成功，返回路径:', avatarPath)
     
-    // 上传成功后，重新获取用户信息以确保头像URL最新
+    // 上传成功后，立即更新用户信息
     await loadUserInfo()
+    
+    // 刷新头像URL - 添加时间戳强制刷新
+    if (userInfo.value.avatar) {
+      // 确保更新URL到最新时间戳
+      const timestamp = new Date().getTime();
+      const currentAvatar = userInfo.value.avatar;
+      if (currentAvatar.includes('?')) {
+        userInfo.value.avatar = currentAvatar.split('?')[0] + `?t=${timestamp}`;
+      } else {
+        userInfo.value.avatar = currentAvatar + `?t=${timestamp}`;
+      }
+    }
     
     message.success('头像上传成功');
     onSuccess(avatarPath, file);

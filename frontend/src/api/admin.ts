@@ -119,6 +119,15 @@ export const updateProductStatus = (id: number, status: number) => {
   })
 }
 
+// 设置商品为推荐/取消推荐
+export const setProductFeatured = (id: number, featured: number) => {
+  return request({
+    url: `/admin/products/featured/${id}`,
+    method: 'post',
+    params: { featured }
+  })
+}
+
 // 删除商品
 export const deleteProduct = (id: number) => {
   return request({

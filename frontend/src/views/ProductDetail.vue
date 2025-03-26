@@ -394,14 +394,22 @@ const handleBuyNow = () => {
     return;
   }
   
-  // 处理立即购买逻辑
+  // 检查用户是否已登录
+  const userStore = useUserStore();
+  if (!userStore.isLoggedIn()) {
+    message.warning('请先登录');
+    router.push('/login');
+    return;
+  }
+  
+  // 处理立即购买逻辑 - 直接跳转到结算页面
   router.push({
     path: '/checkout',
     query: {
-      products: JSON.stringify([{
-        id: product.value.id,
-        quantity: quantity.value
-      }])
+      // 传递单个商品信息作为直接购买
+      directBuy: 'true',
+      productId: product.value.id.toString(),
+      quantity: quantity.value.toString()
     }
   });
 };

@@ -51,10 +51,36 @@ const dashboardData = ref<DashboardData>({
 
 const fetchDashboardData = async () => {
   try {
-    const data = await getSellerDashboard()
-    dashboardData.value = data
+    console.log('正在获取卖家仪表盘数据...');
+    const response = await getSellerDashboard();
+    console.log('获取到的原始仪表盘数据:', response);
+    
+    if (response && typeof response === 'object') {
+      // 处理标准响应格式
+      if (response.data && typeof response.data === 'object') {
+        dashboardData.value = {
+          pendingShipments: response.data.pendingShipments || 0,
+          totalOrders: response.data.totalOrders || 0,
+          totalProducts: response.data.totalProducts || 0,
+          lowStockProducts: response.data.lowStockProducts || 0
+        };
+      } else {
+        // 直接使用响应数据
+        dashboardData.value = {
+          pendingShipments: response.pendingShipments || 0,
+          totalOrders: response.totalOrders || 0,
+          totalProducts: response.totalProducts || 0,
+          lowStockProducts: response.lowStockProducts || 0
+        };
+      }
+      console.log('处理后的仪表盘数据:', dashboardData.value);
+    } else {
+      console.error('仪表盘数据格式不正确:', response);
+      message.error('获取仪表盘数据失败: 数据格式不正确');
+    }
   } catch (error: any) {
-    message.error('获取仪表盘数据失败: ' + error.message)
+    console.error('获取仪表盘数据失败:', error);
+    message.error('获取仪表盘数据失败: ' + error.message);
   }
 }
 

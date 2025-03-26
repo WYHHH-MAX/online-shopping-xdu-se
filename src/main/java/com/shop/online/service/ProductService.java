@@ -94,4 +94,11 @@ public interface ProductService {
      * @return 是否成功
      */
     boolean deleteProduct(Long productId);
+
+    /**
+     * 获取商品的图片数量
+     * @param productId 商品ID
+     * @return 图片数量
+     */
+    int getProductImageCount(Long productId);
 } 

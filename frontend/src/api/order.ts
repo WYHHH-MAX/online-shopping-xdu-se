@@ -55,7 +55,7 @@ export function getOrderDetail(orderNo: string) {
 /**
  * 创建订单
  */
-export function createOrder(data: { cartItemIds: number[] }) {
+export function createOrder(data: { cartItemIds?: number[], directBuy?: boolean, productId?: number, quantity?: number }) {
   console.log('调用创建订单API，参数:', data);
   return request<CreateOrderResult>({
     url: '/orders/create',
@@ -68,11 +68,23 @@ export function createOrder(data: { cartItemIds: number[] }) {
  * 支付订单
  */
 export function payOrder(orderNo: string) {
+  console.log('正在调用支付订单API，订单号:', orderNo);
+  
+  // 确保orderNo是一个字符串并去除前后空格
+  const cleanOrderNo = String(orderNo).trim();
+  console.log('处理后的订单号:', cleanOrderNo);
+  
   return request({
     url: '/orders/pay',
     method: 'post',
-    data: { orderNo }
-  })
+    data: { orderNo: cleanOrderNo }
+  }).then(response => {
+    console.log('支付订单API成功:', response);
+    return response;
+  }).catch(error => {
+    console.error('支付订单API失败:', error);
+    throw error;
+  });
 }
 
 /**

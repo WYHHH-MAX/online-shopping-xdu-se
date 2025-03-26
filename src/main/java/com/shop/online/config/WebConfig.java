@@ -19,6 +19,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 
 @Configuration
@@ -32,7 +33,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         logger.info("配置CORS映射...");
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173") // 前端开发服务器地址
+                .allowedOrigins("http://localhost:5173", "http://localhost:63342", "http://127.0.0.1:5173", "http://127.0.0.1:63342") // 添加更多允许的前端地址
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization") // 允许前端访问的响应头
@@ -52,7 +53,11 @@ public class WebConfig implements WebMvcConfigurer {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:5173"); // 前端开发服务器地址
+        // 添加更多允许的前端地址
+        config.addAllowedOrigin("http://localhost:5173");
+        config.addAllowedOrigin("http://localhost:63342");
+        config.addAllowedOrigin("http://127.0.0.1:5173");
+        config.addAllowedOrigin("http://127.0.0.1:63342");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.addExposedHeader("Authorization"); // 允许前端访问的响应头
@@ -70,7 +75,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(requestLoggingInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/api/images/**", "/api/static/**");
+                .excludePathPatterns("/api/images/**", "/api/static/**", "/api/uploads/**");
         logger.info("请求日志拦截器配置完成");
     }
     
@@ -79,9 +84,27 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 添加图片资源处理
+        // 添加上传文件资源处理 - 配置多个位置
+        logger.info("配置静态资源处理器 - 添加uploads路径映射");
+        
+        // 配置上传文件资源处理器 - 禁用缓存，确保图片能正确刷新
+        String uploadsPath = "file:D:/java/spm2/uploads/";
+        logger.info("上传文件实际路径: {}", uploadsPath);
+        
         registry.addResourceHandler("/api/uploads/**")
-                .addResourceLocations("file:uploads/");
+                .addResourceLocations(uploadsPath)
+                .setCachePeriod(0)  // 禁用缓存
+                .resourceChain(false);
+        
+        logger.info("上传文件资源映射配置完成: /api/uploads/** -> {}", uploadsPath);
+        
+        // 不再需要验证旧的头像路径
+        // 添加静态资源处理 - 禁用缓存以确保头像可以正确刷新
+        registry.addResourceHandler("/api/images/**")
+                .addResourceLocations("classpath:/static/images/")
+                .setCachePeriod(0)
+                .resourceChain(false);
+        
         logger.info("静态资源处理器配置完成");
     }
 } 

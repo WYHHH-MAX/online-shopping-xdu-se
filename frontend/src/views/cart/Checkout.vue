@@ -97,6 +97,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { getCartItems } from '@/api/cart'
+import { getProductDetail } from '@/api/product'
 import { createOrder, payOrder } from '@/api/order'
 import type { CartItemVO } from '@/types/cart'
 import { getImageUrl } from '@/utils/imageUtil'
@@ -130,49 +131,87 @@ const totalQuantity = computed(() => {
 const loadSelectedItems = async () => {
   loading.value = true
   try {
-    const itemsQuery = route.query.items as string
-    if (!itemsQuery) {
-      message.error('未选择商品，无法结算')
-      router.push('/cart')
-      return
-    }
+    // 检查是否是直接购买
+    const directBuy = route.query.directBuy === 'true'
+    const productId = route.query.productId as string
+    const productQuantity = route.query.quantity as string
     
-    const selectedIds = itemsQuery.split(',').map(id => parseInt(id))
-    if (selectedIds.length === 0) {
-      message.error('未选择商品，无法结算')
-      router.push('/cart')
-      return
-    }
-    
-    // 获取购物车商品
-    const result = await getCartItems()
-    console.log('获取购物车商品数据:', result)
-    
-    // 处理不同的数据格式
-    let items: CartItemVO[] = []
-    
-    if (result && Array.isArray(result)) {
-      // 如果直接返回数组
-      items = result
-    } else if (result && (result as any).data && Array.isArray((result as any).data)) {
-      // 如果数据在data字段中
-      items = (result as any).data
-    } else if (result && (result as any).list && Array.isArray((result as any).list)) {
-      // 如果数据在list字段中
-      items = (result as any).list
+    if (directBuy && productId && productQuantity) {
+      // 处理直接购买的情况
+      console.log('直接购买模式，商品ID:', productId, '数量:', productQuantity)
+      
+      try {
+        // 这里应该调用API获取商品详情
+        const productDetail = await getProductDetail(parseInt(productId))
+        
+        // 构造购物车项
+        cartItems.value = [{
+          id: parseInt(productId), // 这里使用商品ID作为临时的购物车项ID
+          userId: useUserStore().userId || 0,
+          productId: parseInt(productId),
+          productName: productDetail.name || '未知商品',
+          productImage: productDetail.mainImage || '',
+          price: productDetail.price || 0,
+          quantity: parseInt(productQuantity),
+          selected: true,
+          stock: productDetail.stock || 0,
+          createTime: new Date().toISOString(),
+          updateTime: new Date().toISOString()
+        }]
+        
+        console.log('直接购买的商品信息:', cartItems.value)
+      } catch (error) {
+        console.error('获取商品详情失败:', error)
+        message.error('获取商品详情失败')
+        router.push('/')
+        return
+      }
     } else {
-      console.error('购物车数据格式不正确:', result)
-      message.error('获取购物车数据格式有误')
-      router.push('/cart')
-      return
-    }
-    
-    // 筛选选中的商品
-    cartItems.value = items.filter(item => selectedIds.includes(item.id))
-    
-    if (cartItems.value.length === 0) {
-      message.error('未找到选中的商品')
-      router.push('/cart')
+      // 处理从购物车结算的情况
+      const itemsQuery = route.query.items as string
+      if (!itemsQuery) {
+        message.error('未选择商品，无法结算')
+        router.push('/cart')
+        return
+      }
+      
+      const selectedIds = itemsQuery.split(',').map(id => parseInt(id))
+      if (selectedIds.length === 0) {
+        message.error('未选择商品，无法结算')
+        router.push('/cart')
+        return
+      }
+      
+      // 获取购物车商品
+      const result = await getCartItems()
+      console.log('获取购物车商品数据:', result)
+      
+      // 处理不同的数据格式
+      let items: CartItemVO[] = []
+      
+      if (result && Array.isArray(result)) {
+        // 如果直接返回数组
+        items = result
+      } else if (result && (result as any).data && Array.isArray((result as any).data)) {
+        // 如果数据在data字段中
+        items = (result as any).data
+      } else if (result && (result as any).list && Array.isArray((result as any).list)) {
+        // 如果数据在list字段中
+        items = (result as any).list
+      } else {
+        console.error('购物车数据格式不正确:', result)
+        message.error('获取购物车数据格式有误')
+        router.push('/cart')
+        return
+      }
+      
+      // 筛选选中的商品
+      cartItems.value = items.filter(item => selectedIds.includes(item.id))
+      
+      if (cartItems.value.length === 0) {
+        message.error('未找到选中的商品')
+        router.push('/cart')
+      }
     }
   } catch (error) {
     console.error('加载结算商品失败:', error)
@@ -192,9 +231,29 @@ const handleSubmitOrder = async () => {
       return;
     }
     
-    // 获取购物车项ID数组
-    const itemIds = cartItems.value.map(item => item.id);
-    console.log('准备提交订单，购物车项IDs:', itemIds);
+    // 检查是否是直接购买模式
+    const directBuy = route.query.directBuy === 'true'
+    
+    // 获取购物车项ID数组或直接购买信息
+    let requestData: any;
+    
+    if (directBuy) {
+      // 直接购买模式
+      const productId = parseInt(route.query.productId as string);
+      const quantity = parseInt(route.query.quantity as string);
+      
+      requestData = { 
+        directBuy: true,
+        productId: productId,
+        quantity: quantity
+      };
+      console.log('直接购买模式，参数:', requestData);
+    } else {
+      // 购物车模式
+      const itemIds = cartItems.value.map(item => item.id);
+      requestData = { cartItemIds: itemIds };
+      console.log('购物车模式，购物车项IDs:', itemIds);
+    }
     
     // 检查用户是否已登录
     const userStore = useUserStore();
@@ -209,26 +268,41 @@ const handleSubmitOrder = async () => {
     loading.value = true;
     message.loading({ content: '正在创建订单...', key: 'createOrder' });
     
-    // 记录请求和详细路径信息
-    const requestData = { cartItemIds: itemIds };
-    console.log('发送创建订单请求:', {
-      url: '/api/orders/create',
-      method: 'POST',
-      data: requestData,
-    });
-    
     // 发送创建订单请求
     try {
-      const result = await createOrder({ cartItemIds: itemIds });
+      const response = await createOrder(requestData);
       
       // 处理响应
-      console.log('创建订单成功，响应:', result);
-      currentOrderNo.value = result.orderNo;
+      console.log('创建订单成功，响应:', response);
+      
+      // 解析响应获取orderNo - 根据实际后端返回结构调整
+      let orderNo = '';
+      
+      // 安全获取嵌套属性
+      const getNestedProperty = (obj: any, path: string): any => {
+        if (!obj) return undefined;
+        const keys = path.split('.');
+        return keys.reduce((o, key) => o && typeof o === 'object' ? o[key] : undefined, obj);
+      };
+      
+      // 尝试不同的路径获取orderNo
+      orderNo = getNestedProperty(response, 'orderNo') || 
+               getNestedProperty(response, 'data.orderNo') || '';
+      
+      if (!orderNo) {
+        console.error('无法从响应中获取订单号:', response);
+        message.error('创建订单成功，但无法获取订单号');
+        return;
+      }
+      
+      // 保存订单号
+      currentOrderNo.value = orderNo;
+      console.log('成功获取到订单号:', orderNo);
       message.success({ content: '订单创建成功!', key: 'createOrder' });
       
-      // 跳转到支付页面
-      console.log('跳转到支付页面，订单号:', result.orderNo);
-      router.push(`/payment/${result.orderNo}`);
+      // 显示支付模态框
+      console.log('显示支付模态框，订单号:', orderNo);
+      paymentModalVisible.value = true;
     } catch (requestError: any) {
       // 详细记录API请求错误
       console.error('API请求失败:', {
@@ -289,15 +363,26 @@ const handleSubmitOrder = async () => {
 
 // 完成支付
 const completePayment = async () => {
+  // 检查订单号是否存在
   if (!currentOrderNo.value) {
-    message.error('订单号不存在')
+    message.error('订单号不存在，请重新提交订单')
+    paymentModalVisible.value = false
     return
   }
   
+  console.log('准备支付订单, 订单号:', currentOrderNo.value);
+  
   paymentLoading.value = true
   try {
-    await payOrder(currentOrderNo.value)
-    message.success('支付成功')
+    // 确保订单号有效
+    const orderNoStr = String(currentOrderNo.value).trim();
+    console.log('处理后的订单号:', orderNoStr);
+    
+    // 执行支付操作
+    await payOrder(orderNoStr)
+    
+    // 支付成功
+    message.success('支付成功！')
     
     // 关闭模态框并跳转到支付成功页面
     paymentModalVisible.value = false
@@ -306,13 +391,34 @@ const completePayment = async () => {
     router.push({
       path: '/payment-success',
       query: {
-        orderNo: currentOrderNo.value,
+        orderNo: orderNoStr,
         amount: totalPrice.value.toFixed(2)
       }
     })
-  } catch (error) {
-    console.error('支付失败:', error)
-    message.error('支付失败')
+  } catch (error: any) {
+    // 详细记录错误信息
+    console.error('支付失败:', {
+      orderNo: currentOrderNo.value,
+      错误详情: error,
+      响应状态: error.response?.status,
+      响应数据: error.response?.data,
+      请求配置: error.config
+    });
+    
+    // 提供更详细的错误信息
+    if (error.response) {
+      if (error.response.status === 404) {
+        message.error('订单不存在，请重新提交订单')
+      } else if (error.response.status === 400) {
+        message.error(error.response.data?.message || '订单状态异常，无法支付')
+      } else {
+        message.error(error.response.data?.message || '支付失败，请稍后重试')
+      }
+    } else if (error.request) {
+      message.error('网络请求失败，请检查网络连接')
+    } else {
+      message.error(error.message || '支付操作出现异常')
+    }
   } finally {
     paymentLoading.value = false
   }

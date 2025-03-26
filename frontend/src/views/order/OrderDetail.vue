@@ -287,7 +287,11 @@ const completePayment = async () => {
   
   paymentLoading.value = true
   try {
-    await payOrder(order.value.orderNo)
+    // 确保订单号是字符串类型
+    const orderNoStr = String(order.value.orderNo);
+    console.log('准备支付订单, 订单号(字符串):', orderNoStr);
+    
+    await payOrder(orderNoStr)
     message.success('支付成功')
     
     // 关闭模态框
