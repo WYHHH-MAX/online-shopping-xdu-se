@@ -33,13 +33,13 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         logger.info("配置CORS映射...");
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173", "http://localhost:63342", "http://127.0.0.1:5173", "http://127.0.0.1:63342") // 添加更多允许的前端地址
+                .allowedOriginPatterns("*") // 使用通配符允许所有来源
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .exposedHeaders("Authorization") // 允许前端访问的响应头
                 .allowCredentials(true)
                 .maxAge(3600);
-        logger.info("CORS映射配置完成");
+        logger.info("CORS映射配置完成: 允许所有来源");
     }
     
     /**
@@ -53,17 +53,14 @@ public class WebConfig implements WebMvcConfigurer {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        // 添加更多允许的前端地址
-        config.addAllowedOrigin("http://localhost:5173");
-        config.addAllowedOrigin("http://localhost:63342");
-        config.addAllowedOrigin("http://127.0.0.1:5173");
-        config.addAllowedOrigin("http://127.0.0.1:63342");
+        // 允许所有来源
+        config.addAllowedOriginPattern("*");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         config.addExposedHeader("Authorization"); // 允许前端访问的响应头
         config.setMaxAge(3600L);
         source.registerCorsConfiguration("/**", config);
-        logger.info("CORS过滤器创建完成");
+        logger.info("CORS过滤器创建完成: 允许所有来源");
         
         return new CorsFilter(source);
     }

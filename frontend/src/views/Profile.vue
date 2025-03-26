@@ -10,6 +10,7 @@
                 :src="avatarUrl"
                 alt="avatar"
                 class="avatar"
+                :key="'avatar-' + forceRefresh"
               />
               <div class="avatar-overlay" @click="handleAvatarClick">
                 <a-upload
@@ -95,6 +96,7 @@ import { getImageUrl } from '../utils/imageUtil'
 
 const userStore = useUserStore()
 const userInfo = computed(() => userStore)
+const forceRefresh = ref(0) // 添加强制刷新计数器
 
 const activeTab = ref('all')
 const editModalVisible = ref(false)
@@ -108,6 +110,9 @@ const editForm = ref({
 
 // 头像默认值设置
 const avatarUrl = computed(() => {
+  // 使用forceRefresh作为依赖，当它变化时重新计算
+  forceRefresh.value; // 仅用于触发依赖收集
+  
   if (!userInfo.value.avatar) {
     console.log('用户没有头像，使用默认头像');
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.value.username}`;
@@ -118,8 +123,8 @@ const avatarUrl = computed(() => {
   console.log('用户头像路径:', avatar);
 
   // 使用工具函数处理图片URL - 新路径格式 /images/avatars/user_X.png
-  // 如果头像路径中没有时间戳，则添加一个唯一标识符
-  const url = getImageUrl(avatar);
+  const timestamp = new Date().getTime(); // 添加时间戳避免缓存
+  const url = getImageUrl(avatar) + `?t=${timestamp}`;
   console.log('处理后的头像URL:', url);
   
   return url;
@@ -232,20 +237,12 @@ const customAvatarUpload = async (options: any) => {
     const avatarPath = await uploadAvatar(file);
     console.log('头像上传成功，返回路径:', avatarPath)
     
-    // 上传成功后，立即更新用户信息
+    // 上传成功后，更新用户信息
     await loadUserInfo()
     
-    // 刷新头像URL - 添加时间戳强制刷新
-    if (userInfo.value.avatar) {
-      // 确保更新URL到最新时间戳
-      const timestamp = new Date().getTime();
-      const currentAvatar = userInfo.value.avatar;
-      if (currentAvatar.includes('?')) {
-        userInfo.value.avatar = currentAvatar.split('?')[0] + `?t=${timestamp}`;
-      } else {
-        userInfo.value.avatar = currentAvatar + `?t=${timestamp}`;
-      }
-    }
+    // 触发强制刷新
+    forceRefresh.value += 1;
+    console.log('触发头像强制刷新, 计数:', forceRefresh.value);
     
     message.success('头像上传成功');
     onSuccess(avatarPath, file);
