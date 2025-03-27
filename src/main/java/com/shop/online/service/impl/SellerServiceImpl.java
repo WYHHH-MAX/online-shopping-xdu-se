@@ -38,7 +38,7 @@ public class SellerServiceImpl extends ServiceImpl<SellerMapper, Seller> impleme
     @Transactional(rollbackFor = Exception.class)
     public boolean apply(SellerApplyDTO sellerApplyDTO) {
         try {
-            log.info("开始处理商家入驻申请: {}", sellerApplyDTO);
+//            log.info("开始处理商家入驻申请: {}", sellerApplyDTO);
             
             User currentUser = null;
             
@@ -59,7 +59,7 @@ public class SellerServiceImpl extends ServiceImpl<SellerMapper, Seller> impleme
                                                sellerApplyDTO.getNickname() : sellerApplyDTO.getUsername());
                     
                     userService.register(registerRequest);
-                    log.info("新用户创建成功: {}", sellerApplyDTO.getUsername());
+//                    log.info("新用户创建成功: {}", sellerApplyDTO.getUsername());
                     
                     // 获取新创建的用户
                     LambdaQueryWrapper<User> userQuery = new LambdaQueryWrapper<>();
@@ -140,10 +140,10 @@ public class SellerServiceImpl extends ServiceImpl<SellerMapper, Seller> impleme
             seller.setUpdatedTime(LocalDateTime.now());
             seller.setDeleted(0);
 
-            log.info("提交商家入驻申请, userId={}, shopName={}", 
-                     currentUser.getId(), seller.getShopName());
+//            log.info("提交商家入驻申请, userId={}, shopName={}",
+//                     currentUser.getId(), seller.getShopName());
             boolean saveResult = save(seller);
-            log.info("保存新申请记录结果: {}", saveResult);
+//            log.info("保存新申请记录结果: {}", saveResult);
             return saveResult;
         } catch (BusinessException e) {
             throw e;
@@ -191,7 +191,7 @@ public class SellerServiceImpl extends ServiceImpl<SellerMapper, Seller> impleme
             if (user != null) {
                 user.setRole(1); // 卖家角色
                 updated = userService.updateUserRole(user.getId(), 1);
-                log.info("更新用户角色为卖家, userId={}", user.getId());
+//                log.info("更新用户角色为卖家, userId={}", user.getId());
             }
         }
 
@@ -314,7 +314,7 @@ public class SellerServiceImpl extends ServiceImpl<SellerMapper, Seller> impleme
         // 更新时间将由MyBatis-Plus自动设置
         
         // 更新商家信息
-        log.info("更新商家信息: id={}, shopName={}", seller.getId(), seller.getShopName());
+//        log.info("更新商家信息: id={}, shopName={}", seller.getId(), seller.getShopName());
         this.updateById(seller);
         
         // 转换为VO返回

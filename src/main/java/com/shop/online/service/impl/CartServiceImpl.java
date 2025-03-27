@@ -164,7 +164,7 @@ public class CartServiceImpl implements CartService {
         cartItem.setQuantity(quantity);
         cartItem.setUpdatedTime(LocalDateTime.now());
         cartMapper.update(cartItem);
-        logger.info("已更新购物车商品数量: userId={}, cartItemId={}, quantity={}", user.getId(), id, quantity);
+//        logger.info("已更新购物车商品数量: userId={}, cartItemId={}, quantity={}", user.getId(), id, quantity);
     }
 
     @Override
@@ -189,7 +189,7 @@ public class CartServiceImpl implements CartService {
         
         // 删除购物车项
         cartMapper.deleteById(id);
-        logger.info("已删除购物车商品: userId={}, cartItemId={}", user.getId(), id);
+//        logger.info("已删除购物车商品: userId={}, cartItemId={}", user.getId(), id);
     }
 
     @Override
@@ -282,7 +282,7 @@ public class CartServiceImpl implements CartService {
         
         // 更新该用户购物车中所有商品的选中状态
         cartMapper.updateSelectedByUserId(user.getId(), selected ? 1 : 0);
-        logger.info("已更新用户所有购物车商品选中状态: userId={}, selected={}", user.getId(), selected);
+//        logger.info("已更新用户所有购物车商品选中状态: userId={}, selected={}", user.getId(), selected);
     }
 
     @Override

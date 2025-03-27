@@ -56,7 +56,7 @@ public class AdminServiceImpl implements AdminService {
                 LambdaQueryWrapper<User> userQuery = new LambdaQueryWrapper<>();
                 Long userCount = userMapper.selectCount(userQuery);
                 statsDTO.setUserCount(userCount);
-                log.info("获取到总用户数: {}", userCount);
+//                log.info("获取到总用户数: {}", userCount);
             } catch (Exception e) {
                 log.error("获取总用户数时出错: {}", e.getMessage(), e);
                 statsDTO.setUserCount(0L);
@@ -68,7 +68,7 @@ public class AdminServiceImpl implements AdminService {
                 sellerQuery.eq(User::getRole, 1); // 1是卖家角色
                 Long sellerCount = userMapper.selectCount(sellerQuery);
                 statsDTO.setSellerCount(sellerCount);
-                log.info("获取到卖家数: {}", sellerCount);
+//                log.info("获取到卖家数: {}", sellerCount);
             } catch (Exception e) {
                 log.error("获取卖家数时出错: {}", e.getMessage(), e);
                 statsDTO.setSellerCount(0L);
@@ -78,7 +78,7 @@ public class AdminServiceImpl implements AdminService {
                 // 待处理申请数
                 Long pendingCount = sellerRequestMapper.countPendingRequests();
                 statsDTO.setPendingRequests(pendingCount);
-                log.info("获取到待处理申请数: {}", pendingCount);
+//                log.info("获取到待处理申请数: {}", pendingCount);
             } catch (Exception e) {
                 log.error("获取待处理申请数时出错: {}", e.getMessage(), e);
                 statsDTO.setPendingRequests(0L);
@@ -88,7 +88,7 @@ public class AdminServiceImpl implements AdminService {
                 // 商品总数
                 Long productCount = productMapper.countProducts();
                 statsDTO.setProductCount(productCount);
-                log.info("获取到商品总数: {}", productCount);
+//                log.info("获取到商品总数: {}", productCount);
             } catch (Exception e) {
                 log.error("获取商品总数时出错: {}", e.getMessage(), e);
                 statsDTO.setProductCount(0L);
@@ -104,21 +104,21 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public List<SellerRequestDTO> getPendingSellerRequests() {
         try {
-            log.info("开始获取待处理的卖家申请");
+//            log.info("开始获取待处理的卖家申请");
             // 查询待处理的申请
             LambdaQueryWrapper<Seller> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(Seller::getStatus, 0) // 待审核状态
                         .orderByDesc(Seller::getCreatedTime);
             
             List<Seller> pendingRequests = sellerRequestMapper.selectList(queryWrapper);
-            log.info("获取到 {} 个待处理的卖家申请", pendingRequests.size());
+//            log.info("获取到 {} 个待处理的卖家申请", pendingRequests.size());
             
             // 转换为DTO并返回
             List<SellerRequestDTO> dtoList = pendingRequests.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
             
-            log.info("转换后的DTO列表大小: {}", dtoList.size());
+//            log.info("转换后的DTO列表大小: {}", dtoList.size());
             return dtoList;
         } catch (Exception e) {
             log.error("获取待处理的卖家申请时出错: {}", e.getMessage(), e);
@@ -129,7 +129,7 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public PageResult<SellerRequestDTO> getSellerRequests(Integer status, int page, int pageSize) {
         try {
-            log.info("开始获取卖家申请列表, 状态: {}, 页码: {}, 每页数量: {}", status, page, pageSize);
+//            log.info("开始获取卖家申请列表, 状态: {}, 页码: {}, 每页数量: {}", status, page, pageSize);
             // 构建查询条件
             LambdaQueryWrapper<Seller> queryWrapper = new LambdaQueryWrapper<>();
             if (status != null) {
@@ -139,19 +139,19 @@ public class AdminServiceImpl implements AdminService {
             queryWrapper.orderByDesc(Seller::getCreatedTime);
             
             // 打印SQL日志用于调试
-            log.info("执行查询卖家申请, 条件: status={}", status);
+//            log.info("执行查询卖家申请, 条件: status={}", status);
             
             // 分页查询
             Page<Seller> pageParam = new Page<>(page, pageSize);
             Page<Seller> pageResult = sellerRequestMapper.selectPage(pageParam, queryWrapper);
-            log.info("分页查询结果: 总记录数: {}, 当前页记录数: {}", pageResult.getTotal(), pageResult.getRecords().size());
+//            log.info("分页查询结果: 总记录数: {}, 当前页记录数: {}", pageResult.getTotal(), pageResult.getRecords().size());
             
             // 转换为DTO
             List<SellerRequestDTO> dtoList = pageResult.getRecords().stream()
                                                       .map(this::convertToDTO)
                                                       .collect(Collectors.toList());
             
-            log.info("转换后的DTO列表: {}", dtoList);
+//            log.info("转换后的DTO列表: {}", dtoList);
             
             return new PageResult<>(pageResult.getTotal(), dtoList);
         } catch (Exception e) {
@@ -164,7 +164,7 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public boolean approveSellerRequest(Long id, Long adminId) {
         try {
-            log.info("开始处理通过卖家申请, 申请ID: {}, 管理员ID: {}", id, adminId);
+//            log.info("开始处理通过卖家申请, 申请ID: {}, 管理员ID: {}", id, adminId);
             // 获取申请
             Seller seller = sellerRequestMapper.selectById(id);
             if (seller == null) {
@@ -189,7 +189,7 @@ public class AdminServiceImpl implements AdminService {
             if (user != null) {
                 user.setRole(1); // 设置为卖家角色
                 int userRows = userMapper.updateById(user);
-                log.info("更新用户角色结果: {}", userRows > 0 ? "成功" : "失败");
+//                log.info("更新用户角色结果: {}", userRows > 0 ? "成功" : "失败");
             } else {
                 log.warn("找不到ID为 {} 的用户", seller.getUserId());
             }

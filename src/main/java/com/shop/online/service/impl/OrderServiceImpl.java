@@ -68,7 +68,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
             
             // 获取当前用户ID
-            log.info("尝试获取当前用户...");
+//            log.info("尝试获取当前用户...");
             com.shop.online.entity.User currentUser = userService.getCurrentUser();
             
             if (currentUser == null) {
@@ -77,13 +77,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             }
             
             Long userId = currentUser.getId();
-            log.info("当前用户ID: {}, 用户名: {}", userId, currentUser.getUsername());
+//            log.info("当前用户ID: {}, 用户名: {}", userId, currentUser.getUsername());
             
             queryWrapper.eq(Order::getUserId, userId);
             
             // 根据状态筛选
             if (StringUtils.hasText(queryDTO.getStatus())) {
-                log.info("按状态筛选订单: {}", queryDTO.getStatus());
+//                log.info("按状态筛选订单: {}", queryDTO.getStatus());
                 queryWrapper.eq(Order::getStatus, queryDTO.getStatus());
             }
             
@@ -95,16 +95,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             
             // 分页查询
             Page<Order> page = new Page<>(queryDTO.getPage(), queryDTO.getSize());
-            log.info("执行订单分页查询: 页码={}, 每页数量={}", queryDTO.getPage(), queryDTO.getSize());
+//            log.info("执行订单分页查询: 页码={}, 每页数量={}", queryDTO.getPage(), queryDTO.getSize());
             Page<Order> orderPage = baseMapper.selectPage(page, queryWrapper);
             
-            log.info("查询结果: 总条数={}, 记录数量={}", orderPage.getTotal(), orderPage.getRecords().size());
+//            log.info("查询结果: 总条数={}, 记录数量={}", orderPage.getTotal(), orderPage.getRecords().size());
             
             if (CollectionUtils.isEmpty(orderPage.getRecords())) {
                 log.info("查询结果为空，返回空列表");
                 // 确保返回正确的格式
                 PageResult<OrderVO> emptyResult = PageResult.of(orderPage.getTotal(), new ArrayList<>());
-                log.info("返回空结果: {}", emptyResult);
+//                log.info("返回空结果: {}", emptyResult);
                 return emptyResult;
             }
             
@@ -115,7 +115,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             
             // 查询订单对应的订单项
             List<OrderItemDTO> orderItems = orderItemMapper.selectByOrderIds(orderIds);
-            log.info("查询到订单项数量: {}", orderItems.size());
+//            log.info("查询到订单项数量: {}", orderItems.size());
             
             // 按订单ID分组
             Map<Long, List<OrderItemDTO>> orderItemMap = orderItems.stream()
@@ -134,7 +134,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 // 显式设置创建时间和更新时间
                 if (order.getCreatedTime() != null) {
                     orderVO.setCreateTime(order.getCreatedTime());
-                    log.info("订单创建时间设置: {} -> {}", order.getOrderNo(), order.getCreatedTime());
+//                    log.info("订单创建、时间设置: {} -> {}", order.getOrderNo(), order.getCreatedTime());
                 } else {
                     LocalDateTime now = LocalDateTime.now();
                     orderVO.setCreateTime(now);
@@ -166,7 +166,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             }).collect(Collectors.toList());
             
             PageResult<OrderVO> result = PageResult.of(orderPage.getTotal(), orderVOList);
-            log.info("返回订单列表结果: 总数={}, 条目数={}", result.getTotal(), result.getList().size());
+//            log.info("返回订单列表结果: 总数={}, 条目数={}", result.getTotal(), result.getList().size());
             return result;
         } catch (Exception e) {
             log.error("获取订单列表时发生异常", e);
@@ -180,16 +180,16 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderVO createOrder(CreateOrderDTO createOrderDTO) {
-        log.info("开始创建订单: {}", createOrderDTO);
+//        log.info("开始创建订单: {}", createOrderDTO);
         
         try {
             // 获取当前用户
             Long userId = userService.getCurrentUser().getId();
-            log.info("当前用户ID: {}", userId);
+//            log.info("当前用户ID: {}", userId);
             
             // 判断是否是直接购买
             boolean isDirectBuy = createOrderDTO.getDirectBuy() != null && createOrderDTO.getDirectBuy();
-            log.info("订单类型: {}", isDirectBuy ? "直接购买" : "购物车结算");
+//            log.info("订单类型: {}", isDirectBuy ? "直接购买" : "购物车结算");
             
             List<Cart> cartItems;
             Map<Long, Product> productMap;
@@ -208,7 +208,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 Long productId = createOrderDTO.getProductId().longValue();
                 Integer quantity = createOrderDTO.getQuantity();
                 
-                log.info("直接购买商品, 商品ID: {}, 数量: {}", productId, quantity);
+//                log.info("直接购买商品, 商品ID: {}, 数量: {}", productId, quantity);
                 
                 Product product = productMapper.selectById(productId);
                 if (product == null) {
@@ -225,11 +225,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 
                 // 计算总金额
                 totalAmount = product.getPrice().multiply(new BigDecimal(quantity));
-                log.info("商品总金额: {}", totalAmount);
+//                log.info("商品总金额: {}", totalAmount);
                 
                 // 获取卖家ID
                 sellerId = product.getSellerId();
-                log.info("订单卖家ID: {}", sellerId);
+//                log.info("订单卖家ID: {}", sellerId);
                 
                 // 创建临时购物车项用于后续处理
                 Cart tempCart = new Cart();
@@ -258,7 +258,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 queryWrapper.eq(Cart::getUserId, userId);
                 queryWrapper.eq(Cart::getDeleted, 0); // 只查询未删除的购物车项
                 cartItems = cartMapper.selectList(queryWrapper);
-                log.info("查询到的购物车项: {}", cartItems);
+//                log.info("查询到的购物车项: {}", cartItems);
                 
                 if (CollectionUtils.isEmpty(cartItems) || cartItems.size() != cartItemIds.size()) {
                     log.error("部分商品不在购物车中, 预期数量: {}, 实际数量: {}", 
@@ -270,10 +270,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 List<Long> productIds = cartItems.stream()
                         .map(Cart::getProductId)
                         .collect(Collectors.toList());
-                log.info("查询商品信息, 商品IDs: {}", productIds);
+//                log.info("查询商品信息, 商品IDs: {}", productIds);
                 
                 List<Product> products = productMapper.selectBatchIds(productIds);
-                log.info("查询到的商品: {}", products);
+//                log.info("查询到的商品: {}", products);
                 
                 productMap = products.stream()
                         .collect(Collectors.toMap(Product::getId, p -> p));
@@ -301,7 +301,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                     // 获取卖家ID（简化处理，实际可能需要按卖家拆分订单）
                     if (sellerId == null) {
                         sellerId = product.getSellerId();
-                        log.info("订单卖家ID: {}", sellerId);
+//                        log.info("订单卖家ID: {}", sellerId);
                     }
                 }
             }
@@ -313,7 +313,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             
             // 生成订单号
             String orderNo = generateOrderNo();
-            log.info("生成订单号: {}", orderNo);
+//            log.info("生成订单号: {}", orderNo);
             
             // 创建订单
             Order order = new Order();
@@ -326,9 +326,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             order.setUpdatedTime(LocalDateTime.now());
             order.setDeleted(0); // 未删除
             
-            log.info("保存订单: {}", order);
+//            log.info("保存订单: {}", order);
             baseMapper.insert(order);
-            log.info("订单已保存, ID: {}", order.getId());
+//            log.info("订单已保存, ID: {}", order.getId());
             
             // 创建订单项
             List<OrderItemDTO> orderItems = new ArrayList<>();
@@ -343,10 +343,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 // 扣减库存
                 product.setStock(product.getStock() - cartItem.getQuantity());
                 productMapper.updateById(product);
-                log.debug("商品库存已更新, 商品: {}, 新库存: {}", product.getName(), product.getStock());
+//                log.debug("商品库存已更新, 商品: {}, 新库存: {}", product.getName(), product.getStock());
             }
             
-            log.info("保存订单项, 数量: {}", orderItems.size());
+//            log.info("保存订单项, 数量: {}", orderItems.size());
             orderItemMapper.insertBatch(orderItems);
             
             // 如果是购物车模式，需要删除购物车项
@@ -354,7 +354,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 List<Long> longCartItemIds = createOrderDTO.getCartItemIds().stream()
                         .map(Integer::longValue)
                         .collect(Collectors.toList());
-                log.info("删除购物车项, IDs: {}", longCartItemIds);
+//                log.info("删除购物车项, IDs: {}", longCartItemIds);
                 cartMapper.deleteBatchIds(longCartItemIds);
             }
             
@@ -375,7 +375,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             
             orderVO.setProducts(productVOList);
             
-            log.info("订单创建成功: {}", orderVO);
+//            log.info("订单创建成功: {}", orderVO);
             return orderVO;
         } catch (Exception e) {
             log.error("创建订单失败", e);
@@ -389,7 +389,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void payOrder(String orderNo) {
-        log.info("开始处理支付订单请求，订单号: {}", orderNo);
+//        log.info("开始处理支付订单请求，订单号: {}", orderNo);
         
         if (orderNo == null || orderNo.trim().isEmpty()) {
             log.error("订单号为空，无法支付");
@@ -404,7 +404,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 log.warn("订单号包含特殊字符，尝试清理: {}", cleanOrderNo);
                 String[] parts = cleanOrderNo.split("[?/]");
                 cleanOrderNo = parts[parts.length - 1];
-                log.info("清理后的订单号: {}", cleanOrderNo);
+//                log.info("清理后的订单号: {}", cleanOrderNo);
             }
             
             // 获取当前用户
@@ -414,10 +414,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 throw new BusinessException("请先登录再支付订单");
             }
             Long userId = currentUser.getId();
-            log.info("当前用户ID: {}", userId);
+//            log.info("当前用户ID: {}", userId);
             
             // 查询订单
-            log.info("查询订单信息，订单号: {}, 用户ID: {}", cleanOrderNo, userId);
+//            log.info("查询订单信息，订单号: {}, 用户ID: {}", cleanOrderNo, userId);
             LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(Order::getOrderNo, cleanOrderNo);
             queryWrapper.eq(Order::getUserId, userId);
@@ -454,9 +454,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             order.setStatus(1); // 待发货
             order.setUpdatedTime(LocalDateTime.now());
             
-            log.info("更新订单状态: 待付款(0) -> 待发货(1)");
+//            log.info("更新订单状态: 待付款(0) -> 待发货(1)");
             baseMapper.updateById(order);
-            log.info("订单支付成功，订单号: {}", cleanOrderNo);
+//            log.info("订单支付成功，订单号: {}", cleanOrderNo);
         } catch (BusinessException e) {
             log.error("支付订单业务异常: {}", e.getMessage());
             throw e;
@@ -539,7 +539,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         
         baseMapper.updateById(order);
         
-        log.info("订单确认收货成功: {}", orderNo);
+//        log.info("订单确认收货成功: {}", orderNo);
     }
 
     /**
@@ -604,7 +604,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      */
     @Override
     public PageResult<OrderVO> getSellerOrders(Map<String, Object> params) {
-        log.info("获取卖家订单列表，查询参数: {}", params);
+//        log.info("获取卖家订单列表，查询参数: {}", params);
         
         try {
             // 获取参数
@@ -613,7 +613,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             Integer size = Integer.parseInt(params.getOrDefault("size", 10).toString());
             String status = (String) params.get("status");
             
-            log.info("查询参数: sellerId={}, page={}, size={}, status={}", sellerId, page, size, status);
+//            log.info("查询参数: sellerId={}, page={}, size={}, status={}", sellerId, page, size, status);
             
             // 构建查询条件
             LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
@@ -646,7 +646,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                     .collect(Collectors.toList());
             
             List<OrderItemDTO> orderItems = orderItemMapper.selectByOrderIds(orderIds);
-            log.info("查询到订单项数量: {}", orderItems.size());
+//            log.info("查询到订单项数量: {}", orderItems.size());
             
             // 按订单ID分组
             Map<Long, List<OrderItemDTO>> orderItemMap = orderItems.stream()
@@ -690,7 +690,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             }).collect(Collectors.toList());
             
             PageResult<OrderVO> result = PageResult.of(orderPage.getTotal(), orderVOList);
-            log.info("返回卖家订单列表结果: 总数={}, 条目数={}", result.getTotal(), result.getList().size());
+//            log.info("返回卖家订单列表结果: 总数={}, 条目数={}", result.getTotal(), result.getList().size());
             return result;
             
         } catch (Exception e) {

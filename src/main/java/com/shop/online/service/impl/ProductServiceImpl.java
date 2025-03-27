@@ -41,11 +41,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public PageResult<ProductVO> getProductsByCategory(Long categoryId, Integer page, Integer size) {
-        log.info("根据分类ID查询商品: categoryId={}, page={}, size={}", categoryId, page, size);
+//        log.info("根据分类ID查询商品: categoryId={}, page={}, size={}", categoryId, page, size);
         
         // 判断是否为一级分类 (parent_id = 0)
         boolean isPrimaryCategory = isPrimaryCategory(categoryId);
-        log.info("分类 {} 是否为一级分类: {}", categoryId, isPrimaryCategory);
+//        log.info("分类 {} 是否为一级分类: {}", categoryId, isPrimaryCategory);
         
         // 如果是一级分类，获取其所有子分类ID
         List<Long> categoryIds = new ArrayList<>();
@@ -54,7 +54,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (isPrimaryCategory) {
             // 查询该一级分类下的所有二级分类
             List<Long> subCategoryIds = getSubCategoryIds(categoryId);
-            log.info("一级分类 {} 的子分类IDs: {}", categoryId, subCategoryIds);
+//            log.info("一级分类 {} 的子分类IDs: {}", categoryId, subCategoryIds);
             categoryIds.addAll(subCategoryIds);
         }
         
@@ -80,11 +80,11 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public PageResult<ProductVO> getProductsByCategoryWithSort(Long categoryId, Integer page, Integer size, String sortBy) {
-        log.info("根据分类ID查询商品(带排序): categoryId={}, page={}, size={}, sortBy={}", categoryId, page, size, sortBy);
+//        log.info("根据分类ID查询商品(带排序): categoryId={}, page={}, size={}, sortBy={}", categoryId, page, size, sortBy);
         
         // 判断是否为一级分类 (parent_id = 0)
         boolean isPrimaryCategory = isPrimaryCategory(categoryId);
-        log.info("分类 {} 是否为一级分类: {}", categoryId, isPrimaryCategory);
+//        log.info("分类 {} 是否为一级分类: {}", categoryId, isPrimaryCategory);
         
         // 如果是一级分类，获取其所有子分类ID
         List<Long> categoryIds = new ArrayList<>();
@@ -93,7 +93,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (isPrimaryCategory) {
             // 查询该一级分类下的所有二级分类
             List<Long> subCategoryIds = getSubCategoryIds(categoryId);
-            log.info("一级分类 {} 的子分类IDs: {}", categoryId, subCategoryIds);
+//            log.info("一级分类 {} 的子分类IDs: {}", categoryId, subCategoryIds);
             categoryIds.addAll(subCategoryIds);
         }
         
@@ -150,7 +150,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public PageResult<ProductVO> getProductsByCondition(ProductQueryDTO queryDTO) {
-        log.info("根据条件查询商品: {}", queryDTO);
+//        log.info("根据条件查询商品: {}", queryDTO);
         
         Page<Product> pageParam = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         
@@ -160,7 +160,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (queryDTO.getCategoryId() != null) {
             // 判断是否为一级分类
             boolean isPrimaryCategory = isPrimaryCategory(queryDTO.getCategoryId());
-            log.info("分类 {} 是否为一级分类: {}", queryDTO.getCategoryId(), isPrimaryCategory);
+//            log.info("分类 {} 是否为一级分类: {}", queryDTO.getCategoryId(), isPrimaryCategory);
             
             if (isPrimaryCategory) {
                 // 获取所有子分类ID
@@ -169,7 +169,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 
                 // 查询该一级分类下的所有二级分类
                 List<Long> subCategoryIds = getSubCategoryIds(queryDTO.getCategoryId());
-                log.info("一级分类 {} 的子分类IDs: {}", queryDTO.getCategoryId(), subCategoryIds);
+//                log.info("一级分类 {} 的子分类IDs: {}", queryDTO.getCategoryId(), subCategoryIds);
                 categoryIds.addAll(subCategoryIds);
                 
                 // 使用IN查询
@@ -258,7 +258,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProductVO saveProduct(Product product) {
-        log.info("保存商品: {}", product);
+//        log.info("保存商品: {}", product);
         
         // 设置默认值
         if (product.getStatus() == null) {
@@ -278,13 +278,13 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         
         // 保存商品
         this.save(product);
-        log.info("商品保存成功, id={}", product.getId());
+//        log.info("商品保存成功, id={}", product.getId());
         
         // 处理商品图片
         if (product.getImages() != null && !product.getImages().isEmpty()) {
             // 获取临时图片列表
             List<String> tempImages = product.getImages();
-            log.info("商品临时图片列表: {}", tempImages);
+//            log.info("商品临时图片列表: {}", tempImages);
             
             // 处理图片路径，将临时图片改名为正式格式 (productId_index.jpg)
             List<String> formalImages = new ArrayList<>();
@@ -293,7 +293,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 
                 // 是否已经是规范格式
                 if (tempPath.matches(".*/"+product.getId()+"_\\d+\\..*")) {
-                    log.info("图片已经是规范格式: {}", tempPath);
+//                    log.info("图片已经是规范格式: {}", tempPath);
                     formalImages.add(tempPath);
                     continue;
                 }
@@ -318,7 +318,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                     
                     if (sourceFile.exists()) {
                         boolean renamed = sourceFile.renameTo(targetFile);
-                        log.info("重命名文件 {} 为 {}, 结果: {}", tempPath, newPath, renamed);
+//                        log.info("重命名文件 {} 为 {}, 结果: {}", tempPath, newPath, renamed);
                         
                         // 添加到正式图片列表
                         formalImages.add(newPath);
@@ -335,7 +335,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             // 设置第一张图片为主图
             if (!formalImages.isEmpty()) {
                 product.setMainImage(formalImages.get(0));
-                log.info("设置商品主图: {}", product.getMainImage());
+//                log.info("设置商品主图: {}", product.getMainImage());
             }
             
             // 更新商品主图
@@ -352,7 +352,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProductVO updateProduct(Product product) {
-        log.info("更新商品: {}", product);
+//        log.info("更新商品: {}", product);
         
         // 检查商品是否存在
         Product existingProduct = this.getById(product.getId());
@@ -373,14 +373,14 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         if (product.getImages() != null && !product.getImages().isEmpty()) {
             // 获取临时图片列表
             List<String> tempImages = product.getImages();
-            log.info("商品更新临时图片列表: {}", tempImages);
+//            log.info("商品更新临时图片列表: {}", tempImages);
             
             // 处理图片路径，将临时图片改名为正式格式 (productId_index.jpg)
             List<String> formalImages = new ArrayList<>();
             
             // 获取当前图片数量（用于确定新序号）
             int currentImageCount = getProductImageCount(product.getId());
-            log.info("当前商品图片数量: {}", currentImageCount);
+//            log.info("当前商品图片数量: {}", currentImageCount);
             
             // 处理现有的图片路径
             for (int i = 0; i < tempImages.size(); i++) {
@@ -388,7 +388,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 
                 // 检查是否已经是规范格式
                 if (tempPath.matches(".*/"+product.getId()+"_\\d+\\..*")) {
-                    log.info("图片已经是规范格式: {}", tempPath);
+//                    log.info("图片已经是规范格式: {}", tempPath);
                     formalImages.add(tempPath);
                     continue;
                 }
@@ -414,7 +414,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                     
                     if (sourceFile.exists()) {
                         boolean renamed = sourceFile.renameTo(targetFile);
-                        log.info("重命名文件 {} 为 {}, 结果: {}", tempPath, newPath, renamed);
+//                        log.info("重命名文件 {} 为 {}, 结果: {}", tempPath, newPath, renamed);
                         
                         // 添加到正式图片列表
                         formalImages.add(newPath);
@@ -431,7 +431,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             // 设置第一张图片为主图
             if (!formalImages.isEmpty()) {
                 product.setMainImage(formalImages.get(0));
-                log.info("更新商品主图: {}", product.getMainImage());
+//                log.info("更新商品主图: {}", product.getMainImage());
             }
             
             // 更新商品
@@ -447,7 +447,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             this.updateById(product);
         }
         
-        log.info("商品更新成功, id={}", product.getId());
+//        log.info("商品更新成功, id={}", product.getId());
         
         // 返回VO
         return convertToVO(product);
@@ -455,7 +455,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     
     @Override
     public boolean updateStock(Long productId, Integer stock) {
-        log.info("更新商品库存, productId={}, stock={}", productId, stock);
+//        log.info("更新商品库存, productId={}, stock={}", productId, stock);
         
         if (stock < 0) {
             log.error("库存不能为负数");
@@ -477,7 +477,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean batchUpdateStock(Long sellerId, Map<Long, Integer> stockMap) {
-        log.info("批量更新商品库存, sellerId={}, stockMap={}", sellerId, stockMap);
+//        log.info("批量更新商品库存, sellerId={}, stockMap={}", sellerId, stockMap);
         
         if (stockMap == null || stockMap.isEmpty()) {
             log.warn("库存更新map为空");
@@ -535,7 +535,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public boolean deleteProduct(Long productId) {
-        log.info("删除商品: id={}", productId);
+//        log.info("删除商品: id={}", productId);
         
         Product product = this.getById(productId);
         if (product == null) {

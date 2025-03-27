@@ -85,33 +85,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public User getCurrentUser() {
-        logger.info("尝试获取当前登录用户");
+//        logger.info("尝试获取当前登录用户");
         
         // 首先尝试从Spring Security上下文中获取
         try {
-            logger.info("从Spring Security上下文中获取用户...");
+//            logger.info("从Spring Security上下文中获取用户...");
             if (SecurityContextHolder.getContext().getAuthentication() != null) {
                 Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-                logger.info("获取到SecurityContext中的principal: {}", principal);
+//                logger.info("获取到SecurityContext中的principal: {}", principal);
                 
                 if (principal instanceof UserDetails) {
                     String username = ((UserDetails) principal).getUsername();
-                    logger.info("从principal中获取到用户名: {}", username);
+//                    logger.info("从principal中获取到用户名: {}", username);
                     User user = getOne(new LambdaQueryWrapper<User>()
                             .eq(User::getUsername, username));
                     if (user != null) {
-                        logger.info("从数据库中找到了用户: {}", username);
+//                        logger.info("从数据库中找到了用户: {}", username);
                         return user;
                     }
                 } else if (principal instanceof String) {
                     // 有时候principal可能只是一个字符串用户名
                     String username = (String) principal;
-                    logger.info("principal是一个字符串: {}", username);
+//                    logger.info("principal是一个字符串: {}", username);
                     if (!"anonymousUser".equals(username)) {
                         User user = getOne(new LambdaQueryWrapper<User>()
                                 .eq(User::getUsername, username));
                         if (user != null) {
-                            logger.info("从数据库中找到了用户: {}", username);
+//                            logger.info("从数据库中找到了用户: {}", username);
                             return user;
                         }
                     }
@@ -125,26 +125,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         
         // 如果上下文中没有，尝试从请求头中获取JWT
         try {
-            logger.info("尝试从请求头中获取JWT...");
+//            logger.info("尝试从请求头中获取JWT...");
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attributes != null) {
                 HttpServletRequest request = attributes.getRequest();
                 String authHeader = request.getHeader("Authorization");
-                logger.info("获取到的Authorization头: {}", authHeader);
+//                logger.info("获取到的Authorization头: {}", authHeader);
                 
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
                     String token = authHeader.substring(7);
-                    logger.info("解析得到的JWT令牌: {}", token);
+//                    logger.info("解析得到的JWT令牌: {}", token);
                     
                     if (jwtUtil.validateToken(token)) {
-                        logger.info("JWT令牌有效");
+//                        logger.info("JWT令牌有效");
                         Long userId = jwtUtil.extractUserId(token);
-                        logger.info("从JWT中提取的用户ID: {}", userId);
+//                        logger.info("从JWT中提取的用户ID: {}", userId);
                         
                         if (userId != null) {
                             User user = getById(userId);
                             if (user != null) {
-                                logger.info("成功从JWT中解析得到用户: {}", user.getUsername());
+//                                logger.info("成功从JWT中解析得到用户: {}", user.getUsername());
                                 return user;
                             } else {
                                 logger.warn("在数据库中未找到用户ID为{}的用户", userId);
@@ -214,7 +214,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 更新数据库
         updateById(user);
         
-        logger.info("用户个人资料已更新，用户ID: {}", currentUser.getId());
+//        logger.info("用户个人资料已更新，用户ID: {}", currentUser.getId());
     }
 
     /**
@@ -240,8 +240,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 更新数据库
         updateById(user);
         
-        logger.info("用户头像已更新，用户ID: {}, 旧头像路径: {}, 新头像路径: {}", 
-                    currentUser.getId(), oldAvatarPath, avatarPath);
+//        logger.info("用户头像已更新，用户ID: {}, 旧头像路径: {}, 新头像路径: {}",
+//                    currentUser.getId(), oldAvatarPath, avatarPath);
     }
 
     @Override
