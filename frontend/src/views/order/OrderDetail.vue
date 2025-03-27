@@ -173,12 +173,12 @@ const loadOrderDetail = async () => {
   
   loading.value = true
   try {
-    console.log('开始加载订单详情, 订单ID:', orderId.value);
-    console.log('发送请求前，完整URL:', '/api/orders');
+    // console.log('开始加载订单详情, 订单ID:', orderId.value);
+    // console.log('发送请求前，完整URL:', '/api/orders');
     
     // 获取订单列表，筛选出当前订单
     const result = await getOrders({})
-    console.log('订单列表加载成功:', result);
+    // console.log('订单列表加载成功:', result);
     
     // 处理不同的响应格式，获取订单数组
     let orderList: any[] = [];
@@ -202,12 +202,12 @@ const loadOrderDetail = async () => {
     
     // 筛选订单详情
     const orderDetail = orderList.find((item: any) => item.id === orderId.value)
-    console.log('筛选出的订单详情:', orderDetail);
+    // console.log('筛选出的订单详情:', orderDetail);
     
     if (orderDetail) {
       order.value = orderDetail
     } else {
-      console.error('未找到订单, ID:', orderId.value);
+      // console.error('未找到订单, ID:', orderId.value);
       message.error('订单不存在')
     }
   } catch (error: any) {
@@ -351,7 +351,7 @@ const handleConfirmOrder = () => {
         message.success('已确认收货')
         loadOrderDetail()
       } catch (error) {
-        console.error('确认收货失败:', error)
+        // console.error('确认收货失败:', error)
         message.error('确认收货失败')
       }
     }

@@ -102,7 +102,13 @@ export const refreshCurrentUser = async () => {
     }
     
     console.log('准备更新用户信息，角色:', userData.role)
-    userStore.setUserInfo(userData)
+    // 使用类型断言避免类型错误
+    try {
+      (userStore as any).setUserInfo(userData);
+    } catch (e) {
+      // 回退方案：使用$patch
+      userStore.$patch(userData);
+    }
     return userData
   } catch (error) {
     console.error('刷新用户信息失败，详细错误:', error)

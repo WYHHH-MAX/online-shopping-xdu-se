@@ -184,9 +184,9 @@ const loading = ref(false)
 // 获取统计数据
 const fetchStats = async () => {
   try {
-    console.log('正在获取管理员统计数据...');
+    // console.log('正在获取管理员统计数据...');
     const res = await getAdminStats() as any
-    console.log('获取到统计数据:', res)
+    // console.log('获取到统计数据:', res)
     
     // 确保我们从返回的对象中获取数据，处理不同的响应格式
     if (res && typeof res === 'object') {
@@ -209,7 +209,7 @@ const fetchStats = async () => {
       }
     }
     
-    console.log('处理后的统计数据:', stats.value);
+    // console.log('处理后的统计数据:', stats.value);
   } catch (error: any) {
     console.error('获取统计数据失败:', error)
     message.error(error.message || '获取统计数据失败')
@@ -228,9 +228,9 @@ const fetchStats = async () => {
 const fetchPendingSellerRequests = async () => {
   loading.value = true
   try {
-    console.log('正在获取待处理的卖家申请...');
+    // console.log('正在获取待处理的卖家申请...');
     const res: any = await getPendingSellerRequests()
-    console.log('获取到待处理的卖家申请原始数据:', res)
+    // console.log('获取到待处理的卖家申请原始数据:', res)
     
     // 处理可能的数据结构差异
     let requests = [];
@@ -259,9 +259,9 @@ const fetchPendingSellerRequests = async () => {
     }
     
     pendingSellerRequests.value = requests;
-    console.log('处理后的待处理申请:', pendingSellerRequests.value);
+    // console.log('处理后的待处理申请:', pendingSellerRequests.value);
   } catch (error: any) {
-    console.error('获取待处理的卖家申请失败:', error)
+    // console.error('获取待处理的卖家申请失败:', error)
     message.error(error.message || '获取待处理的卖家申请失败')
     pendingSellerRequests.value = []
   } finally {

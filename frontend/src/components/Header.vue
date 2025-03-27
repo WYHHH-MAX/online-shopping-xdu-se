@@ -30,6 +30,10 @@
         <template #icon><UserOutlined /></template>
         个人中心
       </a-menu-item>
+      <a-menu-item key="apply-seller" @click="router.push('/apply-seller')">
+        <template #icon><ShopOutlined /></template>
+        注册卖家
+      </a-menu-item>
     </a-menu>
   </a-layout-header>
 </template>
@@ -42,7 +46,8 @@ import {
   AppstoreOutlined,
   ShoppingCartOutlined,
   UserOutlined,
-  OrderedListOutlined
+  OrderedListOutlined,
+  ShopOutlined
 } from '@ant-design/icons-vue'
 
 const router = useRouter()

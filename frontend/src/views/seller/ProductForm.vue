@@ -154,7 +154,7 @@ const fetchCategories = async () => {
         value: child.id
       }))
     }));
-    console.log('处理后的分类数据:', categoryOptions.value);
+    // console.log('处理后的分类数据:', categoryOptions.value);
   } catch (error: any) {
     message.error('获取分类数据失败: ' + error.message);
   }
@@ -220,9 +220,9 @@ const customUpload = async (options: any) => {
     formState.images.push(url);
     
     onSuccess(url, file);
-    console.log('图片上传成功，URL:', url);
+    // console.log('图片上传成功，URL:', url);
   } catch (error: any) {
-    console.error('上传图片失败:', error, '文件信息:', file.name, file.size);
+    // console.error('上传图片失败:', error, '文件信息:', file.name, file.size);
     message.error('上传图片失败: ' + error.message);
     onError(error);
   }
@@ -261,7 +261,7 @@ const handleSubmit = async () => {
     if (!formState.mainImage || formState.mainImage.trim() === '') {
       if (formState.images.length > 0) {
         formState.mainImage = formState.images[0];
-        console.log('自动设置第一张图片为主图:', formState.mainImage);
+        // console.log('自动设置第一张图片为主图:', formState.mainImage);
       } else {
         message.error('请上传至少一张图片作为主图');
         return;
@@ -294,7 +294,7 @@ const handleSubmit = async () => {
       images: validImages
     };
     
-    console.log('提交的商品数据:', productData);
+    // console.log('提交的商品数据:', productData);
     
     if (isEdit.value) {
       // 编辑商品
@@ -309,7 +309,7 @@ const handleSubmit = async () => {
     // 返回商品列表
     router.push('/seller/products');
   } catch (error: any) {
-    console.error('提交失败:', error);
+    // console.error('提交失败:', error);
     message.error('提交失败: ' + error.message);
   } finally {
     submitting.value = false;

@@ -170,7 +170,7 @@ const formatTime = (time: string | null | undefined) => {
       second: '2-digit'
     });
   } catch (error) {
-    console.error('时间格式化错误', error);
+    // console.error('时间格式化错误', error);
     return '时间格式错误';
   }
 };
@@ -202,10 +202,10 @@ const fetchOrders = async () => {
       size: pagination.pageSize
     });
     
-    console.log('获取到的订单数据:', response);
+    // console.log('获取到的订单数据:', response);
     
     if (response && response.data && response.data.list) {
-      console.log('订单原始数据:', response.data.list);
+      // console.log('订单原始数据:', response.data.list);
       
       // 处理每个订单的商品图片
       const processedOrders = response.data.list.map((order: any, index: number) => {
@@ -242,16 +242,16 @@ const fetchOrders = async () => {
         };
       });
       
-      console.log('处理后的订单数据:', processedOrders);
+      // console.log('处理后的订单数据:', processedOrders);
       data.value = processedOrders;
       pagination.total = response.data.total || 0;
     } else {
-      console.warn('订单数据格式不正确或为空:', response);
+      // console.warn('订单数据格式不正确或为空:', response);
       data.value = [];
       pagination.total = 0;
     }
   } catch (error) {
-    console.error('获取订单列表失败', error);
+    // console.error('获取订单列表失败', error);
     message.error('获取订单列表失败');
     data.value = [];
     pagination.total = 0;
@@ -283,21 +283,21 @@ const closeOrderDetail = () => {
 };
 
 const handleShip = (id: number) => {
-  console.log(`准备发货，订单ID: ${id}`);
+  // console.log(`准备发货，订单ID: ${id}`);
   
   // 查找订单
   const orderItem = data.value.find(item => item.id === id);
   if (!orderItem) {
-    console.error(`找不到ID为${id}的订单`);
+    // console.error(`找不到ID为${id}的订单`);
     message.error('找不到对应的订单');
     return;
   }
   
-  console.log('找到订单信息:', orderItem);
+  // console.log('找到订单信息:', orderItem);
   
   // 检查订单号
   if (!orderItem.orderNo) {
-    console.error('订单号不存在:', orderItem);
+    // console.error('订单号不存在:', orderItem);
     message.error('订单号不存在');
     return;
   }
@@ -309,12 +309,12 @@ const handleShip = (id: number) => {
 
 const confirmShip = async () => {
   if (!shipOrderNo.value) {
-    console.error('订单号不存在');
+    // console.error('订单号不存在');
     message.error('订单号不存在');
     return;
   }
   
-  console.log(`开始发货，订单号: ${shipOrderNo.value}`);
+  // console.log(`开始发货，订单号: ${shipOrderNo.value}`);
   
   try {
     // 关闭模态框并显示加载状态
@@ -323,7 +323,7 @@ const confirmShip = async () => {
     
     // 调用发货API
     const response = await shipOrder(shipOrderNo.value);
-    console.log('发货API响应:', response);
+    // console.log('发货API响应:', response);
     
     // 处理响应
     if (response === true || (response && typeof response === 'object' && response.code === 200)) {
@@ -336,11 +336,11 @@ const confirmShip = async () => {
       await fetchOrders();
     } else {
       const errorMsg = response && typeof response === 'object' ? response.message : '发货失败，请重试';
-      console.error('发货失败，API返回:', errorMsg);
+      // console.error('发货失败，API返回:', errorMsg);
       message.error(errorMsg);
     }
   } catch (error) {
-    console.error('发货请求失败:', error);
+    // console.error('发货请求失败:', error);
     const errorMsg = error instanceof Error ? error.message : '发货失败，请重试';
     message.error(errorMsg);
   } finally {

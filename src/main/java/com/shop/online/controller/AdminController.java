@@ -1,7 +1,7 @@
 package com.shop.online.controller;
 
 import com.shop.online.common.result.PageResult;
-import com.shop.online.common.result.Result;
+import com.shop.online.common.Result;
 import com.shop.online.dto.AdminStatsDTO;
 import com.shop.online.dto.ProductDTO;
 import com.shop.online.dto.SellerRequestDTO;
@@ -31,13 +31,13 @@ public class AdminController {
      */
     @GetMapping("/stats")
     public Result<AdminStatsDTO> getAdminStats() {
-        log.info("收到获取管理员统计数据请求");
+//        log.info("收到获取管理员统计数据请求");
         try {
             AdminStatsDTO stats = adminService.getAdminStats();
-            log.info("获取管理员统计数据成功: {}", stats);
+//            log.info("获取管理员统计数据成功: {}", stats);
             return Result.success(stats);
         } catch (Exception e) {
-            log.error("获取管理员统计数据失败: {}", e.getMessage(), e);
+//            log.error("获取管理员统计数据失败: {}", e.getMessage(), e);
             return Result.error("获取统计数据失败: " + e.getMessage());
         }
     }
@@ -47,10 +47,10 @@ public class AdminController {
      */
     @GetMapping("/seller/pending")
     public Result<List<SellerRequestDTO>> getPendingSellerRequests() {
-        log.info("收到获取待处理卖家申请请求");
+//        log.info("收到获取待处理卖家申请请求");
         try {
             List<SellerRequestDTO> requests = adminService.getPendingSellerRequests();
-            log.info("获取待处理卖家申请成功，共有 {} 条记录", requests.size());
+//            log.info("获取待处理卖家申请成功，共有 {} 条记录", requests.size());
             log.debug("待处理申请详情: {}", requests);
             return Result.success(requests);
         } catch (Exception e) {
@@ -67,11 +67,11 @@ public class AdminController {
             @RequestParam(required = false) Integer status,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize) {
-        log.info("收到获取卖家申请列表请求, 状态: {}, 页码: {}, 每页数量: {}", status, page, pageSize);
+//        log.info("收到获取卖家申请列表请求, 状态: {}, 页码: {}, 每页数量: {}", status, page, pageSize);
         try {
             PageResult<SellerRequestDTO> pageResult = adminService.getSellerRequests(status, page, pageSize);
-            log.info("获取卖家申请列表成功，总记录数: {}, 当前页数据量: {}", 
-                     pageResult.getTotal(), pageResult.getList().size());
+//            log.info("获取卖家申请列表成功，总记录数: {}, 当前页数据量: {}",
+//                     pageResult.getTotal(), pageResult.getList().size());
             log.debug("申请列表详情: {}", pageResult.getList());
             return Result.success(pageResult);
         } catch (Exception e) {

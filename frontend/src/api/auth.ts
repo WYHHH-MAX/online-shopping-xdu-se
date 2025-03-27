@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { LoginResponse, ApiResponse } from '@/types/auth'
+import type { LoginResponse, ApiResponse, RegisterRequest } from '@/types/auth'
 
 // 登录
 export function login(username: string, password: string): Promise<LoginResponse> {
@@ -11,10 +11,10 @@ export function login(username: string, password: string): Promise<LoginResponse
 }
 
 // 注册
-export function register(username: string, password: string, nickname: string): Promise<LoginResponse> {
+export function register(data: RegisterRequest): Promise<ApiResponse<LoginResponse>> {
   return request<ApiResponse<LoginResponse>>({
     url: '/auth/register',
     method: 'post',
-    data: { username, password, nickname }
-  }).then(res => res.data);
+    data
+  });
 } 

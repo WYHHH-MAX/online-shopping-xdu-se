@@ -162,7 +162,7 @@ const loadCategories = async () => {
     const result = await getCategoryTree()
     categories.value = result
   } catch (error) {
-    console.error('获取分类列表失败:', error)
+    // console.error('获取分类列表失败:', error)
     message.error('获取分类列表失败')
   }
 }
@@ -171,17 +171,17 @@ const loadCategories = async () => {
 const loadFeaturedProducts = async () => {
   try {
     const result = await getFeaturedProducts()
-    console.log("推荐商品数据:", result)
+    // console.log("推荐商品数据:", result)
     if (result && 'list' in result && Array.isArray(result.list)) {
       featuredProducts.value = result.list
     } else if (Array.isArray(result)) {
       featuredProducts.value = result
     } else {
-      console.error('推荐商品数据格式有误:', result)
+      // console.error('推荐商品数据格式有误:', result)
       featuredProducts.value = []
     }
   } catch (error) {
-    console.error('获取推荐商品失败:', error)
+    // console.error('获取推荐商品失败:', error)
     message.error('获取推荐商品失败')
   }
 }
@@ -190,17 +190,17 @@ const loadFeaturedProducts = async () => {
 const loadNewProducts = async () => {
   try {
     const result = await getNewProducts()
-    console.log("新品数据:", result)
+    // console.log("新品数据:", result)
     if (result && 'list' in result && Array.isArray(result.list)) {
       newProducts.value = result.list
     } else if (Array.isArray(result)) {
       newProducts.value = result
     } else {
-      console.error('新品数据格式有误:', result)
+      // console.error('新品数据格式有误:', result)
       newProducts.value = []
     }
   } catch (error) {
-    console.error('获取新品失败:', error)
+    // console.error('获取新品失败:', error)
     message.error('获取新品失败')
   }
 }
@@ -209,17 +209,17 @@ const loadNewProducts = async () => {
 const loadHotProducts = async () => {
   try {
     const result = await getHotProducts()
-    console.log("热销商品数据:", result)
+    // console.log("热销商品数据:", result)
     if (result && 'list' in result && Array.isArray(result.list)) {
       hotProducts.value = result.list
     } else if (Array.isArray(result)) {
       hotProducts.value = result
     } else {
-      console.error('热销商品数据格式有误:', result)
+      // console.error('热销商品数据格式有误:', result)
       hotProducts.value = []
     }
   } catch (error) {
-    console.error('获取热销商品失败:', error)
+    // console.error('获取热销商品失败:', error)
     message.error('获取热销商品失败')
   }
 }
@@ -227,21 +227,19 @@ const loadHotProducts = async () => {
 // 搜索商品
 const handleSearch = async () => {
   if (!searchKeyword.value.trim()) {
-    message.warning('请输入搜索关键词')
+    // message.warning('请输入搜索关键词')
     return
   }
-  try {
-    const result = await searchProducts({
+  
+  // 跳转到搜索结果页
+  router.push({
+    path: '/search',
+    query: {
       keyword: searchKeyword.value,
-      page: 1,
-      size: 12
-    })
-    products.value = result.records
-    total.value = result.total
-  } catch (error) {
-    console.error('搜索商品失败:', error)
-    message.error('搜索商品失败')
-  }
+      page: '1',
+      sort: 'default'
+    }
+  })
 }
 
 // 处理分类点击
@@ -280,7 +278,7 @@ const addToCart = async (product: ProductVO) => {
     await quickAddToCart(product.id)
     message.success('添加到购物车成功')
   } catch (error) {
-    console.error('添加到购物车失败:', error)
+    // console.error('添加到购物车失败:', error)
     message.error('添加到购物车失败')
   }
 }

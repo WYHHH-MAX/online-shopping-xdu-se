@@ -43,11 +43,11 @@ const loading = ref(false)
 const handlePay = async () => {
   loading.value = true
   try {
-    console.log('开始支付订单，订单号:', props.orderNo);
+    // console.log('开始支付订单，订单号:', props.orderNo);
     
     // 确保orderNo是字符串
     const orderNoStr = String(props.orderNo).trim();
-    console.log('处理后的订单号:', orderNoStr);
+    // console.log('处理后的订单号:', orderNoStr);
     
     await payOrder(orderNoStr)
     message.success('支付成功')
@@ -55,7 +55,7 @@ const handlePay = async () => {
     emit('update:visible', false)
   } catch (error) {
     console.error('支付失败:', error);
-    message.error('支付失败')
+    // message.error('支付失败')
   } finally {
     loading.value = false
   }

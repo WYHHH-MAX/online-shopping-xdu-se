@@ -154,7 +154,7 @@ const loading = ref(false);
 const loadUserData = async () => {
   loading.value = true;
   try {
-    console.log('正在获取用户数据...');
+    // console.log('正在获取用户数据...');
     const params = {
       username: searchForm.value.username || undefined,
       role: searchForm.value.role,
@@ -163,44 +163,44 @@ const loadUserData = async () => {
       pageSize: pagination.value.pageSize,
     };
     
-    console.log('请求参数:', params);
+    // console.log('请求参数:', params);
     const res: any = await getUserList(params);
-    console.log('用户列表响应原始数据:', res);
+    // console.log('用户列表响应原始数据:', res);
     
     // 处理响应数据，确保可以正确获取列表和总数
     if (res.code === 1 || res.code === 200) {
-      console.log('请求成功, 状态码:', res.code);
+      // console.log('请求成功, 状态码:', res.code);
       if (res.data && res.data.list) {
-        console.log('标准格式: {data: {list: [], total: number}}');
+        // console.log('标准格式: {data: {list: [], total: number}}');
         userData.value = res.data.list;
         pagination.value.total = res.data.total || 0;
       } else if (res.data && Array.isArray(res.data)) {
-        console.log('数组格式: {data: []}');
+        // console.log('数组格式: {data: []}');
         userData.value = res.data;
         pagination.value.total = res.data.length;
       } else if (res.list && Array.isArray(res.list)) {
-        console.log('直接分页格式: {list: [], total: number}');
+        // console.log('直接分页格式: {list: [], total: number}');
         userData.value = res.list;
         pagination.value.total = res.total || 0;
       } else if (res.records && Array.isArray(res.records)) {
-        console.log('MyBatis-Plus格式: {records: [], total: number}');
+        // console.log('MyBatis-Plus格式: {records: [], total: number}');
         userData.value = res.records;
         pagination.value.total = res.total || 0;
       } else {
-        console.error('未识别的响应数据格式:', res);
+        // console.error('未识别的响应数据格式:', res);
         userData.value = [];
         pagination.value.total = 0;
         message.error('获取用户列表数据格式错误');
       }
     } else {
-      console.error('请求失败, 状态码:', res.code, '消息:', res.msg);
+      // console.error('请求失败, 状态码:', res.code, '消息:', res.msg);
       userData.value = [];
       pagination.value.total = 0;
       message.error(res.msg || '获取用户列表失败');
     }
     
-    console.log('处理后的用户数据:', userData.value);
-    console.log('分页信息:', pagination.value);
+    // console.log('处理后的用户数据:', userData.value);
+    // console.log('分页信息:', pagination.value);
   } catch (error) {
     console.error('加载用户数据失败', error);
     userData.value = [];
@@ -242,7 +242,7 @@ const changeUserStatus = async (id: number, status: number) => {
     message.success(`${status === 1 ? '启用' : '禁用'}用户成功`);
     loadUserData();
   } catch (error) {
-    console.error('更新用户状态失败', error);
+    // console.error('更新用户状态失败', error);
     message.error('操作失败');
   }
 };

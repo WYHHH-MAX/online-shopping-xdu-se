@@ -1,7 +1,7 @@
 package com.shop.online.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.shop.online.common.PageResult;
+import com.shop.online.common.result.PageResult;
 import com.shop.online.dto.SellerApplyDTO;
 import com.shop.online.entity.Seller;
 import com.shop.online.vo.SellerVO;

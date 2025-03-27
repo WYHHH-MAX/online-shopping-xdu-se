@@ -359,7 +359,7 @@ const nextStep = async () => {
 const submitApplication = async () => {
   submitting.value = true
   try {
-    console.log('准备提交商家入驻申请:', formState)
+    // console.log('准备提交商家入驻申请:', formState)
     
     // 必填字段校验
     const requiredFields = ['shopName', 'description', 'contactName', 'contactPhone', 'contactEmail', 'businessLicense']
@@ -396,14 +396,14 @@ const submitApplication = async () => {
     }
     
     const res = await applySeller(submitData)
-    console.log('申请提交结果:', res)
+    // console.log('申请提交结果:', res)
     
     if (res) {
       message.success('商家入驻申请提交成功')
       currentStep.value = 3
     }
   } catch (error: any) {
-    console.error('提交申请时发生错误:', error)
+    // console.error('提交申请时发生错误:', error)
     message.error('申请提交失败: ' + (error.message || '未知错误'))
     // 保持在当前步骤，让用户可以修改信息
   } finally {

@@ -31,7 +31,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        logger.info("配置CORS映射...");
+//        logger.info("配置CORS映射...");
         registry.addMapping("/**")
                 .allowedOriginPatterns("*") // 使用通配符允许所有来源
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
@@ -39,7 +39,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .exposedHeaders("Authorization") // 允许前端访问的响应头
                 .allowCredentials(true)
                 .maxAge(3600);
-        logger.info("CORS映射配置完成: 允许所有来源");
+//        logger.info("CORS映射配置完成: 允许所有来源");
     }
     
     /**
@@ -49,7 +49,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsFilter corsFilter() {
-        logger.info("创建CORS过滤器...");
+//        logger.info("创建CORS过滤器...");
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
@@ -60,7 +60,7 @@ public class WebConfig implements WebMvcConfigurer {
         config.addExposedHeader("Authorization"); // 允许前端访问的响应头
         config.setMaxAge(3600L);
         source.registerCorsConfiguration("/**", config);
-        logger.info("CORS过滤器创建完成: 允许所有来源");
+//        logger.info("CORS过滤器创建完成: 允许所有来源");
         
         return new CorsFilter(source);
     }
@@ -82,18 +82,18 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 添加上传文件资源处理 - 配置多个位置
-        logger.info("配置静态资源处理器 - 添加uploads路径映射");
+//        logger.info("配置静态资源处理器 - 添加uploads路径映射");
         
         // 配置上传文件资源处理器 - 禁用缓存，确保图片能正确刷新
         String uploadsPath = "file:D:/java/spm2/uploads/";
-        logger.info("上传文件实际路径: {}", uploadsPath);
+//        logger.info("上传文件实际路径: {}", uploadsPath);
         
         registry.addResourceHandler("/api/uploads/**")
                 .addResourceLocations(uploadsPath)
                 .setCachePeriod(0)  // 禁用缓存
                 .resourceChain(false);
         
-        logger.info("上传文件资源映射配置完成: /api/uploads/** -> {}", uploadsPath);
+//        logger.info("上传文件资源映射配置完成: /api/uploads/** -> {}", uploadsPath);
         
         // 不再需要验证旧的头像路径
         // 添加静态资源处理 - 禁用缓存以确保头像可以正确刷新
@@ -102,6 +102,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .setCachePeriod(0)
                 .resourceChain(false);
         
-        logger.info("静态资源处理器配置完成");
+//        logger.info("静态资源处理器配置完成");
     }
 } 

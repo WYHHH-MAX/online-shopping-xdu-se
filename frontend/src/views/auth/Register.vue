@@ -65,19 +65,12 @@ import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { register } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
+import type { RegisterRequest } from '@/types/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-interface FormState {
-  username: string
-  password: string
-  nickname: string
-  phone: string
-  email: string
-}
-
-const formState = reactive<FormState>({
+const formState = reactive<RegisterRequest>({
   username: '',
   password: '',
   nickname: '',
@@ -85,11 +78,9 @@ const formState = reactive<FormState>({
   email: ''
 })
 
-const onFinish = async (values: FormState) => {
+const onFinish = async (values: RegisterRequest) => {
   try {
-    console.log('发送注册请求:', values)
     const res = await register(values)
-    console.log('注册响应:', res)
     if (res.code === 200) {
       message.success('注册成功')
       userStore.setUserInfo(res.data)
@@ -98,7 +89,6 @@ const onFinish = async (values: FormState) => {
       message.error(res.message || '注册失败')
     }
   } catch (error: any) {
-    console.error('注册错误:', error)
     message.error(error.response?.data?.message || error.message || '注册失败')
   }
 }

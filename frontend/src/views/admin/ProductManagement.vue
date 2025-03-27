@@ -245,22 +245,22 @@ const loadProducts = async () => {
       pageSize: pagination.pageSize
     }
     
-    console.log('请求参数:', params)
+    // console.log('请求参数:', params)
     const res = await getAdminProducts(params) as ApiResponse<any>
-    console.log('商品列表API响应:', res)
+    // console.log('商品列表API响应:', res)
     
     // 更加灵活的响应处理逻辑
     if (res && (res.code === 200 || res.code === 1)) {
-      console.log('响应成功, 数据结构:', res)
+      // console.log('响应成功, 数据结构:', res)
       
       if (res.data && typeof res.data === 'object') {
         // 检查是否是分页对象
         if (res.data.list && Array.isArray(res.data.list)) {
-          console.log('标准分页格式 data.list')
+          // console.log('标准分页格式 data.list')
           products.value = res.data.list
           pagination.total = res.data.total || 0
         } else if (Array.isArray(res.data)) {
-          console.log('数组格式 data[]')
+          // console.log('数组格式 data[]')
           products.value = res.data
           pagination.total = res.data.length
         } else {
@@ -269,7 +269,7 @@ const loadProducts = async () => {
           pagination.total = 1
         }
       } else if (res.list && Array.isArray(res.list)) {
-        console.log('直接分页格式 list[]')
+        // console.log('直接分页格式 list[]')
         products.value = res.list
         pagination.total = res.total || res.list.length
       } else {
@@ -285,7 +285,7 @@ const loadProducts = async () => {
     }
   } catch (error) {
     console.error('获取商品列表异常:', error)
-    message.error('获取商品列表失败，请检查网络连接')
+    // message.error('获取商品列表失败，请检查网络连接')
     products.value = []
     pagination.total = 0
   } finally {

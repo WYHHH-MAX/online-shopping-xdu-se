@@ -138,7 +138,7 @@ const loadSelectedItems = async () => {
     
     if (directBuy && productId && productQuantity) {
       // 处理直接购买的情况
-      console.log('直接购买模式，商品ID:', productId, '数量:', productQuantity)
+      // console.log('直接购买模式，商品ID:', productId, '数量:', productQuantity)
       
       try {
         // 这里应该调用API获取商品详情
@@ -159,9 +159,9 @@ const loadSelectedItems = async () => {
           updateTime: new Date().toISOString()
         }]
         
-        console.log('直接购买的商品信息:', cartItems.value)
+        // console.log('直接购买的商品信息:', cartItems.value)
       } catch (error) {
-        console.error('获取商品详情失败:', error)
+        // console.error('获取商品详情失败:', error)
         message.error('获取商品详情失败')
         router.push('/')
         return
@@ -184,7 +184,7 @@ const loadSelectedItems = async () => {
       
       // 获取购物车商品
       const result = await getCartItems()
-      console.log('获取购物车商品数据:', result)
+      // console.log('获取购物车商品数据:', result)
       
       // 处理不同的数据格式
       let items: CartItemVO[] = []
@@ -258,7 +258,7 @@ const handleSubmitOrder = async () => {
     // 检查用户是否已登录
     const userStore = useUserStore();
     if (!userStore.isLoggedIn()) {
-      console.error('用户未登录，无法创建订单');
+      // console.error('用户未登录，无法创建订单');
       message.warning('请先登录再提交订单');
       router.push('/login');
       return;
@@ -273,7 +273,7 @@ const handleSubmitOrder = async () => {
       const response = await createOrder(requestData);
       
       // 处理响应
-      console.log('创建订单成功，响应:', response);
+      // console.log('创建订单成功，响应:', response);
       
       // 解析响应获取orderNo - 根据实际后端返回结构调整
       let orderNo = '';
@@ -290,18 +290,18 @@ const handleSubmitOrder = async () => {
                getNestedProperty(response, 'data.orderNo') || '';
       
       if (!orderNo) {
-        console.error('无法从响应中获取订单号:', response);
+        // console.error('无法从响应中获取订单号:', response);
         message.error('创建订单成功，但无法获取订单号');
         return;
       }
       
       // 保存订单号
       currentOrderNo.value = orderNo;
-      console.log('成功获取到订单号:', orderNo);
+      // console.log('成功获取到订单号:', orderNo);
       message.success({ content: '订单创建成功!', key: 'createOrder' });
       
       // 显示支付模态框
-      console.log('显示支付模态框，订单号:', orderNo);
+      // console.log('显示支付模态框，订单号:', orderNo);
       paymentModalVisible.value = true;
     } catch (requestError: any) {
       // 详细记录API请求错误
@@ -370,13 +370,13 @@ const completePayment = async () => {
     return
   }
   
-  console.log('准备支付订单, 订单号:', currentOrderNo.value);
+  // console.log('准备支付订单, 订单号:', currentOrderNo.value);
   
   paymentLoading.value = true
   try {
     // 确保订单号有效
     const orderNoStr = String(currentOrderNo.value).trim();
-    console.log('处理后的订单号:', orderNoStr);
+    // console.log('处理后的订单号:', orderNoStr);
     
     // 执行支付操作
     await payOrder(orderNoStr)

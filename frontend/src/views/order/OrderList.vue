@@ -157,14 +157,14 @@ const loadOrders = async () => {
   });
   
   try {
-    console.log('发送请求前，完整URL:', '/api/orders');
+    // console.log('发送请求前，完整URL:', '/api/orders');
     const result = await getOrders({
       status: activeStatus.value || null,
       page: currentPage.value,
       size: pageSize.value
     })
     
-    console.log('订单列表加载成功:', result);
+    // console.log('订单列表加载成功:', result);
     
     // 处理不同的响应格式
     if (result && result.records) {

@@ -29,14 +29,14 @@ export const useUserStore = defineStore('user', {
     const phone = localStorage.getItem('phone')
     const email = localStorage.getItem('email')
     
-    console.log('初始化用户store, 从localStorage读取角色:', role, '类型:', typeof role)
+    // console.log('初始化用户store, 从localStorage读取角色:', role, '类型:', typeof role)
     
     // 确保role是数字类型
     let roleNumber: number | null = null
     if (role !== null) {
       try {
         roleNumber = parseInt(role)
-        console.log('解析角色为数字:', roleNumber)
+        // console.log('解析角色为数字:', roleNumber)
       } catch (e) {
         console.error('角色解析失败:', e)
       }
@@ -62,7 +62,7 @@ export const useUserStore = defineStore('user', {
         return;
       }
       
-      console.log('设置用户信息, 角色:', userInfo.role, '类型:', typeof userInfo.role);
+      // console.log('设置用户信息, 角色:', userInfo.role, '类型:', typeof userInfo.role);
       
       this.userId = userInfo.userId || null;
       this.username = userInfo.username || '';
@@ -82,13 +82,13 @@ export const useUserStore = defineStore('user', {
       if (userInfo.role !== undefined && userInfo.role !== null) {
         const roleStr = String(userInfo.role);
         localStorage.setItem('role', roleStr);
-        console.log('存储用户角色到localStorage:', roleStr);
+        // console.log('存储用户角色到localStorage:', roleStr);
       }
       if (userInfo.avatar) localStorage.setItem('avatar', userInfo.avatar);
       if (userInfo.phone) localStorage.setItem('phone', userInfo.phone);
       if (userInfo.email) localStorage.setItem('email', userInfo.email);
       
-      console.log('用户信息已保存，token:', userInfo.token, '角色:', this.role);
+      // console.log('用户信息已保存，token:', userInfo.token, '角色:', this.role);
     },
     
     clearUserInfo() {
@@ -112,18 +112,18 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('phone')
       localStorage.removeItem('email')
       
-      console.log('用户信息已清除')
+      // console.log('用户信息已清除')
     },
 
     async login(data: LoginRequest) {
       try {
         const { username, password } = data
         const response = await loginApi(username, password)
-        console.log('登录成功，响应:', response)
+        // console.log('登录成功，响应:', response)
         this.setUserInfo(response)
         return response
       } catch (error: any) {
-        console.error('登录失败:', error)
+        // console.error('登录失败:', error)
         message.error(error.message || '登录失败')
         return null
       }
@@ -133,11 +133,11 @@ export const useUserStore = defineStore('user', {
       try {
         const { username, password, nickname } = data
         const response = await registerApi(username, password, nickname)
-        console.log('注册成功，响应:', response)
+        // console.log('注册成功，响应:', response)
         this.setUserInfo(response)
         return response
       } catch (error: any) {
-        console.error('注册失败:', error)
+        // console.error('注册失败:', error)
         message.error(error.message || '注册失败')
         return null
       }

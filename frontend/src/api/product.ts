@@ -5,15 +5,9 @@ import type { PageResult } from '../types/common'
 /**
  * 搜索商品
  */
-export function searchProducts(params: SearchProductsParams) {
-  return request<{
-    records: ProductVO[]
-    total: number
-    size: number
-    current: number
-    pages: number
-  }>({
-    url: '/product/search',
+export function searchProducts(params: { keyword: string, page?: number, size?: number, sortBy?: string }) {
+  return request<any>({
+    url: '/public/search',
     method: 'get',
     params
   })

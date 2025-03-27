@@ -106,7 +106,7 @@ const loadCartItems = async () => {
   loading.value = true
   try {
     const result = await getCartItems()
-    console.log('获取购物车数据:', result)
+    // console.log('获取购物车数据:', result)
     
     // 处理不同的数据格式
     if (result && Array.isArray(result)) {
@@ -124,7 +124,7 @@ const loadCartItems = async () => {
       message.error('获取购物车数据格式有误')
     }
   } catch (error) {
-    console.error('获取购物车数据失败:', error)
+    // console.error('获取购物车数据失败:', error)
     message.error('获取购物车数据失败')
     cartItems.value = []
   } finally {
@@ -138,7 +138,7 @@ const handleQuantityChange = async (id: number, quantity: number) => {
     await updateCartItem(id, quantity)
     message.success('更新数量成功')
   } catch (error) {
-    console.error('更新数量失败:', error)
+    // console.error('更新数量失败:', error)
     message.error('更新数量失败')
     // 失败时重新加载数据
     loadCartItems()
@@ -152,7 +152,7 @@ const handleDelete = async (id: number) => {
     message.success('删除成功')
     cartItems.value = cartItems.value.filter(item => item.id !== id)
   } catch (error) {
-    console.error('删除失败:', error)
+    // console.error('删除失败:', error)
     message.error('删除失败')
   }
 }
@@ -167,7 +167,7 @@ const handleSelectItem = async (id: number, selected: boolean) => {
       item.selected = selected
     }
   } catch (error) {
-    console.error('选择商品失败:', error)
+    // console.error('选择商品失败:', error)
     message.error('选择商品失败')
     loadCartItems()
   }
@@ -183,7 +183,7 @@ const handleSelectAll = async (e: any) => {
       item.selected = selected
     })
   } catch (error) {
-    console.error('全选/取消全选失败:', error)
+    // console.error('全选/取消全选失败:', error)
     message.error('操作失败')
     loadCartItems()
   }
@@ -204,7 +204,7 @@ const handleSelectBatch = async (ids: number[]) => {
     })
     message.success('批量选择成功')
   } catch (error) {
-    console.error('批量选择商品失败:', error)
+    // console.error('批量选择商品失败:', error)
     message.error('批量选择失败')
     loadCartItems()
   }

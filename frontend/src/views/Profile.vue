@@ -114,18 +114,18 @@ const avatarUrl = computed(() => {
   forceRefresh.value; // 仅用于触发依赖收集
   
   if (!userInfo.value.avatar) {
-    console.log('用户没有头像，使用默认头像');
+    // console.log('用户没有头像，使用默认头像');
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.value.username}`;
   }
 
   // 确保avatar是字符串
   const avatar = String(userInfo.value.avatar);
-  console.log('用户头像路径:', avatar);
+  // console.log('用户头像路径:', avatar);
 
   // 使用工具函数处理图片URL - 新路径格式 /images/avatars/user_X.png
   const timestamp = new Date().getTime(); // 添加时间戳避免缓存
   const url = getImageUrl(avatar) + `?t=${timestamp}`;
-  console.log('处理后的头像URL:', url);
+  // console.log('处理后的头像URL:', url);
   
   return url;
 })
@@ -139,7 +139,7 @@ const displayEmail = computed(() => userInfo.value.email || '未设置')
 const loadUserInfo = async () => {
   try {
     const userData = await getCurrentUser() as any
-    console.log('从后端获取的用户信息:', userData)
+    // console.log('从后端获取的用户信息:', userData)
     
     // 更新存储的用户信息
     if (userData && userData.data) {
@@ -165,7 +165,7 @@ const loadUserInfo = async () => {
 
 // 处理标签页切换
 const handleTabChange = (key: string) => {
-  console.log('标签页切换:', key);
+  // console.log('标签页切换:', key);
   activeTab.value = key;
 }
 
@@ -182,7 +182,7 @@ const handleEditSubmit = async () => {
   try {
     editLoading.value = true
     
-    console.log('更新用户信息:', editForm.value)
+    // console.log('更新用户信息:', editForm.value)
     
     // 调用API更新用户信息
     await updateUserProfile({
@@ -197,7 +197,7 @@ const handleEditSubmit = async () => {
     message.success('更新成功')
     editModalVisible.value = false
   } catch (error) {
-    console.error('更新失败:', error)
+    // console.error('更新失败:', error)
     message.error('更新失败')
   } finally {
     editLoading.value = false
@@ -235,19 +235,19 @@ const customAvatarUpload = async (options: any) => {
   try {
     // 上传头像
     const avatarPath = await uploadAvatar(file);
-    console.log('头像上传成功，返回路径:', avatarPath)
+    // console.log('头像上传成功，返回路径:', avatarPath)
     
     // 上传成功后，更新用户信息
     await loadUserInfo()
     
     // 触发强制刷新
     forceRefresh.value += 1;
-    console.log('触发头像强制刷新, 计数:', forceRefresh.value);
+    // console.log('触发头像强制刷新, 计数:', forceRefresh.value);
     
     message.success('头像上传成功');
     onSuccess(avatarPath, file);
   } catch (error) {
-    console.error('头像上传失败:', error);
+    // console.error('头像上传失败:', error);
     message.error('头像上传失败');
     onError(error);
   }
@@ -255,7 +255,7 @@ const customAvatarUpload = async (options: any) => {
 
 // 初始化时加载用户信息
 onMounted(() => {
-  console.log('用户信息:', userInfo.value);
+  // console.log('用户信息:', userInfo.value);
   
   // 从后端获取最新用户信息
   loadUserInfo();
@@ -264,11 +264,11 @@ onMounted(() => {
   const urlParams = new URLSearchParams(window.location.search)
   const tab = urlParams.get('tab')
   if (tab) {
-    console.log('从URL参数中读取标签:', tab);
+    // console.log('从URL参数中读取标签:', tab);
     activeTab.value = tab
   }
   
-  console.log('当前激活的标签页:', activeTab.value);
+  // console.log('当前激活的标签页:', activeTab.value);
 })
 </script>
 

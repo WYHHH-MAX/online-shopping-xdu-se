@@ -41,30 +41,33 @@
               <span>店铺信息</span>
             </router-link>
           </a-menu-item>
+          <a-menu-item key="home">
+            <router-link to="/">
+              <home-outlined />
+              <span>返回商城</span>
+            </router-link>
+          </a-menu-item>
         </a-menu>
       </a-layout-sider>
       <a-layout>
         <a-layout-header style="background: #fff; padding: 0">
-          <div class="header-right">
-            <a-dropdown>
-              <a class="ant-dropdown-link" @click.prevent>
-                {{ userInfo.nickname || userInfo.username }} <down-outlined />
-              </a>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item>
-                    <router-link to="/">
-                      <home-outlined />
-                      <span>返回商城</span>
-                    </router-link>
-                  </a-menu-item>
-                  <a-menu-item @click="logout">
-                    <logout-outlined />
-                    <span>退出登录</span>
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
+          <div class="header-controls">
+            <div class="header-left"></div>
+            <div class="header-right">
+              <a-dropdown>
+                <a class="ant-dropdown-link" @click.prevent>
+                  {{ userInfo.nickname || userInfo.username }} <down-outlined />
+                </a>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item @click="logout">
+                      <logout-outlined />
+                      <span>退出登录</span>
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
+            </div>
           </div>
         </a-layout-header>
         <a-layout-content style="margin: 0 16px">
@@ -131,10 +134,21 @@ const logout = () => {
   text-align: center;
 }
 
+.header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  width: 100%;
+}
+
+.header-left {
+  width: 120px;  /* 与原按钮宽度相近 */
+}
+
 .header-right {
   display: flex;
   justify-content: flex-end;
-  padding-right: 24px;
 }
 
 .ant-dropdown-link {

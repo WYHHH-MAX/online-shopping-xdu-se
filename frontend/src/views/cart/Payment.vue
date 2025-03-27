@@ -61,7 +61,7 @@ onMounted(async () => {
     const orderDetail = await getOrderDetail(orderNo.value)
     orderAmount.value = orderDetail.totalAmount
   } catch (error: any) {
-    console.error('获取订单详情失败:', error)
+    // console.error('获取订单详情失败:', error)
     message.error(error.message || '获取订单详情失败')
   }
 })
@@ -74,7 +74,7 @@ const handlePay = async (payMethod: 'wechat' | 'alipay') => {
     
     // 确保订单号是字符串类型
     const orderNoStr = String(orderNo.value);
-    console.log('准备支付订单, 订单号(字符串):', orderNoStr);
+    // console.log('准备支付订单, 订单号(字符串):', orderNoStr);
     
     // 延迟1.5秒模拟支付过程
     await new Promise(resolve => setTimeout(resolve, 1500))
@@ -86,7 +86,7 @@ const handlePay = async (payMethod: 'wechat' | 'alipay') => {
     payStatus.value = 'success'
     message.success('支付成功！')
   } catch (error: any) {
-    console.error('支付失败:', error)
+    // console.error('支付失败:', error)
     message.error(error.message || '支付失败')
   }
 }

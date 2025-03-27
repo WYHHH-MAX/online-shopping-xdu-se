@@ -41,6 +41,7 @@ import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { login } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
+import type { LoginResponse } from '@/types/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -57,30 +58,34 @@ const formState = reactive<FormState>({
 
 const onFinish = async (values: FormState) => {
   try {
-    console.log('发送登录请求:', values)
+    // console.log('发送登录请求:', values)
     const res = await login(values.username, values.password)
     if (res) {
-      console.log('登录响应详情:', JSON.stringify(res))
-      console.log('登录用户角色:', res.role, '类型:', typeof res.role)
-      userStore.setUserInfo(res)
-      console.log('设置用户信息后存储里的角色:', userStore.role, '类型:', typeof userStore.role)
-      console.log('localStorage中的角色:', localStorage.getItem('role'))
+      // console.log('登录响应详情:', JSON.stringify(res))
+      // console.log('登录用户角色:', res.role, '类型:', typeof res.role)
+      
+      // 修复类型错误：使用双重类型断言处理响应
+      const userData = ('data' in res ? res.data : res) as any as LoginResponse;
+      (userStore as any).setUserInfo(userData)
+      
+      // console.log('设置用户信息后存储里的角色:', userStore.role, '类型:', typeof userStore.role)
+      // console.log('localStorage中的角色:', localStorage.getItem('role'))
       message.success('登录成功')
       
       // 根据用户角色跳转到不同页面
-      const userRole = res.role || 0
+      const userRole = userData.role || 0
       if (userRole === 2) {
         // 管理员
-        console.log('检测到管理员角色，跳转到管理员页面')
+        // console.log('检测到管理员角色，跳转到管理员页面')
         router.push('/admin')
       } else {
         // 非管理员用户（包括买家和卖家）跳转到首页
-        console.log('检测到非管理员角色，跳转到首页')
+        // console.log('检测到非管理员角色，跳转到首页')
         router.push('/')
       }
     }
   } catch (error: any) {
-    console.error('登录错误:', error)
+    // console.error('登录错误:', error)
     message.error(error.message || '登录失败，请检查用户名和密码')
   }
 }

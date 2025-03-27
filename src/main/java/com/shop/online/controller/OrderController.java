@@ -29,31 +29,31 @@ public class OrderController {
      */
     @GetMapping
     public Result getOrders(OrderQueryDTO queryDTO, HttpServletRequest request) {
-        log.info("========== 获取订单列表请求开始 ==========");
-        log.info("请求URL: {}", request.getRequestURI());
-        log.info("请求方法: {}", request.getMethod());
-        log.info("请求参数: {}", queryDTO);
+//        log.info("========== 获取订单列表请求开始 ==========");
+//        log.info("请求URL: {}", request.getRequestURI());
+//        log.info("请求方法: {}", request.getMethod());
+//        log.info("请求参数: {}", queryDTO);
         
         // 打印请求头
-        log.info("请求头信息:");
+//        log.info("请求头信息:");
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            log.info("{}: {}", headerName, request.getHeader(headerName));
+//            log.info("{}: {}", headerName, request.getHeader(headerName));
         }
         
         // 特别检查Authorization头
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            log.info("JWT Token存在: {}", authHeader.substring(0, Math.min(20, authHeader.length())) + "...");
+//            log.info("JWT Token存在: {}", authHeader.substring(0, Math.min(20, authHeader.length())) + "...");
         } else {
             log.warn("Authorization头不存在或格式不正确");
         }
         
         try {
             Object result = orderService.getOrders(queryDTO);
-            log.info("订单列表获取成功");
-            log.info("========== 获取订单列表请求结束 ==========");
+//            log.info("订单列表获取成功");
+//            log.info("========== 获取订单列表请求结束 ==========");
             return Result.success(result);
         } catch (Exception e) {
             log.error("订单列表获取失败", e);
@@ -67,23 +67,23 @@ public class OrderController {
      */
     @PostMapping("/create")
     public Result createOrder(@RequestBody CreateOrderDTO createOrderDTO, HttpServletRequest request) {
-        log.info("========== 创建订单请求开始 ==========");
-        log.info("请求路径: {}", request.getRequestURI());
-        log.info("请求方法: {}", request.getMethod());
+//        log.info("========== 创建订单请求开始 ==========");
+//        log.info("请求路径: {}", request.getRequestURI());
+//        log.info("请求方法: {}", request.getMethod());
         
         // 打印请求头
-        log.info("请求头信息:");
+        log.info("请求头信息:/");
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            log.info("{}: {}", headerName, request.getHeader(headerName));
+//            log.info("{}: {}", headerName, request.getHeader(headerName));
         }
         
         log.info("创建订单, 参数: {}", createOrderDTO);
         try {
             Object result = orderService.createOrder(createOrderDTO);
-            log.info("订单创建成功: {}", result);
-            log.info("========== 创建订单请求结束 ==========");
+//            log.info("订单创建成功: {}", result);
+//            log.info("========== 创建订单请求结束 ==========");
             return Result.success(result);
         } catch (Exception e) {
             log.error("订单创建失败", e);
@@ -97,8 +97,8 @@ public class OrderController {
      */
     @PostMapping("/pay")
     public Result payOrder(@RequestBody Map<String, String> params, HttpServletRequest request) {
-        log.info("支付订单, 参数: {}", params);
-        log.info("请求路径: {}", request.getRequestURI());
+//        log.info("支付订单, 参数: {}", params);
+//        log.info("请求路径: {}", request.getRequestURI());
         
         String orderNo = params.get("orderNo");
         if (orderNo == null) {
@@ -108,7 +108,7 @@ public class OrderController {
         
         try {
             orderService.payOrder(orderNo);
-            log.info("订单支付成功: {}", orderNo);
+//            log.info("订单支付成功: {}", orderNo);
             return Result.success();
         } catch (Exception e) {
             log.error("订单支付失败", e);
@@ -121,10 +121,10 @@ public class OrderController {
      */
     @PostMapping("/{orderNo}/cancel")
     public Result cancelOrder(@PathVariable("orderNo") String orderNo) {
-        log.info("取消订单, 订单号: {}", orderNo);
+//        log.info("取消订单, 订单号: {}", orderNo);
         try {
             orderService.cancelOrder(orderNo);
-            log.info("订单取消成功: {}", orderNo);
+//            log.info("订单取消成功: {}", orderNo);
             return Result.success();
         } catch (Exception e) {
             log.error("订单取消失败", e);
@@ -137,10 +137,10 @@ public class OrderController {
      */
     @PostMapping("/{orderNo}/confirm")
     public Result confirmOrder(@PathVariable("orderNo") String orderNo) {
-        log.info("确认收货, 订单号: {}", orderNo);
+//        log.info("确认收货, 订单号: {}", orderNo);
         try {
             orderService.confirmOrder(orderNo);
-            log.info("确认收货成功: {}", orderNo);
+//            log.info("确认收货成功: {}", orderNo);
             return Result.success();
         } catch (Exception e) {
             log.error("确认收货失败", e);
@@ -153,10 +153,10 @@ public class OrderController {
      */
     @GetMapping("/{orderNo}")
     public Result getOrderDetail(@PathVariable("orderNo") String orderNo) {
-        log.info("获取订单详情, 订单号: {}", orderNo);
+//        log.info("获取订单详情, 订单号: {}", orderNo);
         try {
             OrderVO orderVO = orderService.getOrderDetail(orderNo);
-            log.info("获取订单详情成功: {}", orderNo);
+//            log.info("获取订单详情成功: {}", orderNo);
             return Result.success(orderVO);
         } catch (Exception e) {
             log.error("获取订单详情失败", e);

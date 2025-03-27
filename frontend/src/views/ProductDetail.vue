@@ -248,7 +248,7 @@ const logImageDetails = () => {
 // 处理图片加载
 const handleImageLoaded = () => {
   if (mainImage.value) {
-    console.log('主图加载完成:', mainImage.value.src);
+    // console.log('主图加载完成:', mainImage.value.src);
   }
 };
 
@@ -282,9 +282,9 @@ const loadProductDetail = async () => {
     // 加载推荐商品
     await loadRecommendedProducts();
     
-    console.log('商品详情:', product.value);
+    // console.log('商品详情:', product.value);
   } catch (err: any) {
-    console.error('加载商品详情失败:', err);
+    // console.error('加载商品详情失败:', err);
     error.value = err.message || '加载商品详情失败';
   } finally {
     loading.value = false;
@@ -299,7 +299,7 @@ const loadCategoryInfo = async (categoryId: number) => {
       categoryName.value = result.name || `分类${categoryId}`;
     }
   } catch (error) {
-    console.error('加载分类信息失败:', error);
+    // console.error('加载分类信息失败:', error);
     categoryName.value = `分类${categoryId}`;
   }
 };
@@ -311,7 +311,7 @@ const loadSellerInfo = async (sellerId: number) => {
     // 由于当前API似乎只支持获取当前商家信息，暂时使用ID直接显示
     sellerName.value = `商家${sellerId}`;
   } catch (error) {
-    console.error('加载商家信息失败:', error);
+    // console.error('加载商家信息失败:', error);
     sellerName.value = `商家${sellerId}`;
   }
 };

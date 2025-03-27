@@ -113,12 +113,12 @@ const fetchProducts = async () => {
       size: pagination.pageSize
     };
     
-    console.log('获取商品列表，参数:', params);
+    // console.log('获取商品列表，参数:', params);
     const res = await getSellerProducts(params);
-    console.log('获取到的商品数据:', res);
+    // console.log('获取到的商品数据:', res);
     
     if (!res.list || res.list.length === 0) {
-      console.warn('没有获取到商品数据');
+      // console.warn('没有获取到商品数据');
       products.value = [];
       pagination.total = 0;
       return;
@@ -133,12 +133,12 @@ const fetchProducts = async () => {
         : []
     }));
     
-    console.log('处理后的商品数据:', processedProducts);
+    // console.log('处理后的商品数据:', processedProducts);
     
     products.value = processedProducts;
     pagination.total = res.total;
   } catch (error: any) {
-    console.error('获取商品列表失败:', error);
+    // console.error('获取商品列表失败:', error);
     message.error('获取商品列表失败: ' + error.message);
   } finally {
     loading.value = false;

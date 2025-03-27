@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.shop.online.common.PageResult;
+import com.shop.online.common.result.PageResult;
 import com.shop.online.dto.ProductQueryDTO;
 import com.shop.online.entity.Product;
 import com.shop.online.entity.ProductImage;

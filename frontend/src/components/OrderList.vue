@@ -70,7 +70,7 @@ const props = defineProps<{
 }>()
 
 // 添加调试日志，监控status属性
-console.log('OrderList初始化，接收到的status参数:', props.status, typeof props.status);
+// console.log('OrderList初始化，接收到的status参数:', props.status, typeof props.status);
 
 interface OrderProduct {
   id: number
@@ -107,23 +107,20 @@ const loadOrders = async () => {
     // 只有在status不为null且不为undefined和空字符串时才添加到请求参数
     if (props.status !== null && props.status !== undefined && props.status !== '') {
       params.status = props.status;
-      console.log(`正在按状态 [${props.status}] (类型: ${typeof props.status}) 加载订单`);
+      // console.log(`正在按状态 [${props.status}] (类型: ${typeof props.status}) 加载订单`);
     } else {
-      console.log('加载所有状态的订单');
+      // console.log('加载所有状态的订单');
     }
-    
-    console.log('正在加载订单，请求URL: /orders，参数:', params, '参数类型:', 
-      Object.entries(params).map(([k, v]) => `${k}: ${typeof v}`).join(', '));
     
     // 发送请求
     const res = await getOrders(params);
-    console.log('获取订单API响应:', res);
+    // console.log('获取订单API响应:', res);
     
     // 处理响应数据
     if (res && res.list) {
       // 使用list字段
       orders.value = res.list;
-      console.log('成功获取订单列表，数量:', orders.value.length);
+      // console.log('成功获取订单列表，数量:', orders.value.length);
       
       // DEBUG: 打印每个订单信息
       orders.value.forEach((order, index) => {
@@ -132,7 +129,7 @@ const loadOrders = async () => {
     } else if (res && res.records) {
       // 使用records字段
       orders.value = res.records;
-      console.log('成功获取订单列表（从records字段），数量:', orders.value.length);
+      // console.log('成功获取订单列表（从records字段），数量:', orders.value.length);
       
       orders.value.forEach((order, index) => {
         console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
@@ -155,19 +152,19 @@ const loadOrders = async () => {
       }
       
       if (orders.value.length > 0) {
-        console.log('成功获取订单列表（从data字段），数量:', orders.value.length);
+        // console.log('成功获取订单列表（从data字段），数量:', orders.value.length);
         orders.value.forEach((order, index) => {
-          console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
+          // console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
         });
       }
     } else {
       console.error('订单数据格式异常，没有list、records或data字段:', res);
       // 尝试直接使用响应，可能返回的就是数组
       if (Array.isArray(res)) {
-        console.log('响应是数组格式，直接使用');
+        // console.log('响应是数组格式，直接使用');
         orders.value = res;
         orders.value.forEach((order, index) => {
-          console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
+          // console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
         });
       } else {
         orders.value = [];
@@ -177,7 +174,7 @@ const loadOrders = async () => {
     isLoaded.value = true;
   } catch (error) {
     console.error('加载订单失败:', error);
-    message.error('加载订单失败');
+    // message.error('加载订单失败');
     orders.value = [];
   } finally {
     loading.value = false;

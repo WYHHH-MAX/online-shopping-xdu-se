@@ -90,7 +90,7 @@ const parentCategory = ref<CategoryVO | null>(null)
 const loadCategory = async () => {
   try {
     const result = await getCategoryById(Number(route.params.id))
-    console.log('分类信息:', result)
+    // console.log('分类信息:', result)
     
     categoryId.value = result.id
     categoryName.value = result.name
@@ -98,19 +98,19 @@ const loadCategory = async () => {
     // 设置父分类信息
     if (result.parent) {
       parentCategory.value = result.parent
-      console.log('找到父分类:', result.parent.name)
+      // console.log('找到父分类:', result.parent.name)
     } else if (result.parentId && result.parentId !== 0) {
       // 如果没有直接提供parent对象但有parentId，尝试加载父分类
       try {
         const parentData = await getCategoryById(result.parentId)
         parentCategory.value = parentData
-        console.log('加载父分类成功:', parentData.name)
+        // console.log('加载父分类成功:', parentData.name)
       } catch (err) {
-        console.error('加载父分类失败:', err)
+        // console.error('加载父分类失败:', err)
       }
     }
   } catch (error) {
-    console.error('获取分类信息失败:', error)
+    // console.error('获取分类信息失败:', error)
     message.error('获取分类信息失败')
   }
 }
@@ -126,7 +126,7 @@ const loadProducts = async () => {
       sortBy.value
     )
     
-    console.log("分类商品数据:", result)
+    // console.log("分类商品数据:", result)
     
     // 处理不同的数据格式
     if (result && result.list && Array.isArray(result.list)) {
@@ -145,17 +145,17 @@ const loadProducts = async () => {
         products.value = data.list
         total.value = data.total || data.list.length
       } else {
-        console.error('无法解析data字段中的商品数据:', data)
+        // console.error('无法解析data字段中的商品数据:', data)
         products.value = []
         total.value = 0
       }
     } else {
-      console.error('分类商品数据格式有误:', result)
+      // console.error('分类商品数据格式有误:', result)
       products.value = []
       total.value = 0
     }
   } catch (error) {
-    console.error('获取商品列表失败:', error)
+    // console.error('获取商品列表失败:', error)
     message.error('获取商品列表失败')
     products.value = []
     total.value = 0

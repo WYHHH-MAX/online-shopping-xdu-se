@@ -34,7 +34,7 @@ public class CartController {
      */
     @PostMapping("/add")
     public Result<Void> add(@RequestBody CartItemDTO cartItemDTO) {
-        logger.info("接收到添加购物车请求: {}", cartItemDTO);
+//        logger.info("接收到添加购物车请求: {}", cartItemDTO);
         if (cartItemDTO.getProductId() == null) {
             return Result.error("商品ID不能为空");
         }
@@ -57,7 +57,7 @@ public class CartController {
      */
     @PostMapping("/quickAdd")
     public Result<Void> quickAdd(@RequestBody Map<String, Object> params) {
-        logger.info("接收到快速添加购物车请求: {}", params);
+//        logger.info("接收到快速添加购物车请求: {}", params);
         
         Long productId = null;
         Integer quantity = 1;

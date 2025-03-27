@@ -96,7 +96,7 @@ const menuItems = reactive([
 
 // 导航到指定路径
 const navigateTo = (path: string) => {
-  console.log('点击菜单，导航到路径:', path)
+  // console.log('点击菜单，导航到路径:', path)
   router.push(path)
 }
 
@@ -104,19 +104,19 @@ const navigateTo = (path: string) => {
 watch(
   () => route.path,
   (path) => {
-    console.log('当前路由路径:', path);
+    // console.log('当前路由路径:', path);
     const pathParts = path.split('/');
-    console.log('路由部分:', pathParts);
+    // console.log('路由部分:', pathParts);
     
     if (pathParts.length >= 3) {
       const menuKey = pathParts[2] || 'dashboard';
-      console.log('设置选中菜单项:', menuKey);
+      // console.log('设置选中菜单项:', menuKey);
       selectedKeys.value = [menuKey];
       
       // 确保菜单项存在，否则默认选中dashboard
       const validMenuKeys = ['dashboard', 'seller-requests', 'users', 'products'];
       if (!validMenuKeys.includes(menuKey)) {
-        console.warn('无效的菜单键:', menuKey, '将使用默认值dashboard');
+        // console.warn('无效的菜单键:', menuKey, '将使用默认值dashboard');
         selectedKeys.value = ['dashboard'];
       }
     } else {
@@ -129,7 +129,8 @@ watch(
 
 // 退出登录
 const logout = () => {
-  userStore.clearUserInfo()
+  // 修复方法：使用类型断言确保调用正确
+  (userStore as any).clearUserInfo?.() || userStore.$reset?.()
   message.success('已退出登录')
   router.push('/login')
 }

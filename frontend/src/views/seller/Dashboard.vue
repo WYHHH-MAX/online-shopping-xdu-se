@@ -1,6 +1,12 @@
 <template>
   <div class="dashboard">
-    <h1>卖家数据仪表盘</h1>
+    <div class="dashboard-header">
+      <h1>卖家数据仪表盘</h1>
+      <a-button type="primary" @click="goToHome" class="home-button">
+        <HomeOutlined />
+        返回商城首页
+      </a-button>
+    </div>
     <a-row :gutter="16">
       <a-col :span="6">
         <a-card>
@@ -34,6 +40,10 @@
 import { ref, onMounted } from 'vue'
 import { getSellerDashboard } from '@/api/seller'
 import { message } from 'ant-design-vue'
+import { useRouter } from 'vue-router'
+import { HomeOutlined } from '@ant-design/icons-vue'
+
+const router = useRouter()
 
 interface DashboardData {
   pendingShipments: number;
@@ -51,9 +61,9 @@ const dashboardData = ref<DashboardData>({
 
 const fetchDashboardData = async () => {
   try {
-    console.log('正在获取卖家仪表盘数据...');
+    // console.log('正在获取卖家仪表盘数据...');
     const response = await getSellerDashboard();
-    console.log('获取到的原始仪表盘数据:', response);
+    // console.log('获取到的原始仪表盘数据:', response);
     
     if (response && typeof response === 'object') {
       // 处理标准响应格式
@@ -73,15 +83,20 @@ const fetchDashboardData = async () => {
           lowStockProducts: response.lowStockProducts || 0
         };
       }
-      console.log('处理后的仪表盘数据:', dashboardData.value);
+      // console.log('处理后的仪表盘数据:', dashboardData.value);
     } else {
-      console.error('仪表盘数据格式不正确:', response);
+      // console.error('仪表盘数据格式不正确:', response);
       message.error('获取仪表盘数据失败: 数据格式不正确');
     }
   } catch (error: any) {
-    console.error('获取仪表盘数据失败:', error);
+    // console.error('获取仪表盘数据失败:', error);
     message.error('获取仪表盘数据失败: ' + error.message);
   }
+}
+
+// 返回商城首页
+const goToHome = () => {
+  router.push('/');
 }
 
 onMounted(() => {
@@ -92,6 +107,18 @@ onMounted(() => {
 <style scoped>
 .dashboard {
   padding: 20px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.home-button {
+  display: flex;
+  align-items: center;
 }
 
 .stat-value {

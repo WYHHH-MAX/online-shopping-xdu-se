@@ -1,4 +1,4 @@
-package com.shop.online.common.result;
+package com.shop.online.common;
 
 import lombok.Data;
 

@@ -5,7 +5,7 @@ import com.shop.online.entity.Order;
 import com.shop.online.dto.CreateOrderDTO;
 import com.shop.online.dto.OrderQueryDTO;
 import com.shop.online.vo.OrderVO;
-import com.shop.online.common.PageResult;
+import com.shop.online.common.result.PageResult;
 import java.util.Map;
 
 /**

@@ -1,6 +1,6 @@
 package com.shop.online.service;
 
-import com.shop.online.common.PageResult;
+import com.shop.online.common.result.PageResult;
 import com.shop.online.dto.ProductQueryDTO;
 import com.shop.online.entity.Product;
 import com.shop.online.vo.ProductVO;

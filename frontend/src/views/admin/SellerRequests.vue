@@ -220,7 +220,7 @@ const route = useRoute()
 const fetchRequests = async () => {
   loading.value = true
   try {
-    console.log('正在获取卖家申请数据，状态:', getStatusByActiveTab())
+    // console.log('正在获取卖家申请数据，状态:', getStatusByActiveTab())
     
     // 构建查询参数
     const params: any = {
@@ -234,11 +234,11 @@ const fetchRequests = async () => {
       params.status = parseInt(statusValue)
     }
     
-    console.log('请求参数:', params)
+    // console.log('请求参数:', params)
     
     // 发送请求获取卖家申请
     const res: any = await getSellerRequests(params)
-    console.log('获取到卖家申请列表原始数据:', res)
+    // console.log('获取到卖家申请列表原始数据:', res)
     
     // 处理返回的数据
     if (res && typeof res === 'object') {
@@ -265,7 +265,7 @@ const fetchRequests = async () => {
       pagination.total = 0
     }
 
-    console.log('处理后的卖家申请数据:', allRequests.value)
+    // console.log('处理后的卖家申请数据:', allRequests.value)
   } catch (error: any) {
     console.error('获取卖家申请失败:', error)
     message.error(error.message || '获取卖家申请失败')

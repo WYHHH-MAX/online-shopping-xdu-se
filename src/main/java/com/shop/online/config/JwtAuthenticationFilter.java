@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         // 打印请求路径和方法
-        logger.info("JWT过滤器处理请求: {} {}", request.getMethod(), path);
+//        logger.info("JWT过滤器处理请求: {} {}", request.getMethod(), path);
         return false;
     }
 
@@ -46,34 +46,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String requestURI = request.getRequestURI();
-        logger.info("===== JWT过滤器开始处理请求: {} {} =====", request.getMethod(), requestURI);
+//        logger.info("===== JWT过滤器开始处理请求: {} {} =====", request.getMethod(), requestURI);
         
         // 打印所有请求头
-        logger.info("请求头信息:");
+//        logger.info("请求头信息:");
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
-            logger.info("{}: {}", headerName, request.getHeader(headerName));
+//            logger.info("{}: {}", headerName, request.getHeader(headerName));
         }
         
         try {
             String authHeader = request.getHeader("Authorization");
-            logger.info("Authorization头: {}", authHeader);
+//            logger.info("Authorization头: {}", authHeader);
 
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
                 // 只输出token的前10个字符，避免日志中包含完整token
-                logger.info("JWT令牌: {}...", token.substring(0, Math.min(10, token.length())));
+//                logger.info("JWT令牌: {}...", token.substring(0, Math.min(10, token.length())));
                 
                 if (jwtUtil.validateToken(token)) {
-                    logger.info("JWT令牌有效");
+//                    logger.info("JWT令牌有效");
                     Long userId = jwtUtil.extractUserId(token);
-                    logger.info("从JWT令牌中提取的用户ID: {}", userId);
+//                    logger.info("从JWT令牌中提取的用户ID: {}", userId);
                     
                     if (userId != null) {
                         // 直接使用userMapper获取用户
                         User user = userMapper.selectById(userId);
-                        logger.info("根据用户ID查询用户结果: {}", user != null ? user.getUsername() : "null");
+//                        logger.info("根据用户ID查询用户结果: {}", user != null ? user.getUsername() : "null");
                         
                         if (user != null) {
                             // 设置认证信息到Spring Security上下文
@@ -84,7 +84,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             );
                             
                             SecurityContextHolder.getContext().setAuthentication(authToken);
-                            logger.info("已成功设置用户认证信息到上下文: {}", user.getUsername());
+//                            logger.info("已成功设置用户认证信息到上下文: {}", user.getUsername());
                         } else {
                             logger.warn("未能找到用户ID为{}的用户", userId);
                         }

@@ -3,7 +3,7 @@ package com.shop.online.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.shop.online.common.PageResult;
+import com.shop.online.common.result.PageResult;
 import com.shop.online.dto.SellerApplyDTO;
 import com.shop.online.entity.Seller;
 import com.shop.online.entity.User;
