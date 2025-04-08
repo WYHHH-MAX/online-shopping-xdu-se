@@ -20,7 +20,7 @@
                 >
                   <div class="upload-text">
                     <i class="anticon anticon-camera"></i>
-                    <div>更换头像</div>
+                    <div>Change your avater</div>
                   </div>
                 </a-upload>
               </div>
@@ -28,35 +28,35 @@
           </template>
           <a-card-meta :title="displayName">
             <template #description>
-              <div>用户名：{{ userInfo.username }}</div>
-              <div>角色：{{ userInfo.role === 0 ? '买家' : '卖家' }}</div>
-              <div>手机：{{ displayPhone }}</div>
-              <div>邮箱：{{ displayEmail }}</div>
+              <div>username:{{ userInfo.username }}</div>
+              <div>role:{{ userInfo.role === 0 ? 'buyer' : 'seller' }}</div>
+              <div>phone:{{ displayPhone }}</div>
+              <div>Email:{{ displayEmail }}</div>
             </template>
           </a-card-meta>
           <a-button type="primary" block style="margin-top: 16px" @click="showEditModal">
-            编辑资料
+            Edit profile information
           </a-button>
         </a-card>
       </a-col>
 
       <!-- 右侧订单信息 -->
       <a-col :span="16">
-        <a-card title="我的订单">
+        <a-card title="My Orders">
           <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
-            <a-tab-pane key="all" tab="全部订单">
+            <a-tab-pane key="all" tab="All orders">
               <order-list :status="''" />
             </a-tab-pane>
-            <a-tab-pane key="0" tab="待付款">
+            <a-tab-pane key="0" tab="Pending payment">
               <order-list status="0" />
             </a-tab-pane>
-            <a-tab-pane key="1" tab="待发货">
+            <a-tab-pane key="1" tab="To be shipped">
               <order-list status="1" />
             </a-tab-pane>
-            <a-tab-pane key="2" tab="待收货">
+            <a-tab-pane key="2" tab="To be received">
               <order-list status="2" />
             </a-tab-pane>
-            <a-tab-pane key="3" tab="已完成">
+            <a-tab-pane key="3" tab="Done">
               <order-list status="3" />
             </a-tab-pane>
           </a-tabs>
@@ -67,18 +67,18 @@
     <!-- 编辑资料弹窗 -->
     <a-modal
       v-model:visible="editModalVisible"
-      title="编辑资料"
+      title="Edit your profile"
       @ok="handleEditSubmit"
       :confirmLoading="editLoading"
     >
       <a-form :model="editForm" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
-        <a-form-item label="昵称" name="nickname">
+        <a-form-item label="nickname" name="nickname">
           <a-input v-model:value="editForm.nickname" />
         </a-form-item>
-        <a-form-item label="手机" name="phone">
+        <a-form-item label="phone" name="phone">
           <a-input v-model:value="editForm.phone" />
         </a-form-item>
-        <a-form-item label="邮箱" name="email">
+        <a-form-item label="email" name="email">
           <a-input v-model:value="editForm.email" />
         </a-form-item>
       </a-form>
@@ -93,6 +93,7 @@ import { useUserStore } from '@/stores/user'
 import OrderList from '@/components/OrderList.vue'
 import { updateUserProfile, uploadAvatar, getCurrentUser } from '../api/user'
 import { getImageUrl } from '../utils/imageUtil'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
 const userInfo = computed(() => userStore)
@@ -135,9 +136,26 @@ const displayName = computed(() => userInfo.value.nickname || userInfo.value.use
 const displayPhone = computed(() => userInfo.value.phone || '未设置')
 const displayEmail = computed(() => userInfo.value.email || '未设置')
 
+const router = useRouter()
+
 // 从后端加载用户信息
 const loadUserInfo = async () => {
   try {
+    // 首先检查用户是否已登录
+    if (!userStore.isLoggedIn()) {
+      console.warn('用户未登录，重定向到登录页面')
+      router.push('/login?redirect=/profile')
+      return
+    }
+    
+    // 验证当前token是否有效
+    const isTokenValid = await userStore.validateToken()
+    if (!isTokenValid) {
+      console.warn('Token无效，重定向到登录页面')
+      router.push('/login?redirect=/profile')
+      return
+    }
+    
     const userData = await getCurrentUser() as any
     // console.log('从后端获取的用户信息:', userData)
     
@@ -160,6 +178,8 @@ const loadUserInfo = async () => {
     }
   } catch (error) {
     console.error('获取用户信息失败:', error)
+    // 出错时也尝试重定向到登录页面
+    router.push('/login?redirect=/profile')
   }
 }
 

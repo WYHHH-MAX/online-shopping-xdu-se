@@ -1,12 +1,12 @@
 <template>
   <div class="search-results">
     <div class="header">
-      <h1 class="search-title">搜索结果:</h1>
+      <h1 class="search-title">Search results:</h1>
       <div class="search-bar">
         <a-input-search
           v-model:value="keyword"
-          placeholder="请输入商品名称"
-          enter-button="搜索"
+          placeholder="Please enter a product name"
+          enter-button="search"
           size="large"
           @search="handleSearch"
           class="search-input"
@@ -15,9 +15,9 @@
     </div>
 
     <div class="results-info">
-      <p class="results-count">共找到 <span class="highlight">{{ total }}</span> 个相关商品</p>
+      <p class="results-count">Totally found <span class="highlight">{{ total }}</span> related products</p>
       <div class="sort-container">
-        <span class="sort-label">排序方式:</span>
+        <span class="sort-label">Sort by:</span>
         <a-select
           v-model:value="sortBy"
           style="width: 140px"
@@ -25,17 +25,17 @@
           size="middle"
           class="sort-select"
         >
-          <a-select-option value="default">默认排序</a-select-option>
-          <a-select-option value="price_asc">价格从低到高</a-select-option>
-          <a-select-option value="price_desc">价格从高到低</a-select-option>
-          <a-select-option value="sales_desc">销量优先</a-select-option>
+          <a-select-option value="default">Default sorting</a-select-option>
+          <a-select-option value="price_asc">Prices range from low to high</a-select-option>
+          <a-select-option value="price_desc">Prices range from high to low</a-select-option>
+          <a-select-option value="sales_desc">Prioritize sales</a-select-option>
         </a-select>
       </div>
     </div>
 
     <!-- 加载提示 -->
     <div v-if="loading" class="loading-container">
-      <a-spin tip="加载中..." size="large" />
+      <a-spin tip="Loading..." size="large" />
     </div>
     
     <!-- 商品列表 -->
@@ -59,12 +59,12 @@
         <a-card-meta :title="product.name" class="product-meta">
           <template #description>
             <div class="product-price">¥{{ product.price }}</div>
-            <div class="product-sales">销量: {{ product.sales }}</div>
+            <div class="product-sales">Sales: {{ product.sales }}</div>
           </template>
         </a-card-meta>
         <div class="product-actions">
           <a-button type="primary" size="middle" @click.stop="viewProduct(product)">
-            查看详情
+            View details
           </a-button>
           <a-button type="link" size="middle" @click.stop="addToCart(product)" class="cart-button">
             <shopping-cart-outlined />
@@ -72,7 +72,7 @@
         </div>
       </a-card>
     </div>
-    <a-empty v-else description="未找到相关商品" class="empty-result" />
+    <a-empty v-else description="The product was not found" class="empty-result" />
 
     <!-- 分页 -->
     <div class="pagination" v-if="total > 0">

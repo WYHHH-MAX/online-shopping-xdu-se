@@ -4,54 +4,54 @@
       <div class="page-header">
         <a-button @click="goBack">
           <ArrowLeftOutlined />
-          返回订单列表
+          Return to the list of orders
         </a-button>
-        <h1 class="page-title">订单详情</h1>
+        <h1 class="page-title">Return to the order list, order details</h1>
       </div>
       
       <div v-if="loading" class="loading-container">
-        <a-spin tip="加载中..."></a-spin>
+        <a-spin tip="Loading..."></a-spin>
       </div>
       
       <div v-else-if="!order" class="empty-container">
-        <a-empty description="未找到订单"></a-empty>
+        <a-empty description="Order not found"></a-empty>
       </div>
       
       <div v-else class="order-detail">
         <!-- 订单基本信息 -->
         <div class="section">
-          <h2 class="section-title">订单信息</h2>
+          <h2 class="section-title">Order Information</h2>
           <div class="info-grid">
             <div class="info-item">
-              <span class="label">订单号：</span>
+              <span class="label">Order number:</span>
               <span class="value">{{ order.orderNo }}</span>
             </div>
             <div class="info-item">
-              <span class="label">创建时间：</span>
+              <span class="label">Creation time:</span>
               <span class="value">{{ formatDate(order.createTime) }}</span>
             </div>
             <div class="info-item">
-              <span class="label">订单状态：</span>
+              <span class="label">Order Status:</span>
               <span class="value status" :class="getStatusClass(order.status)">
                 {{ getStatusText(order.status) }}
               </span>
             </div>
             <div class="info-item">
-              <span class="label">支付方式：</span>
-              <span class="value">{{ order.paymentMethod || '暂未支付' }}</span>
+              <span class="label">Payment Methods:</span>
+              <span class="value">{{ order.paymentMethod || 'Not yet paid' }}</span>
             </div>
           </div>
         </div>
         
         <!-- 商品信息 -->
         <div class="section">
-          <h2 class="section-title">商品信息</h2>
+          <h2 class="section-title">Product information</h2>
           <div class="product-list">
             <div class="product-header">
-              <div class="header-item product">商品信息</div>
-              <div class="header-item price">单价</div>
-              <div class="header-item quantity">数量</div>
-              <div class="header-item subtotal">小计</div>
+              <div class="header-item product">Product information</div>
+              <div class="header-item price">unit price</div>
+              <div class="header-item quantity">quantity</div>
+              <div class="header-item subtotal">subtotal</div>
             </div>
             <div v-for="product in order.products" :key="product.id" class="product-item">
               <div class="item-product">
@@ -69,18 +69,18 @@
         
         <!-- 金额信息 -->
         <div class="section">
-          <h2 class="section-title">金额信息</h2>
+          <h2 class="section-title">Amount information</h2>
           <div class="amount-info">
             <div class="amount-item">
-              <span class="label">商品总额：</span>
+              <span class="label">The total amount of the item:</span>
               <span class="value">¥{{ order.totalAmount }}</span>
             </div>
             <div class="amount-item">
-              <span class="label">运费：</span>
+              <span class="label">freight:</span>
               <span class="value">¥0.00</span>
             </div>
             <div class="amount-item total">
-              <span class="label">订单总额：</span>
+              <span class="label">Order Total:</span>
               <span class="value">¥{{ order.totalAmount }}</span>
             </div>
           </div>
@@ -89,12 +89,12 @@
         <!-- 订单操作 -->
         <div class="actions">
           <template v-if="order.status === 0">
-            <a-button type="primary" @click="handlePayOrder">去支付</a-button>
-            <a-button @click="handleCancelOrder">取消订单</a-button>
+            <a-button type="primary" @click="handlePayOrder">Go and pay</a-button>
+            <a-button @click="handleCancelOrder">Cancel the order</a-button>
           </template>
           
           <template v-if="order.status === 2">
-            <a-button type="primary" @click="handleConfirmOrder">确认收货</a-button>
+            <a-button type="primary" @click="handleConfirmOrder">Confirm receipt</a-button>
           </template>
         </div>
       </div>
@@ -103,31 +103,32 @@
     <!-- 支付模态框 -->
     <a-modal
       v-model:visible="paymentModalVisible"
-      title="订单支付"
+      title="Order Payment"
       :footer="null"
       @cancel="cancelPayment"
     >
       <div class="payment-modal">
         <div class="payment-amount">
-          <p>订单金额</p>
+          <p>The amount of the order</p>
           <h2>¥{{ order?.totalAmount || 0 }}</h2>
         </div>
         
         <div class="payment-methods">
-          <h3>选择支付方式</h3>
+          <h3>Select a payment method</h3>
           <div class="method-options">
             <a-radio-group v-model:value="paymentMethod">
-              <a-radio value="wechat">微信支付</a-radio>
-              <a-radio value="alipay">支付宝</a-radio>
-              <a-radio value="card">银行卡</a-radio>
+              <a-radio value="1">Alipay</a-radio>
+              <a-radio value="2">WeChat Pay</a-radio>
+              <a-radio value="3">Bank cards</a-radio>
+              <a-radio value="4">cash on delivery</a-radio>
             </a-radio-group>
           </div>
         </div>
         
         <div class="payment-actions">
-          <a-button @click="cancelPayment">取消</a-button>
+          <a-button @click="cancelPayment">cancel</a-button>
           <a-button type="primary" @click="completePayment" :loading="paymentLoading">
-            确认支付
+            Confirm the payment
           </a-button>
         </div>
       </div>
@@ -151,7 +152,7 @@ const loading = ref(true)
 
 // 支付相关
 const paymentModalVisible = ref(false)
-const paymentMethod = ref('wechat')
+const paymentMethod = ref('1')  // 默认使用支付宝
 const paymentLoading = ref(false)
 
 // 订单状态
@@ -183,21 +184,21 @@ const loadOrderDetail = async () => {
     // 处理不同的响应格式，获取订单数组
     let orderList: any[] = [];
     
-    if (result && result.records) {
-      orderList = result.records;
-    } else if (result && result.list) {
-      orderList = result.list;
-    } else if (result && (result as any).data) {
-      const data = (result as any).data;
-      if (Array.isArray(data)) {
-        orderList = data;
-      } else if (data.records) {
-        orderList = data.records;
-      } else if (data.list) {
-        orderList = data.list;
+    if (result.code === 200 && result.data) {
+      if (result.data.records) {
+        orderList = result.data.records;
+      } else if (result.data.list) {
+        orderList = result.data.list;
+      } else if (Array.isArray(result.data)) {
+        orderList = result.data;
+      } else if (typeof result.data === 'object') {
+        const data = result.data;
+        if (data.records) {
+          orderList = data.records;
+        } else if (data.list) {
+          orderList = data.list;
+        }
       }
-    } else if (Array.isArray(result)) {
-      orderList = result;
     }
     
     // 筛选订单详情
@@ -291,7 +292,7 @@ const completePayment = async () => {
     const orderNoStr = String(order.value.orderNo);
     console.log('准备支付订单, 订单号(字符串):', orderNoStr);
     
-    await payOrder(orderNoStr)
+    await payOrder(orderNoStr, paymentMethod.value)
     message.success('支付成功')
     
     // 关闭模态框

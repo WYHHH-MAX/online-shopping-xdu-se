@@ -30,7 +30,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(WebSecurity web) throws Exception {
         // 设置不经过Spring Security的请求路径
         web.ignoring()
-           .antMatchers("/api/images/**", "/api/static/**", "/api/uploads/**")
+           .antMatchers("/api/images/**", "/api/static/**", "/api/uploads/**","/images/**")
            .antMatchers(HttpMethod.OPTIONS, "/**"); // 允许所有OPTIONS请求通过
         
         // 使用自定义的HttpFirewall，更宽松地处理特殊字符

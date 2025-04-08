@@ -7,15 +7,25 @@
   >
     <div class="payment-dialog">
       <div class="amount">
-        <span class="label">支付金额：</span>
+        <span class="label">The amount to be paid:</span>
         <span class="value">￥{{ amount }}</span>
       </div>
+      
+      <div class="payment-methods">
+        <h3>Select a payment method</h3>
+        <a-radio-group v-model:value="selectedPaymentMethod">
+          <a-radio value="1">Alipay</a-radio>
+          <a-radio value="2">WeChat Pay</a-radio>
+          <a-radio value="3">Bank cards</a-radio>
+        </a-radio-group>
+      </div>
+      
       <div class="actions">
         <a-space>
           <a-button type="primary" :loading="loading" @click="handlePay">
-            确认支付
+            Confirm the payment
           </a-button>
-          <a-button @click="handleCancel">取消</a-button>
+          <a-button @click="handleCancel">Cancel</a-button>
         </a-space>
       </div>
     </div>
@@ -39,6 +49,7 @@ const emit = defineEmits<{
 }>()
 
 const loading = ref(false)
+const selectedPaymentMethod = ref('1') // 默认选择支付宝
 
 const handlePay = async () => {
   loading.value = true
@@ -49,7 +60,7 @@ const handlePay = async () => {
     const orderNoStr = String(props.orderNo).trim();
     // console.log('处理后的订单号:', orderNoStr);
     
-    await payOrder(orderNoStr)
+    await payOrder(orderNoStr, selectedPaymentMethod.value)
     message.success('支付成功')
     emit('success')
     emit('update:visible', false)
@@ -85,6 +96,15 @@ const handleCancel = () => {
   color: #f5222d;
   font-size: 24px;
   font-weight: bold;
+}
+
+.payment-methods {
+  margin: 24px 0;
+  text-align: left;
+}
+
+.payment-methods h3 {
+  margin-bottom: 12px;
 }
 
 .actions {

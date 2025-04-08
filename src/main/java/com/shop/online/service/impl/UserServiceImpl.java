@@ -23,6 +23,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
@@ -246,26 +247,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public boolean updateUserRole(Long userId, Integer role) {
-        if (userId == null || role == null) {
-            logger.error("更新用户角色参数不完整: userId={}, role={}", userId, role);
-            return false;
-        }
-        
         User user = getById(userId);
         if (user == null) {
-            logger.error("用户不存在: userId={}", userId);
-            return false;
+            throw new BusinessException("用户不存在");
         }
         
-        // 只允许有效的角色值：0-买家，1-卖家，2-管理员
-        if (role < 0 || role > 2) {
-            logger.error("无效的角色值: {}", role);
-            return false;
-        }
-        
+        // 更新角色
         user.setRole(role);
-        user.setUpdatedTime(LocalDateTime.now());
         
         return updateById(user);
+    }
+    
+    /**
+     * 根据条件查询用户列表
+     */
+    @Override
+    public List<User> list(LambdaQueryWrapper<User> queryWrapper) {
+        return baseMapper.selectList(queryWrapper);
     }
 } 

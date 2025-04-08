@@ -43,6 +43,21 @@ public class OrderVO {
     private LocalDateTime updateTime;
     
     /**
+     * 订单用户ID
+     */
+    private Long userId;
+    
+    /**
+     * 订单用户名称
+     */
+    private String username;
+    
+    /**
+     * 支付方式: 1-支付宝，2-微信支付，3-银行卡，4-货到付款
+     */
+    private String paymentMethod;
+    
+    /**
      * 订单商品列表
      */
     private List<OrderProductVO> products;

@@ -30,7 +30,7 @@
         <template #icon><UserOutlined /></template>
         个人中心
       </a-menu-item>
-      <a-menu-item key="apply-seller" @click="router.push('/apply-seller')">
+      <a-menu-item v-if="userStore.isLoggedIn() && userStore.role === 0" key="apply-seller" @click="router.push('/apply-seller')">
         <template #icon><ShopOutlined /></template>
         注册卖家
       </a-menu-item>
@@ -41,6 +41,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import {
   HomeOutlined,
   AppstoreOutlined,
@@ -52,6 +53,7 @@ import {
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 const selectedKeys = ref<string[]>(['home'])
 
 watch(() => route.path, (newPath) => {

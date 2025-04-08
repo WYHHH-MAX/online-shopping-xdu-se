@@ -1,6 +1,6 @@
 <template>
   <div class="cart">
-    <h2>我的购物车</h2>
+    <h2>My Cart</h2>
     
     <!-- 购物车列表 -->
     <a-table
@@ -35,7 +35,7 @@
         
         <!-- 操作 -->
         <template v-if="column.key === 'action'">
-          <a-button type="link" @click="removeFromCart(record)">删除</a-button>
+          <a-button type="link" @click="removeFromCart(record)">delete</a-button>
         </template>
       </template>
     </a-table>
@@ -43,11 +43,11 @@
     <!-- 结算区域 -->
     <div class="settlement">
       <div class="total">
-        已选择 {{ selectedRows.length }} 件商品
-        <span class="price">合计：¥{{ totalPrice.toFixed(2) }}</span>
+        Selected {{ selectedRows.length }} products
+        <span class="price">total:¥{{ totalPrice.toFixed(2) }}</span>
       </div>
       <a-button type="primary" :disabled="!selectedRows.length" @click="handleCheckout">
-        结算
+        settlement
       </a-button>
     </div>
   </div>

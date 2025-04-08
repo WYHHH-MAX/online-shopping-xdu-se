@@ -9,8 +9,8 @@
         <div class="search-container">
           <a-input-search
             v-model:value="searchKeyword"
-            placeholder="请输入商品名称"
-            enter-button="搜索"
+            placeholder="Please enter a product name"
+            enter-button="Search"
             size="large"
             @search="handleSearch"
           />
@@ -70,32 +70,32 @@
           <a-carousel autoplay v-if="featuredProducts.length > 0">
             <div v-for="product in featuredProducts" :key="product.id" class="carousel-item">
               <div class="carousel-content-wrapper">
-                <img :src="getImageUrl(product.mainImage)" :alt="product.name" class="carousel-image" />
+                <img :src="getImageUrl(product.mainImage)" :alt="product.name" class="carousel-image" @error="handleImageError" />
                 <div class="carousel-content">
                   <h3>{{ product.name }}</h3>
                   <p>¥{{ product.price }}</p>
-                  <a-button type="primary" @click="viewProduct(product)">查看详情</a-button>
+                  <a-button type="primary" @click="viewProduct(product)">Find out more</a-button>
                 </div>
               </div>
             </div>
           </a-carousel>
           <div v-else class="carousel-placeholder">
-            <a-empty description="暂无推荐商品" />
+            <a-empty description="There are no recommended products" />
           </div>
         </div>
       </div>
 
       <!-- 推荐商品展示区域 -->
       <div class="featured-products">
-        <h2 class="section-title">推荐商品</h2>
+        <h2 class="section-title">Recommended products</h2>
         <div class="featured-grid">
           <div v-for="product in featuredProducts" :key="product.id" class="featured-item">
-            <img :src="getImageUrl(product.mainImage)" :alt="product.name" class="featured-image" />
+            <img :src="getImageUrl(product.mainImage)" :alt="product.name" class="featured-image" @error="handleImageError" />
             <div class="featured-content">
               <h3>{{ product.name }}</h3>
               <p class="price">¥{{ product.price }}</p>
               <div class="featured-actions">
-                <a-button type="primary" @click="viewProduct(product)">查看详情</a-button>
+                <a-button type="primary" @click="viewProduct(product)">Find out more</a-button>
                 <a-button type="link" @click="addToCart(product)">
                   <ShoppingCartOutlined />
                 </a-button>
@@ -126,7 +126,7 @@ import { quickAddToCart } from '../api/cart'
 import type { CategoryVO } from '../types/category'
 import type { ProductVO } from '../types/product'
 import { useRouter } from 'vue-router'
-import { getImageUrl } from '../utils/imageUtil'
+import { getImageUrl, handleImageError } from '../utils/imageUtil'
 
 const router = useRouter()
 const searchKeyword = ref('')

@@ -80,6 +80,11 @@ const router = createRouter({
           path: 'search',
           name: 'SearchResults',
           component: () => import('../views/SearchResults.vue')
+        },
+        {
+          path: 'review',
+          name: 'ProductReview',
+          component: () => import('../views/review/ProductReview.vue')
         }
       ]
     },
@@ -124,6 +129,11 @@ const router = createRouter({
           path: 'profile',
           name: 'SellerProfile',
           component: () => import('../views/seller/Profile.vue')
+        },
+        {
+          path: 'sales',
+          name: 'SellerSales',
+          component: () => import('../views/seller/SalesAnalytics.vue')
         }
       ]
     },
@@ -182,16 +192,17 @@ router.beforeEach((to, from, next) => {
   const isLoggedIn = localStorage.getItem('token')
   const userRole = localStorage.getItem('role') ? parseInt(localStorage.getItem('role') as string) : null
   
-  // 检查是否是卖家申请路径，如果是则跳过登录检查
-  if (to.path === '/apply-seller') {
-    // 允许未登录用户访问卖家申请页面
+  // 检查是否是卖家申请路径或公开路径
+  if (to.path === '/apply-seller' || to.path === '/login' || to.path === '/register') {
+    // 允许所有用户访问卖家申请页面和登录/注册页面
     return next()
   }
   
   // 检查是否需要登录
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!isLoggedIn) {
-      next('/login')
+      console.log('用户未登录，重定向到登录页面')
+      return next({ path: '/login', query: { redirect: to.fullPath } })
     } else {
       // 检查角色权限
       const hasRequiredRole = to.matched.some(record => {
@@ -212,6 +223,10 @@ router.beforeEach((to, from, next) => {
       }
     }
   } else {
+    // 对于首页特殊处理，不要求登录也可以查看
+    if (to.path === '/' || to.path.startsWith('/category/') || to.path.startsWith('/product/') || to.path.startsWith('/search')) {
+      return next()
+    }
     next()
   }
 })

@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS `order` (
     created_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除'
+    payment_method VARCHAR(10) DEFAULT NULL COMMENT '支付方式: 1-支付宝，2-微信支付，3-银行卡，4-货到付款';
 ) COMMENT '订单表';
 
 -- 订单明细表
@@ -100,6 +101,25 @@ CREATE TABLE IF NOT EXISTS order_item (
     updated_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     deleted TINYINT NOT NULL DEFAULT 0 COMMENT '是否删除'
 ) COMMENT '订单明细表';
+
+-- Product Review Table
+CREATE TABLE IF NOT EXISTS product_review (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_no VARCHAR(50) NOT NULL COMMENT 'Order number',
+    user_id BIGINT NOT NULL COMMENT 'User ID of the reviewer',
+    product_id BIGINT NOT NULL COMMENT 'Product ID',
+    rating TINYINT NOT NULL COMMENT 'Rating (1-5 stars)',
+    content TEXT COMMENT 'Review content',
+    images VARCHAR(500) COMMENT 'Review images (comma separated URLs)',
+    created_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+    updated_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update time',
+    deleted TINYINT NOT NULL DEFAULT 0 COMMENT 'Soft delete flag'
+) COMMENT 'Product review table';
+
+-- Add indexes for fast query
+CREATE INDEX idx_product_review_product_id ON product_review(product_id);
+CREATE INDEX idx_product_review_user_id ON product_review(user_id);
+CREATE INDEX idx_product_review_order_no ON product_review(order_no);
 
 -- 商家表
 CREATE TABLE IF NOT EXISTS seller (

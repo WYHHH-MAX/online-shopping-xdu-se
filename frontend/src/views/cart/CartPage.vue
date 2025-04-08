@@ -1,12 +1,12 @@
 <template>
   <div class="cart-page">
     <div class="content-wrapper">
-      <h1 class="page-title">我的购物车</h1>
+      <h1 class="page-title">My Cart</h1>
       
       <div v-if="cartItems.length === 0" class="empty-cart">
-        <a-empty description="购物车为空">
+        <a-empty description="The cart is empty">
           <template #extra>
-            <a-button type="primary" @click="goToHome">去购物</a-button>
+            <a-button type="primary" @click="goToHome">Go shopping</a-button>
           </template>
         </a-empty>
       </div>
@@ -18,13 +18,13 @@
               :checked="allSelected"
               :indeterminate="indeterminate"
               @change="handleSelectAll"
-            >全选</a-checkbox>
+            >Select all</a-checkbox>
           </div>
-          <div class="header-item product">商品信息</div>
-          <div class="header-item price">单价</div>
-          <div class="header-item quantity">数量</div>
-          <div class="header-item subtotal">金额</div>
-          <div class="header-item actions">操作</div>
+          <div class="header-item product">Product information</div>
+          <div class="header-item price">unit price</div>
+          <div class="header-item quantity">quantity</div>
+          <div class="header-item subtotal">amount</div>
+          <div class="header-item actions">operate</div>
         </div>
         
         <div class="cart-items">
@@ -52,20 +52,20 @@
             </div>
             <div class="item-subtotal">¥{{ (item.price * item.quantity).toFixed(2) }}</div>
             <div class="item-actions">
-              <a-button type="link" danger @click="handleDelete(item.id)">删除</a-button>
+              <a-button type="link" danger @click="handleDelete(item.id)">delete</a-button>
             </div>
           </div>
         </div>
         
         <div class="cart-footer">
           <div class="selected-info">
-            已选择 <span class="selected-count">{{ selectedCount }}</span> 件商品
+            Selected <span class="selected-count">{{ selectedCount }}</span> products
           </div>
           <div class="total-info">
-            合计: <span class="total-price">¥{{ totalPrice.toFixed(2) }}</span>
+            total: <span class="total-price">¥{{ totalPrice.toFixed(2) }}</span>
           </div>
           <a-button type="primary" :disabled="selectedCount === 0" @click="handleCheckout">
-            去结算
+            Go to checkout
           </a-button>
         </div>
       </template>

@@ -4,20 +4,20 @@
       <div class="success-icon">
         <CheckCircleFilled style="font-size: 72px; color: #52c41a;" />
       </div>
-      <h1 class="success-title">支付成功</h1>
+      <h1 class="success-title">The payment was successful</h1>
       <div class="order-info">
         <p class="info-item">
-          <span class="label">订单号：</span>
+          <span class="label">Order number:</span>
           <span class="value">{{ orderNo }}</span>
         </p>
         <p class="info-item">
-          <span class="label">支付金额：</span>
+          <span class="label">Payment Amount:</span>
           <span class="value">¥{{ amount }}</span>
         </p>
       </div>
       <div class="actions">
-        <a-button type="primary" @click="viewOrder">查看订单</a-button>
-        <a-button @click="continueShopping">继续购物</a-button>
+        <a-button type="primary" @click="viewOrder">View the order</a-button>
+        <a-button @click="continueShopping">Keep shopping</a-button>
       </div>
     </div>
   </div>

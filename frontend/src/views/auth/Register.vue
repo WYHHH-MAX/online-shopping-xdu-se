@@ -1,7 +1,7 @@
 <template>
   <div class="register-container">
     <div class="register-box">
-      <h2>注册</h2>
+      <h2>register</h2>
       <a-form
         :model="formState"
         name="register"
@@ -11,48 +11,48 @@
         @finish="onFinish"
       >
         <a-form-item
-          label="用户名"
+          label="Username"
           name="username"
-          :rules="[{ required: true, message: '请输入用户名!' }]"
+          :rules="[{ required: true, message: 'Please enter a username!' }]"
         >
           <a-input v-model:value="formState.username" />
         </a-form-item>
 
         <a-form-item
-          label="密码"
+          label="Password"
           name="password"
-          :rules="[{ required: true, message: '请输入密码!' }]"
+          :rules="[{ required: true, message: 'Please enter your password!' }]"
         >
           <a-input-password v-model:value="formState.password" />
         </a-form-item>
 
         <a-form-item
-          label="昵称"
+          label="nickname"
           name="nickname"
-          :rules="[{ required: true, message: '请输入昵称!' }]"
+          :rules="[{ required: true, message: 'Please enter your nickname!' }]"
         >
           <a-input v-model:value="formState.nickname" />
         </a-form-item>
 
         <a-form-item
-          label="手机号"
+          label="phone"
           name="phone"
-          :rules="[{ required: true, message: '请输入手机号!' }]"
+          :rules="[{ required: true, message: 'Please enter your phone!' }]"
         >
           <a-input v-model:value="formState.phone" />
         </a-form-item>
 
         <a-form-item
-          label="邮箱"
+          label="email"
           name="email"
-          :rules="[{ required: true, message: '请输入邮箱!' }]"
+          :rules="[{ required: true, message: 'Please enter your email!' }]"
         >
           <a-input v-model:value="formState.email" />
         </a-form-item>
 
         <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
-          <a-button type="primary" html-type="submit">注册</a-button>
-          <a-button style="margin-left: 10px" @click="goToLogin">返回登录</a-button>
+          <a-button type="primary" html-type="submit">register</a-button>
+          <a-button style="margin-left: 10px" @click="goToLogin">login</a-button>
         </a-form-item>
       </a-form>
     </div>
@@ -81,10 +81,15 @@ const formState = reactive<RegisterRequest>({
 const onFinish = async (values: RegisterRequest) => {
   try {
     const res = await register(values)
-    if (res.code === 200) {
+    if (res.code === 200 || res.code === 1) {
       message.success('注册成功')
-      userStore.setUserInfo(res.data)
-      router.push('/')
+      const loginResult = await userStore.login({
+        username: values.username,
+        password: values.password
+      })
+      if (loginResult) {
+        router.push('/')
+      }
     } else {
       message.error(res.message || '注册失败')
     }

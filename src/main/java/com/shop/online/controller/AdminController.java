@@ -1,7 +1,7 @@
 package com.shop.online.controller;
 
 import com.shop.online.common.result.PageResult;
-import com.shop.online.common.Result;
+import com.shop.online.common.result.Result;
 import com.shop.online.dto.AdminStatsDTO;
 import com.shop.online.dto.ProductDTO;
 import com.shop.online.dto.SellerRequestDTO;

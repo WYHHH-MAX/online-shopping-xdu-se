@@ -2,29 +2,29 @@
   <div class="payment-page">
     <a-result
       :status="payStatus"
-      :title="payStatus === 'success' ? '支付成功' : '等待支付'"
-      :sub-title="orderNo ? `订单号: ${orderNo}` : ''"
+      :title="payStatus === 'success' ? 'The payment was successful' : 'Wait for payment'"
+      :sub-title="orderNo ? `Order number: ${orderNo}` : ''"
     >
       <template #extra>
         <div v-if="payStatus !== 'success'" class="payment-methods">
-          <h3>请选择支付方式</h3>
+          <h3>Please select a payment method</h3>
           <div class="payment-options">
             <a-button type="primary" size="large" @click="handlePay('wechat')" class="payment-btn wechat-btn">
               <template #icon><WechatOutlined /></template>
-              微信支付
+              WeChat Pay
             </a-button>
             <a-button type="primary" size="large" @click="handlePay('alipay')" class="payment-btn alipay-btn">
               <template #icon><AlipayOutlined /></template>
-              支付宝支付
+              Alipay payment
             </a-button>
           </div>
           <div class="order-amount">
-            <span>应付金额：</span>
+            <span>Amount due:</span>
             <span class="amount">¥ {{ orderAmount }}</span>
           </div>
         </div>
         <div class="action-buttons">
-          <a-button v-if="payStatus === 'success'" type="primary" @click="goToOrderList">查看订单</a-button>
+          <a-button v-if="payStatus === 'success'" type="primary" @click="goToOrderList">View the order</a-button>
           <a-button @click="goToHome">返回首页</a-button>
         </div>
       </template>
@@ -79,8 +79,9 @@ const handlePay = async (payMethod: 'wechat' | 'alipay') => {
     // 延迟1.5秒模拟支付过程
     await new Promise(resolve => setTimeout(resolve, 1500))
     
-    // 调用支付API
-    await payOrder(orderNoStr)
+    // 调用支付API，传递支付方式
+    const paymentMethodCode = payMethod === 'wechat' ? '2' : '1'; // 微信是2，支付宝是1
+    await payOrder(orderNoStr, paymentMethodCode)
     
     // 更新支付状态
     payStatus.value = 'success'

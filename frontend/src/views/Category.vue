@@ -4,7 +4,7 @@
     <div class="breadcrumb">
       <a-breadcrumb>
         <a-breadcrumb-item>
-          <router-link to="/">首页</router-link>
+          <router-link to="/">Home</router-link>
         </a-breadcrumb-item>
         <template v-if="parentCategory">
           <a-breadcrumb-item>
@@ -19,11 +19,11 @@
     <div class="filter-section">
       <a-space>
         <a-select v-model:value="sortBy" style="width: 120px" @change="handleSortChange">
-          <a-select-option value="default">默认排序</a-select-option>
-          <a-select-option value="price_asc">价格从低到高</a-select-option>
-          <a-select-option value="price_desc">价格从高到低</a-select-option>
-          <a-select-option value="sales_desc">销量优先</a-select-option>
-          <a-select-option value="rating_desc">好评优先</a-select-option>
+          <a-select-option value="default">Default sorting</a-select-option>
+          <a-select-option value="price_asc">Prices range from low to high</a-select-option>
+          <a-select-option value="price_desc">Prices go from high to low</a-select-option>
+          <a-select-option value="sales_desc">Prioritize sales</a-select-option>
+          <a-select-option value="rating_desc">Praise is preferred</a-select-option>
         </a-select>
       </a-space>
     </div>
@@ -37,7 +37,7 @@
             <div class="product-info">
               <h3 class="product-name">{{ product.name }}</h3>
               <p class="product-price">¥{{ product.price }}</p>
-              <p class="product-sales">销量: {{ product.sales }}</p>
+              <p class="product-sales">sales: {{ product.sales }}</p>
             </div>
           </div>
         </a-col>

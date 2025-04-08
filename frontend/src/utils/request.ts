@@ -57,21 +57,17 @@ instance.interceptors.response.use(
       
       // 401: 未授权 - 重新登录
       if (res.code === 401) {
-        // 弹出确认对话框
+        // 显示错误消息
         message.error('您的登录状态已过期，请重新登录')
         
         // 清除用户信息
-        localStorage.removeItem('token')
-        localStorage.removeItem('userId')
-        localStorage.removeItem('username')
-        localStorage.removeItem('nickname')
-        localStorage.removeItem('role')
-        localStorage.removeItem('avatar')
-        localStorage.removeItem('phone')
-        localStorage.removeItem('email')
+        clearUserAuth()
         
-        // 重定向到登录页面
-        window.location.href = '/login'
+        // 重定向到登录页面，并记录当前路径
+        const currentPath = window.location.pathname + window.location.search
+        setTimeout(() => {
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+        }, 1000)
       }
       
       return Promise.reject(new Error(res.message || res.msg || '请求失败'))
@@ -98,18 +94,16 @@ instance.interceptors.response.use(
       const status = error.response.status
       if (status === 401) {
         // 清除用户信息
-        localStorage.removeItem('token')
-        localStorage.removeItem('userId')
-        localStorage.removeItem('username')
-        localStorage.removeItem('nickname')
-        localStorage.removeItem('role')
-        localStorage.removeItem('avatar')
-        localStorage.removeItem('phone')
-        localStorage.removeItem('email')
+        clearUserAuth()
         
-        // 重定向到登录页面
-        window.location.href = '/login'
+        // 显示错误消息
         message.error('登录状态已过期，请重新登录')
+        
+        // 重定向到登录页面，并记录当前路径
+        const currentPath = window.location.pathname + window.location.search
+        setTimeout(() => {
+          window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+        }, 1000)
       } else if (status === 404) {
         message.error('请求的资源不存在')
       } else if (status === 500) {
@@ -129,6 +123,19 @@ instance.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// 清除用户认证信息的辅助函数
+function clearUserAuth() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userId')
+  localStorage.removeItem('username')
+  localStorage.removeItem('nickname')
+  localStorage.removeItem('role')
+  localStorage.removeItem('avatar')
+  localStorage.removeItem('phone')
+  localStorage.removeItem('email')
+  console.log('已清除用户认证信息')
+}
 
 // 封装请求方法
 export function request<T>(config: AxiosRequestConfig): Promise<T> {

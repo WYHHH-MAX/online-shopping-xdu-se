@@ -49,4 +49,6 @@ mybatis-plus:
 upload:
   path: D:/upload/
   allowed-types: jpg,jpeg,png,gif
-  max-size: 5242880 
+  max-size: 5242880
+  products:
+    path: ${user.dir}/src/main/resources/static/images/products/ 

@@ -6,7 +6,7 @@
     >
       <template #renderItem="{ item }">
         <a-list-item>
-          <a-card :title="'订单号：' + item.orderNo" style="width: 100%">
+          <a-card :title="'Order number:' + item.orderNo" style="width: 100%">
             <template #extra>
               <a-tag :color="getStatusColor(item.status)">
                 {{ getStatusText(item.status) }}
@@ -27,7 +27,7 @@
             <!-- 订单信息 -->
             <div class="order-info">
               <div class="order-total">
-                总计：<span class="price">¥{{ item.totalAmount.toFixed(2) }}</span>
+                total:<span class="price">¥{{ item.totalAmount.toFixed(2) }}</span>
               </div>
               <div class="order-actions">
                 <a-button
@@ -35,20 +35,27 @@
                   type="primary"
                   @click="handlePay(item)"
                 >
-                  立即支付
+                  Pay immediately
                 </a-button>
                 <a-button
                   v-if="parseInt(item.status) === 0"
                   @click="handleCancel(item)"
                 >
-                  取消订单
+                  Cancel the order
                 </a-button>
                 <a-button
                   v-if="parseInt(item.status) === 2"
                   type="primary"
                   @click="handleConfirm(item)"
                 >
-                  确认收货
+                  Confirm receipt
+                </a-button>
+                <a-button
+                  v-if="parseInt(item.status) === 3"
+                  type="primary"
+                  @click="handleReview(item)"
+                >
+                  Review
                 </a-button>
               </div>
             </div>
@@ -64,6 +71,7 @@ import { ref, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { getOrders, payOrder, cancelOrder, confirmOrder } from '@/api/order'
 import { getImageUrl } from '@/utils/imageUtil'
+import { useRouter } from 'vue-router'
 
 const props = defineProps<{
   status: string | null
@@ -94,6 +102,8 @@ const loading = ref(false)
 // 添加加载标志，确保组件能正确加载数据
 const isLoaded = ref(false)
 
+const router = useRouter()
+
 const loadOrders = async () => {
   try {
     loading.value = true;
@@ -107,74 +117,48 @@ const loadOrders = async () => {
     // 只有在status不为null且不为undefined和空字符串时才添加到请求参数
     if (props.status !== null && props.status !== undefined && props.status !== '') {
       params.status = props.status;
-      // console.log(`正在按状态 [${props.status}] (类型: ${typeof props.status}) 加载订单`);
+      console.log(`正在按状态 [${props.status}] (类型: ${typeof props.status}) 加载订单`);
     } else {
-      // console.log('加载所有状态的订单');
+      console.log('加载所有状态的订单');
     }
     
     // 发送请求
     const res = await getOrders(params);
-    // console.log('获取订单API响应:', res);
+    console.log('获取订单API响应:', res);
     
-    // 处理响应数据
-    if (res && res.list) {
-      // 使用list字段
-      orders.value = res.list;
-      // console.log('成功获取订单列表，数量:', orders.value.length);
+    // 处理 ApiResponse 格式的响应
+    if (res.code === 200 && res.data) {
+      const responseData = res.data;
       
-      // DEBUG: 打印每个订单信息
-      orders.value.forEach((order, index) => {
-        console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
-      });
-    } else if (res && res.records) {
-      // 使用records字段
-      orders.value = res.records;
-      // console.log('成功获取订单列表（从records字段），数量:', orders.value.length);
-      
-      orders.value.forEach((order, index) => {
-        console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
-      });
-    } else if (res && (res as any).data) {
-      // 数据在data字段中
-      const data = (res as any).data;
-      if (Array.isArray(data)) {
-        // data直接是数组
-        orders.value = data;
-      } else if (data.list && Array.isArray(data.list)) {
-        // data.list是数组
-        orders.value = data.list;
-      } else if (data.records && Array.isArray(data.records)) {
-        // data.records是数组
-        orders.value = data.records;
+      // 处理 PageResult 格式的数据
+      if (responseData.records && Array.isArray(responseData.records)) {
+        orders.value = responseData.records;
+        console.log('从 records 字段加载订单数据，数量:', orders.value.length);
+      } else if (responseData.list && Array.isArray(responseData.list)) {
+        orders.value = responseData.list;
+        console.log('从 list 字段加载订单数据，数量:', orders.value.length);
+      } else if (Array.isArray(responseData)) {
+        orders.value = responseData;
+        console.log('直接从 data 字段加载订单数组，数量:', orders.value.length);
       } else {
-        console.error('订单数据格式异常，data字段结构不符合预期:', data);
+        console.error('订单数据格式异常:', responseData);
         orders.value = [];
       }
       
-      if (orders.value.length > 0) {
-        // console.log('成功获取订单列表（从data字段），数量:', orders.value.length);
-        orders.value.forEach((order, index) => {
-          // console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
-        });
-      }
+      // 打印每个订单信息帮助调试
+      orders.value.forEach((order, index) => {
+        console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
+      });
     } else {
-      console.error('订单数据格式异常，没有list、records或data字段:', res);
-      // 尝试直接使用响应，可能返回的就是数组
-      if (Array.isArray(res)) {
-        // console.log('响应是数组格式，直接使用');
-        orders.value = res;
-        orders.value.forEach((order, index) => {
-          // console.log(`订单[${index}]: ID=${order.id}, 订单号=${order.orderNo}, 状态=${order.status}`);
-        });
-      } else {
-        orders.value = [];
-      }
+      console.error('API 返回错误:', res);
+      message.error(res.msg || '加载订单失败');
+      orders.value = [];
     }
     
     isLoaded.value = true;
   } catch (error) {
     console.error('加载订单失败:', error);
-    // message.error('加载订单失败');
+    message.error('加载订单失败');
     orders.value = [];
   } finally {
     loading.value = false;
@@ -202,48 +186,82 @@ const getStatusText = (status: string) => {
   
   // 根据数字状态码返回文本
   switch(statusNum) {
-    case 0: return '待付款'
-    case 1: return '待发货'
-    case 2: return '待收货'
-    case 3: return '已完成'
-    case 4: return '已取消'
+    case 0: return 'Pending payment'
+    case 1: return 'To be shipped'
+    case 2: return 'To be received'
+    case 3: return 'Done'
+    case 4: return 'Canceled'
     default: return status
   }
 }
 
 const handlePay = async (order: Order) => {
   try {
-    await payOrder(order.orderNo)
-    message.success('支付成功')
-    loadOrders()
+    const response = await payOrder(order.orderNo);
+    console.log('支付响应:', response);
+    
+    if (response && response.code === 200) {
+      message.success('The payment was successful');
+      loadOrders();
+    } else {
+      message.error((response && response.msg) || 'The payment failed');
+    }
   } catch (error) {
-    message.error('支付失败')
+    console.error('支付失败:', error);
+    message.error('The payment failed');
   }
 }
 
 const handleCancel = async (order: Order) => {
   try {
-    await cancelOrder(order.orderNo)
-    message.success('取消订单成功')
-    loadOrders()
+    const response = await cancelOrder(order.orderNo);
+    console.log('取消订单响应:', response);
+    
+    if (response && response.code === 200) {
+      message.success('The cancellation of the order is successful');
+      loadOrders();
+    } else {
+      message.error((response && response.msg) || 'Failed to cancel the order');
+    }
   } catch (error) {
-    message.error('取消订单失败')
+    console.error('取消订单失败:', error);
+    message.error('Failed to cancel the order');
   }
 }
 
 const handleConfirm = async (order: Order) => {
   try {
-    await confirmOrder(order.orderNo)
-    message.success('确认收货成功')
-    loadOrders()
+    const response = await confirmOrder(order.orderNo);
+    console.log('确认收货响应:', response);
+    
+    if (response && response.code === 200) {
+      message.success('Confirm that the receipt is successful');
+      loadOrders();
+    } else {
+      message.error((response && response.msg) || 'Failed to confirm receipt');
+    }
   } catch (error) {
-    message.error('确认收货失败')
+    console.error('确认收货失败:', error);
+    message.error('Failed to confirm receipt');
   }
+}
+
+// 处理评价按钮点击事件
+const handleReview = (order: Order) => {
+  console.log('准备评价订单:', order.orderNo);
+  // 跳转到评价页面，传递订单信息
+  router.push({
+    path: '/review',
+    query: {
+      orderNo: order.orderNo,
+      productId: order.products[0].id.toString()  // 如果只有一个商品，直接使用第一个
+    }
+  });
 }
 
 // 监听status变化，重新加载订单
 watch(() => props.status, (newStatus) => {
-  console.log('订单状态参数变化:', newStatus);
+  console.log('The order status parameter changes:', newStatus);
   loadOrders();
 }, { immediate: true }); // 添加immediate: true确保组件初始化时就加载数据
 

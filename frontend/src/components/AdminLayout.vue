@@ -3,7 +3,7 @@
     <a-layout-header class="header">
       <div class="logo">
         <img src="@/assets/logo.png" alt="Logo" height="40" />
-        <span style="color: white; margin-left: 10px; font-size: 16px">管理员后台</span>
+        <span style="color: white; margin-left: 10px; font-size: 16px">Admin Portal</span>
       </div>
       <div class="user-info">
         <a-dropdown>
@@ -77,19 +77,19 @@ const menuItems = reactive([
   { 
     key: 'seller-requests', 
     path: '/admin/seller-requests', 
-    title: '卖家申请', 
+    title: 'Seller application',
     icon: SolutionOutlined 
   },
   { 
     key: 'users', 
     path: '/admin/users', 
-    title: '用户管理', 
+    title: 'User management',
     icon: UserOutlined 
   },
   { 
     key: 'products', 
     path: '/admin/products', 
-    title: '商品管理', 
+    title: 'Merchandise management',
     icon: ShoppingOutlined 
   }
 ])
@@ -131,7 +131,7 @@ watch(
 const logout = () => {
   // 修复方法：使用类型断言确保调用正确
   (userStore as any).clearUserInfo?.() || userStore.$reset?.()
-  message.success('已退出登录')
+  message.success('Logged out')
   router.push('/login')
 }
 </script>

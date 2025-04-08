@@ -2,7 +2,7 @@
   <div class="admin-dashboard">
     <a-row :gutter="24">
       <a-col :span="24">
-        <h1 class="page-title">管理员控制台</h1>
+        <h1 class="page-title">Administrator Console</h1>
       </a-col>
     </a-row>
     
@@ -15,7 +15,7 @@
             </div>
           </template>
           <a-card-meta>
-            <template #title>管理用户</template>
+            <template #title>Manage users</template>
             <template #description>
               <div class="stats-value">{{ stats.userCount }}</div>
             </template>
@@ -49,7 +49,7 @@
             </div>
           </template>
           <a-card-meta>
-            <template #title>待审核申请</template>
+            <template #title>Applications are pending</template>
             <template #description>
               <div class="stats-value">{{ stats.pendingRequests }}</div>
             </template>
@@ -65,7 +65,7 @@
             </div>
           </template>
           <a-card-meta>
-            <template #title>管理商品</template>
+            <template #title>Manage products</template>
             <template #description>
               <div class="stats-value">{{ stats.productCount }}</div>
             </template>
@@ -76,7 +76,7 @@
     
     <a-row :gutter="24" class="action-cards">
       <a-col :span="8">
-        <a-card title="待处理卖家申请" :bodyStyle="{ height: '300px', overflow: 'auto' }">
+        <a-card title="Pending seller application" :bodyStyle="{ height: '300px', overflow: 'auto' }">
           <a-list
             v-if="pendingSellerRequests.length > 0"
             :data-source="pendingSellerRequests"
@@ -86,7 +86,7 @@
               <a-list-item>
                 <a-list-item-meta
                   :title="item.username"
-                  :description="`申请时间: ${item.applyTime}`"
+                  :description="`Application timeline: ${item.applyTime}`"
                 >
                   <template #avatar>
                     <a-avatar :src="item.avatar || '@/assets/avatar.png'" />
@@ -94,23 +94,23 @@
                 </a-list-item-meta>
                 <template #actions>
                   <a-button type="primary" size="small" @click="reviewSellerRequest(item)">
-                    查看
+                    View
                   </a-button>
                 </template>
               </a-list-item>
             </template>
           </a-list>
-          <a-empty v-else description="暂无待处理申请" />
+          <a-empty v-else description="There are no pending applications at this time" />
         </a-card>
       </a-col>
       
       <a-col :span="16">
-        <a-card title="系统概况">
+        <a-card title="System Overview">
           <a-descriptions :column="2">
-            <a-descriptions-item label="系统版本">v1.0.0</a-descriptions-item>
-            <a-descriptions-item label="最后更新">{{ new Date().toLocaleDateString() }}</a-descriptions-item>
-            <a-descriptions-item label="系统状态">正常运行</a-descriptions-item>
-            <a-descriptions-item label="管理员数量">1</a-descriptions-item>
+            <a-descriptions-item label="System version">v1.0.0</a-descriptions-item>
+            <a-descriptions-item label="Last updated">{{ new Date().toLocaleDateString() }}</a-descriptions-item>
+            <a-descriptions-item label="System status">Normal operation</a-descriptions-item>
+            <a-descriptions-item label="Number of administrators">1</a-descriptions-item>
           </a-descriptions>
           
           <a-divider />
@@ -118,7 +118,7 @@
           <a-row :gutter="16">
             <a-col :span="12">
               <a-statistic
-                title="今日访问量"
+                title="Today's visits"
                 :value="1234"
                 style="margin-right: 50px"
               >
@@ -129,7 +129,7 @@
             </a-col>
             <a-col :span="12">
               <a-statistic
-                title="今日订单数"
+                title="Number of orders for today"
                 :value="88"
                 style="margin-right: 50px"
               >

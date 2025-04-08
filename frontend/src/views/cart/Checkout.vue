@@ -1,21 +1,21 @@
 <template>
   <div class="checkout-page">
     <div class="content-wrapper">
-      <h1 class="page-title">订单结算</h1>
+      <h1 class="page-title">Order settlement</h1>
       
       <div v-if="loading" class="loading-container">
-        <a-spin tip="加载中..."></a-spin>
+        <a-spin tip="Loading..."></a-spin>
       </div>
       
       <div v-else>
         <div class="section">
-          <h2 class="section-title">确认商品信息</h2>
+          <h2 class="section-title">Confirm the product information</h2>
           <div class="product-list">
             <div class="product-header">
-              <div class="header-item product">商品信息</div>
-              <div class="header-item price">单价</div>
-              <div class="header-item quantity">数量</div>
-              <div class="header-item subtotal">小计</div>
+              <div class="header-item product">Product information</div>
+              <div class="header-item price">unit price</div>
+              <div class="header-item quantity">quantity</div>
+              <div class="header-item subtotal">subtotal</div>
             </div>
             <div v-for="item in cartItems" :key="item.id" class="product-item">
               <div class="item-product">
@@ -32,27 +32,27 @@
         </div>
         
         <div class="section">
-          <h2 class="section-title">订单总计</h2>
+          <h2 class="section-title">Total orders</h2>
           <div class="order-summary">
             <div class="summary-item">
-              <span class="item-label">商品总价：</span>
+              <span class="item-label">The total price of the item:</span>
               <span class="item-value">¥{{ totalPrice.toFixed(2) }}</span>
             </div>
             <div class="summary-item">
-              <span class="item-label">商品数量：</span>
+              <span class="item-label">The number of units:</span>
               <span class="item-value">{{ totalQuantity }} 件</span>
             </div>
           </div>
           
           <div class="order-total">
-            <span class="total-label">应付金额：</span>
+            <span class="total-label">Amount due:</span>
             <span class="total-value">¥{{ totalPrice.toFixed(2) }}</span>
           </div>
         </div>
         
         <div class="actions">
-          <a-button @click="goBack">返回购物车</a-button>
-          <a-button type="primary" @click="handleSubmitOrder">提交订单</a-button>
+          <a-button @click="goBack">Return to cart</a-button>
+          <a-button type="primary" @click="handleSubmitOrder">Submit your order</a-button>
         </div>
       </div>
     </div>
@@ -60,31 +60,32 @@
     <!-- 支付模态框 -->
     <a-modal
       v-model:visible="paymentModalVisible"
-      title="订单支付"
+      title="Order Payment"
       :footer="null"
       @cancel="cancelPayment"
     >
       <div class="payment-modal">
         <div class="payment-amount">
-          <p>订单金额</p>
+          <p>The amount of the order</p>
           <h2>¥{{ totalPrice.toFixed(2) }}</h2>
         </div>
         
         <div class="payment-methods">
-          <h3>选择支付方式</h3>
+          <h3>Select a payment method</h3>
           <div class="method-options">
             <a-radio-group v-model:value="paymentMethod">
-              <a-radio value="wechat">微信支付</a-radio>
-              <a-radio value="alipay">支付宝</a-radio>
-              <a-radio value="card">银行卡</a-radio>
+              <a-radio value="1">Alipay</a-radio>
+              <a-radio value="2">WeChat Pay</a-radio>
+              <a-radio value="3">Bank cards</a-radio>
+              <a-radio value="4">cash on delivery</a-radio>
             </a-radio-group>
           </div>
         </div>
         
         <div class="payment-actions">
-          <a-button @click="cancelPayment">取消</a-button>
+          <a-button @click="cancelPayment">cancel</a-button>
           <a-button type="primary" @click="completePayment" :loading="paymentLoading">
-            确认支付
+            Confirm the payment
           </a-button>
         </div>
       </div>
@@ -110,7 +111,7 @@ const cartItems = ref<CartItemVO[]>([])
 
 // 支付相关
 const paymentModalVisible = ref(false)
-const paymentMethod = ref('wechat')
+const paymentMethod = ref('1') // 默认选择支付宝
 const paymentLoading = ref(false)
 const currentOrderNo = ref('')
 
@@ -245,13 +246,17 @@ const handleSubmitOrder = async () => {
       requestData = { 
         directBuy: true,
         productId: productId,
-        quantity: quantity
+        quantity: quantity,
+        paymentMethod: paymentMethod.value
       };
       console.log('直接购买模式，参数:', requestData);
     } else {
       // 购物车模式
       const itemIds = cartItems.value.map(item => item.id);
-      requestData = { cartItemIds: itemIds };
+      requestData = { 
+        cartItemIds: itemIds,
+        paymentMethod: paymentMethod.value
+      };
       console.log('购物车模式，购物车项IDs:', itemIds);
     }
     

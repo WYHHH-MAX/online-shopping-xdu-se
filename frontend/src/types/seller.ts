@@ -55,4 +55,43 @@ export interface ProductRequest {
 // 商品库存更新请求
 export interface StockUpdateRequest {
   [productId: string]: number
+}
+
+// 销售数据分析
+export interface SalesAnalyticsData {
+  // 销售总览数据
+  overview: {
+    totalSales: number   // 总销售额
+    totalOrders: number  // 总订单数
+    averageOrderValue: number // 平均订单金额
+  }
+  
+  // 按时间的销售数据
+  salesByTime: {
+    period: string  // 日期/时间段
+    amount: number  // 销售额
+    orderCount: number // 订单数
+  }[]
+  
+  // 按商品类别的销售数据
+  salesByCategory: {
+    category: string  // 商品类别名称
+    amount: number    // 销售额
+    percentage: number // 销售占比
+  }[]
+  
+  // 热销商品数据
+  topProducts: {
+    productId: number
+    productName: string
+    salesAmount: number
+    salesCount: number
+  }[]
+}
+
+// 财务报表请求
+export interface FinancialReportRequest {
+  startDate: string
+  endDate: string
+  reportType: 'daily' | 'weekly' | 'monthly' | 'custom'
 } 

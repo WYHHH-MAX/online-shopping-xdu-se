@@ -242,9 +242,14 @@ public class SellerServiceImpl extends ServiceImpl<SellerMapper, Seller> impleme
             throw new BusinessException("商家不存在");
         }
 
+        log.info("更新商家资质, sellerId={}, fileType={}, filePath={}", sellerId, fileType, filePath);
+        
         // 根据文件类型更新对应的字段
         switch (fileType) {
             case "logo":
+                // 记录旧的Logo路径
+                String oldLogo = seller.getShopLogo();
+                log.info("更新商家Logo, 旧Logo: {}, 新Logo: {}", oldLogo, filePath);
                 seller.setShopLogo(filePath);
                 break;
             case "businessLicenseImage":
@@ -262,7 +267,9 @@ public class SellerServiceImpl extends ServiceImpl<SellerMapper, Seller> impleme
         }
 
         seller.setUpdatedTime(LocalDateTime.now());
-        return updateById(seller);
+        boolean result = updateById(seller);
+        log.info("更新商家资质结果: {}", result);
+        return result;
     }
 
     @Override

@@ -1,7 +1,7 @@
 <template>
   <div class="category-manage">
     <div class="header">
-      <a-button type="primary" @click="showCreateModal">新建分类</a-button>
+      <a-button type="primary" @click="showCreateModal">Create a new category</a-button>
     </div>
     
     <a-table
@@ -13,12 +13,12 @@
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'action'">
           <a-space>
-            <a @click="showUpdateModal(record)">编辑</a>
+            <a @click="showUpdateModal(record)">edit</a>
             <a-popconfirm
-              title="确定要删除这个分类吗？"
+              title="Are you sure you want to remove this category?？"
               @confirm="handleDelete(record.id)"
             >
-              <a class="danger">删除</a>
+              <a class="danger">delete</a>
             </a-popconfirm>
           </a-space>
         </template>
@@ -38,24 +38,24 @@
         :label-col="{ span: 6 }"
         :wrapper-col="{ span: 16 }"
       >
-        <a-form-item label="父级分类" name="parentId">
+        <a-form-item label="parentId" name="parentId">
           <a-cascader
             v-model:value="formData.parentId"
             :options="categoryOptions"
             :field-names="{ label: 'name', value: 'id', children: 'children' }"
-            placeholder="请选择父级分类"
+            placeholder="Please select a parent category"
             change-on-select
             @change="handleParentChange"
           />
         </a-form-item>
-        <a-form-item label="分类名称" name="name">
-          <a-input v-model:value="formData.name" placeholder="请输入分类名称" />
+        <a-form-item label="name" name="name">
+          <a-input v-model:value="formData.name" placeholder="Please enter the category name" />
         </a-form-item>
-        <a-form-item label="排序" name="sort">
+        <a-form-item label="sort" name="sort">
           <a-input-number v-model:value="formData.sort" :min="0" />
         </a-form-item>
-        <a-form-item label="图标" name="icon">
-          <a-input v-model:value="formData.icon" placeholder="请输入图标URL" />
+        <a-form-item label="icon" name="icon">
+          <a-input v-model:value="formData.icon" placeholder="Please enter the icon URL" />
         </a-form-item>
       </a-form>
     </a-modal>

@@ -1,28 +1,29 @@
 <template>
   <div class="apply-seller">
     <a-page-header
-      title="商家入驻申请"
-      sub-title="加入我们的平台，开始您的销售之旅"
+      title="Merchant application for entry"
+      sub-title="Join our platform and start your sales journey"
       @back="goBack"
     />
     
     <a-card>
       <a-steps :current="currentStep" style="margin-bottom: 30px">
-        <a-step title="填写基本信息" description="店铺和联系信息" />
-        <a-step title="上传资质证明" description="营业执照和身份证" />
-        <a-step title="提交申请" description="等待审核" />
+        <a-step title="Fill in the basic information" description="Store and contact information" />
+        <a-step title="Upload your qualifications" description="Business license and ID card" />
+        <a-step title="Submit an application" description="Wait for review" />
       </a-steps>
       
       <!-- 第一步：基本信息 -->
       <div v-if="currentStep === 0">
-        <a-card title="商家入驻申请" class="mt-4">
+        <a-card title="Merchant application for entry" class="mt-4">
           <!-- 未登录提示 -->
           <a-alert v-if="!isLoggedIn" type="info" showIcon class="mb-4">
             <template #message>
-              您当前未登录，请填写以下注册信息创建新账户
+              You are not currently logged in, please fill in
+              the registration information below to create a new account
             </template>
             <template #description>
-              已有账户？<a @click="router.push('/login')">立即登录</a>
+              Already have an account？<a @click="router.push('/login')">Log in now</a>
             </template>
           </a-alert>
 
@@ -34,47 +35,47 @@
           >
             <!-- 用户注册信息，仅未登录用户需要填写 -->
             <div v-if="!isLoggedIn">
-              <h3 class="mb-3">账户信息</h3>
-              <a-form-item label="用户名" name="username">
-                <a-input v-model:value="formState.username" placeholder="请输入4-20位的用户名" />
+              <h3 class="mb-3">Account Information</h3>
+              <a-form-item label="username" name="username">
+                <a-input v-model:value="formState.username" placeholder="Please enter a username with 4-20 digits" />
               </a-form-item>
-              <a-form-item label="密码" name="password">
-                <a-input-password v-model:value="formState.password" placeholder="请输入6-20位的密码" />
+              <a-form-item label="password" name="password">
+                <a-input-password v-model:value="formState.password" placeholder="Please enter a 6-20 digit password" />
               </a-form-item>
-              <a-form-item label="昵称" name="nickname">
-                <a-input v-model:value="formState.nickname" placeholder="请输入昵称（选填）" />
+              <a-form-item label="nickname" name="nickname">
+                <a-input v-model:value="formState.nickname" placeholder="Please enter a nickname (optional)" />
               </a-form-item>
               <a-divider />
             </div>
 
-            <h3 class="mb-3">店铺信息</h3>
-            <a-form-item label="店铺名称" name="shopName">
-              <a-input v-model:value="formState.shopName" placeholder="请输入店铺名称" />
+            <h3 class="mb-3">Shop Information</h3>
+            <a-form-item label="shopName" name="shopName">
+              <a-input v-model:value="formState.shopName" placeholder="Please enter a store name" />
             </a-form-item>
-            <a-form-item label="店铺描述" name="description">
-              <a-textarea v-model:value="formState.description" placeholder="请简要描述您的店铺经营范围" :rows="4" />
-            </a-form-item>
-
-            <h3 class="mb-3 mt-4">联系人信息</h3>
-            <a-form-item label="联系人姓名" name="contactName">
-              <a-input v-model:value="formState.contactName" placeholder="请输入联系人姓名" />
-            </a-form-item>
-            <a-form-item label="联系电话" name="contactPhone">
-              <a-input v-model:value="formState.contactPhone" placeholder="请输入联系电话" />
-            </a-form-item>
-            <a-form-item label="联系邮箱" name="contactEmail">
-              <a-input v-model:value="formState.contactEmail" placeholder="请输入联系邮箱" />
+            <a-form-item label="description" name="description">
+              <a-textarea v-model:value="formState.description" placeholder="Please provide a brief description of the scope of your store" :rows="4" />
             </a-form-item>
 
-            <h3 class="mb-3 mt-4">营业资质</h3>
-            <a-form-item label="营业执照号码" name="businessLicense">
-              <a-input v-model:value="formState.businessLicense" placeholder="请输入营业执照号码" />
+            <h3 class="mb-3 mt-4">Contact information</h3>
+            <a-form-item label="contactName" name="contactName">
+              <a-input v-model:value="formState.contactName" placeholder="Please enter a contact name" />
+            </a-form-item>
+            <a-form-item label="contactPhone" name="contactPhone">
+              <a-input v-model:value="formState.contactPhone" placeholder="Please enter your contact number" />
+            </a-form-item>
+            <a-form-item label="contactEmail" name="contactEmail">
+              <a-input v-model:value="formState.contactEmail" placeholder="Please enter your contact email address" />
+            </a-form-item>
+
+            <h3 class="mb-3 mt-4">Business qualifications</h3>
+            <a-form-item label="businessLicense" name="businessLicense">
+              <a-input v-model:value="formState.businessLicense" placeholder="Please enter your business license number" />
             </a-form-item>
           </a-form>
         </a-card>
         
         <div :style="{ textAlign: 'right' }">
-          <a-button type="primary" @click="nextStep">下一步</a-button>
+          <a-button type="primary" @click="nextStep">next step</a-button>
         </div>
       </div>
       
@@ -82,7 +83,7 @@
       <div v-if="currentStep === 1">
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="店铺Logo" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-form-item label="shopping Logo" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
               <a-upload
                 v-model:file-list="logoFileList"
                 list-type="picture-card"
@@ -92,7 +93,7 @@
               >
                 <div v-if="!logoUrl">
                   <plus-outlined />
-                  <div style="margin-top: 8px">上传Logo</div>
+                  <div style="margin-top: 8px">upload Logo</div>
                 </div>
               </a-upload>
               <div v-if="logoUrl" style="margin-top: 10px">
@@ -102,7 +103,7 @@
           </a-col>
           
           <a-col :span="12">
-            <a-form-item label="营业执照" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-form-item label="License" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
               <a-upload
                 v-model:file-list="licenseFileList"
                 list-type="picture-card"
@@ -112,7 +113,7 @@
               >
                 <div v-if="!licenseUrl">
                   <plus-outlined />
-                  <div style="margin-top: 8px">上传执照</div>
+                  <div style="margin-top: 8px">Upload licenses</div>
                 </div>
               </a-upload>
               <div v-if="licenseUrl" style="margin-top: 10px">
@@ -124,7 +125,7 @@
         
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="身份证正面" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-form-item label="The front of the ID card" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
               <a-upload
                 v-model:file-list="idCardFrontFileList"
                 list-type="picture-card"
@@ -134,7 +135,7 @@
               >
                 <div v-if="!idCardFrontUrl">
                   <plus-outlined />
-                  <div style="margin-top: 8px">上传身份证正面</div>
+                  <div style="margin-top: 8px">The ID card is being uploaded to the front of the ID card</div>
                 </div>
               </a-upload>
               <div v-if="idCardFrontUrl" style="margin-top: 10px">
@@ -144,7 +145,7 @@
           </a-col>
           
           <a-col :span="12">
-            <a-form-item label="身份证背面" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-form-item label="The back of the ID card" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
               <a-upload
                 v-model:file-list="idCardBackFileList"
                 list-type="picture-card"
@@ -154,7 +155,7 @@
               >
                 <div v-if="!idCardBackUrl">
                   <plus-outlined />
-                  <div style="margin-top: 8px">上传身份证背面</div>
+                  <div style="margin-top: 8px">Upload the back of your ID</div>
                 </div>
               </a-upload>
               <div v-if="idCardBackUrl" style="margin-top: 10px">
@@ -165,32 +166,32 @@
         </a-row>
         
         <div :style="{ textAlign: 'right' }">
-          <a-button style="margin-right: 10px" @click="prevStep">上一步</a-button>
-          <a-button style="margin-right: 10px" type="dashed" @click="skipUpload">跳过上传</a-button>
-          <a-button type="primary" @click="nextStep">下一步</a-button>
+          <a-button style="margin-right: 10px" @click="prevStep">Previous</a-button>
+          <a-button style="margin-right: 10px" type="dashed" @click="skipUpload">Skip uploads</a-button>
+          <a-button type="primary" @click="nextStep">next step</a-button>
         </div>
       </div>
       
       <!-- 第三步：提交申请 -->
       <div v-if="currentStep === 2">
         <a-result
-          title="申请资料已准备就绪"
-          sub-title="请确认信息无误后提交申请，我们的工作人员将在1-3个工作日内进行审核"
+          title="The application materials are ready"
+          sub-title="Please confirm that the information is correct and submit the application, and our staff will review it within 1-3 working days"
         >
           <template #extra>
-            <a-button style="margin-right: 10px" @click="prevStep">上一步</a-button>
-            <a-button type="primary" :loading="submitting" @click="submitApplication">提交申请</a-button>
+            <a-button style="margin-right: 10px" @click="prevStep">Previous</a-button>
+            <a-button type="primary" :loading="submitting" @click="submitApplication">Submit an application</a-button>
           </template>
           
           <div class="desc">
-            <h3>申请信息预览</h3>
+            <h3>Preview of application information</h3>
             <a-descriptions bordered>
-              <a-descriptions-item label="店铺名称" :span="3">{{ formState.shopName }}</a-descriptions-item>
-              <a-descriptions-item label="店铺描述" :span="3">{{ formState.description }}</a-descriptions-item>
-              <a-descriptions-item label="联系人姓名">{{ formState.contactName }}</a-descriptions-item>
-              <a-descriptions-item label="联系电话">{{ formState.contactPhone }}</a-descriptions-item>
-              <a-descriptions-item label="联系邮箱">{{ formState.contactEmail }}</a-descriptions-item>
-              <a-descriptions-item label="营业执照号" :span="3">{{ formState.businessLicense }}</a-descriptions-item>
+              <a-descriptions-item label="The name of the store" :span="3">{{ formState.shopName }}</a-descriptions-item>
+              <a-descriptions-item label="Description of the store" :span="3">{{ formState.description }}</a-descriptions-item>
+              <a-descriptions-item label="Contact name">{{ formState.contactName }}</a-descriptions-item>
+              <a-descriptions-item label="Contact number">{{ formState.contactPhone }}</a-descriptions-item>
+              <a-descriptions-item label="Contact email">{{ formState.contactEmail }}</a-descriptions-item>
+              <a-descriptions-item label="Business license number" :span="3">{{ formState.businessLicense }}</a-descriptions-item>
             </a-descriptions>
           </div>
         </a-result>
@@ -200,11 +201,11 @@
       <div v-if="currentStep === 3">
         <a-result
           status="success"
-          title="申请提交成功"
-          sub-title="您的商家入驻申请已提交，我们将尽快审核，请耐心等待审核结果"
+          title="The application was successfully submitted"
+          sub-title="Your business application has been submitted, we will review it as soon as possible, please wait patiently for the review result"
         >
           <template #extra>
-            <a-button type="primary" @click="goHome">返回首页</a-button>
+            <a-button type="primary" @click="goHome">Return to the top page</a-button>
           </template>
         </a-result>
       </div>

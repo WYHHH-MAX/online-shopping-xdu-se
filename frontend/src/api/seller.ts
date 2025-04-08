@@ -48,17 +48,72 @@ export function uploadQualification(fileType: string, file: File) {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
-  })
+  }).then(response => {
+    console.log('上传资质图片响应:', response);
+    
+    // 从响应中提取URL
+    let url = '';
+    
+    // 如果响应是字符串类型
+    if (typeof response === 'string') {
+      url = response;
+      console.log('1. 从字符串响应中获取URL:', url);
+    } 
+    // 如果响应是对象类型且包含data字段
+    else if (response && typeof response === 'object') {
+      if ('data' in response) {
+        url = (response as any).data;
+        console.log('2. 从响应对象的data字段获取URL:', url);
+      } else if ('code' in response && 'data' in response) {
+        url = (response as any).data;
+        console.log('3. 从标准API响应的data字段获取URL:', url);
+      }
+    }
+    
+    // 处理URL中可能存在的重复前缀
+    if (url && typeof url === 'string' && url.startsWith('/api/api/')) {
+      url = url.replace('/api/api/', '/api/');
+      console.log('4. 修正重复前缀后的URL:', url);
+    }
+    
+    console.log('5. 最终返回的URL:', url);
+    return url;
+  });
 }
 
 /**
  * 获取商家信息
  */
 export function getSellerInfo() {
-  return request<SellerInfo>({
+  return request<any>({
     url: '/seller/info',
     method: 'get'
-  })
+  }).then(response => {
+    // 标准化字段名，以便前端正确处理
+    const data = response;
+    
+    // 确保字段名一致性
+    if (data) {
+      // 如果有description但没有shopDesc，添加shopDesc
+      if (data.description && !data.shopDesc) {
+        data.shopDesc = data.description;
+      } 
+      // 如果有shopDesc但没有description，添加description
+      else if (data.shopDesc && !data.description) {
+        data.description = data.shopDesc;
+      }
+      
+      // 处理logo字段
+      if (data.logo && !data.shopLogo) {
+        data.shopLogo = data.logo;
+      } else if (data.shopLogo && !data.logo) {
+        data.logo = data.shopLogo;
+      }
+    }
+    
+    console.log('标准化后的商家信息:', data);
+    return data;
+  });
 }
 
 /**
@@ -131,15 +186,31 @@ export function addProduct(data: ProductRequest) {
     images: data.images ? `[${data.images.length}个图片]` : null
   });
   
+  // 自动处理图片数据
+  const processedData = { ...data };
+  
+  // 如果有图片但没有设置主图，自动设置第一张为主图
+  if ((!processedData.mainImage || processedData.mainImage.trim() === '') 
+      && processedData.images && processedData.images.length > 0) {
+    processedData.mainImage = processedData.images[0];
+    console.log('自动设置主图为第一张图片:', processedData.mainImage);
+  }
+  
   // 验证必要字段
-  if (!data.name || !data.categoryId || data.price === undefined || !data.mainImage) {
+  if (!processedData.name || !processedData.categoryId || processedData.price === undefined || !processedData.mainImage) {
+    console.error('商品数据不完整:', { 
+      name: !!processedData.name, 
+      categoryId: !!processedData.categoryId, 
+      price: processedData.price !== undefined,
+      mainImage: !!processedData.mainImage 
+    });
     return Promise.reject(new Error('商品数据不完整'));
   }
   
   return request<ProductVO>({
     url: '/seller/products',
     method: 'post',
-    data
+    data: processedData
   }).then(response => {
     console.log('添加商品成功:', response);
     return response;
@@ -163,15 +234,31 @@ export function updateProduct(id: number, data: ProductRequest) {
     return Promise.reject(new Error('无效的商品ID'));
   }
   
+  // 自动处理图片数据
+  const processedData = { ...data };
+  
+  // 如果有图片但没有设置主图，自动设置第一张为主图
+  if ((!processedData.mainImage || processedData.mainImage.trim() === '') 
+      && processedData.images && processedData.images.length > 0) {
+    processedData.mainImage = processedData.images[0];
+    console.log('自动设置主图为第一张图片:', processedData.mainImage);
+  }
+  
   // 验证必要字段
-  if (!data.name || !data.categoryId || data.price === undefined || !data.mainImage) {
+  if (!processedData.name || !processedData.categoryId || processedData.price === undefined || !processedData.mainImage) {
+    console.error('商品数据不完整:', { 
+      name: !!processedData.name, 
+      categoryId: !!processedData.categoryId, 
+      price: processedData.price !== undefined,
+      mainImage: !!processedData.mainImage 
+    });
     return Promise.reject(new Error('商品数据不完整'));
   }
   
   return request<ProductVO>({
     url: `/seller/products/${id}`,
     method: 'put',
-    data
+    data: processedData
   }).then(response => {
     console.log('更新商品成功:', response);
     return response;
@@ -194,14 +281,23 @@ export function deleteProduct(id: number) {
 /**
  * 上传商品图片
  */
-export function uploadProductImage(file: File) {
+export function uploadProductImage(file: File, productId?: number, imageIndex?: number) {
   if (!file) {
     return Promise.reject(new Error('文件不能为空'));
   }
   
-  console.log(`上传商品图片: ${file.name}, 大小: ${file.size} 字节, 类型: ${file.type}`);
+  console.log(`上传商品图片: ${file.name}, 大小: ${file.size} 字节, 类型: ${file.type}, 商品ID: ${productId}, 序号: ${imageIndex}`);
   const formData = new FormData();
   formData.append('file', file);
+  
+  // 添加商品ID和图片序号
+  if (productId !== undefined) {
+    formData.append('productId', productId.toString());
+  }
+  
+  if (imageIndex !== undefined) {
+    formData.append('imageIndex', imageIndex.toString());
+  }
   
   return request<string | { code?: number; message?: string; data?: string }>({
     url: '/seller/products/image',
@@ -393,9 +489,174 @@ export function batchUpdateProductStock(stockMap: StockUpdateRequest) {
  * 更新商家信息
  */
 export function updateSeller(data: any) {
+  console.log('更新商家信息，请求数据:', {
+    ...data,
+    shopLogo: data.shopLogo ? (
+      typeof data.shopLogo === 'string' && data.shopLogo.length > 30 ? 
+      data.shopLogo.substring(0, 30) + '...' : data.shopLogo
+    ) : null
+  });
+  
   return request<any>({
     url: '/seller/info/update',
     method: 'put',
     data
-  })
+  }).then(response => {
+    console.log('更新商家信息成功:', response);
+    return response;
+  }).catch(error => {
+    console.error('更新商家信息失败:', error);
+    throw error;
+  });
+}
+
+/**
+ * 删除商品图片
+ */
+export function deleteProductImage(productId: number, imageUrl: string) {
+  console.log(`删除商品图片: productId=${productId}, imageUrl=${imageUrl}`);
+  
+  if (!productId || !imageUrl) {
+    console.error('删除图片参数无效:', { productId, imageUrl });
+    return Promise.reject(new Error('参数无效'));
+  }
+  
+  return request<boolean | any>({
+    url: '/api/images/product',
+    method: 'delete',
+    params: { productId, imageUrl }
+  }).then(response => {
+    console.log('删除图片响应:', response);
+    
+    // 处理不同格式的响应
+    if (typeof response === 'boolean') {
+      return response;
+    } else if (response && typeof response === 'object') {
+      // 尝试从标准响应格式中提取成功状态
+      if ('data' in response && typeof response.data === 'boolean') {
+        return response.data;
+      } else if ('success' in response && typeof response.success === 'boolean') {
+        return response.success;
+      } else if ('code' in response && typeof response.code === 'number') {
+        return response.code === 200 || response.code === 0;
+      }
+    }
+    
+    // 默认返回成功
+    console.warn('无法从响应中确定删除状态，默认返回成功');
+    return true;
+  }).catch(error => {
+    console.error('删除图片失败:', error);
+    throw error;
+  });
+}
+
+/**
+ * 批量删除商品所有图片
+ */
+export function deleteAllProductImages(productId: number) {
+  console.log(`批量删除商品所有图片: productId=${productId}`);
+  
+  if (!productId) {
+    console.error('批量删除图片参数无效:', { productId });
+    return Promise.reject(new Error('商品ID参数无效'));
+  }
+  
+  return request<boolean | any>({
+    url: '/api/images/product/all',
+    method: 'delete',
+    params: { productId }
+  }).then(response => {
+    console.log('批量删除图片响应:', response);
+    
+    // 处理不同格式的响应
+    if (typeof response === 'boolean') {
+      return response;
+    } else if (response && typeof response === 'object') {
+      // 尝试从标准响应格式中提取成功状态
+      if ('data' in response && typeof response.data === 'boolean') {
+        return response.data;
+      } else if ('success' in response && typeof response.success === 'boolean') {
+        return response.success;
+      } else if ('code' in response && typeof response.code === 'number') {
+        return response.code === 200 || response.code === 0;
+      }
+    }
+    
+    // 默认返回成功
+    console.warn('无法从响应中确定批量删除状态，默认返回成功');
+    return true;
+  }).catch(error => {
+    console.error('批量删除图片失败:', error);
+    throw error;
+  });
+}
+
+/**
+ * 获取销售数据分析
+ */
+export function getSalesAnalytics(params: { startDate?: string, endDate?: string, period?: string }) {
+  console.log('请求销售数据分析，参数:', params);
+  
+  return request<any>({
+    url: '/seller/sales/analytics',
+    method: 'get',
+    params
+  }).then(response => {
+    console.log('销售数据分析响应:', response);
+    
+    // 处理不同响应格式
+    if (response && typeof response === 'object') {
+      // 标准响应结构 {code, message, data}
+      if (response.data && typeof response.data === 'object') {
+        return response.data;
+      } 
+      // 直接返回数据对象
+      else if (response.overview !== undefined || 
+              response.salesByTime !== undefined ||
+              response.salesByCategory !== undefined) {
+        return response;
+      }
+    }
+    
+    console.warn('销售数据分析格式不符合预期:', response);
+    // 返回空数据
+    return {
+      overview: {
+        totalSales: 0,
+        totalOrders: 0,
+        averageOrderValue: 0
+      },
+      salesByTime: [],
+      salesByCategory: [],
+      topProducts: []
+    };
+  }).catch(error => {
+    console.error('获取销售数据分析失败:', error);
+    throw error;
+  });
+}
+
+/**
+ * 导出财务报表
+ */
+export function exportFinancialReport(params: { 
+  startDate: string, 
+  endDate: string, 
+  reportType: string
+}) {
+  console.log('导出财务报表，参数:', params);
+  
+  return request<Blob>({
+    url: '/seller/financial/export',
+    method: 'get',
+    params,
+    responseType: 'blob'  // 指定响应类型为二进制数据
+  }).then(response => {
+    console.log('导出报表响应类型:', response.type);
+    return response;
+  }).catch(error => {
+    console.error('导出财务报表失败:', error);
+    throw error;
+  });
 } 

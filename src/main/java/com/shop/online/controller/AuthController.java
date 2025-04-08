@@ -27,4 +27,14 @@ public class AuthController {
         userService.register(request);
         return Result.success();
     }
+    
+    /**
+     * 验证当前token是否有效
+     * @return 验证结果
+     */
+    @GetMapping("/check-token")
+    public Result<Boolean> checkToken() {
+        // 如果能通过拦截器（JWT检查）到达这个接口，说明token是有效的
+        return Result.success(true);
+    }
 } 

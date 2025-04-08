@@ -3,8 +3,8 @@
     <a-layout style="min-height: 100vh">
       <a-layout-sider v-model:collapsed="collapsed" collapsible>
         <div class="logo">
-          <h2 v-if="!collapsed">卖家中心</h2>
-          <h2 v-else>卖</h2>
+          <h2 v-if="!collapsed">Seller Central</h2>
+          <h2 v-else>sales</h2>
         </div>
         <a-menu
           v-model:selectedKeys="selectedKeys"
@@ -14,37 +14,43 @@
           <a-menu-item key="dashboard">
             <router-link to="/seller">
               <dashboard-outlined />
-              <span>卖家仪表盘</span>
+              <span>Seller dashboard</span>
             </router-link>
           </a-menu-item>
           <a-menu-item key="products">
             <router-link to="/seller/products">
               <shopping-outlined />
-              <span>商品管理</span>
+              <span>Merchandise management</span>
             </router-link>
           </a-menu-item>
           <a-menu-item key="orders">
             <router-link to="/seller/orders">
               <shopping-cart-outlined />
-              <span>订单管理</span>
+              <span>Order management</span>
             </router-link>
           </a-menu-item>
           <a-menu-item key="inventory">
             <router-link to="/seller/inventory">
               <database-outlined />
-              <span>库存管理</span>
+              <span>Inventory management</span>
+            </router-link>
+          </a-menu-item>
+          <a-menu-item key="sales">
+            <router-link to="/seller/sales">
+              <pie-chart-outlined />
+              <span>Sales Data Analytics</span>
             </router-link>
           </a-menu-item>
           <a-menu-item key="profile">
             <router-link to="/seller/profile">
               <user-outlined />
-              <span>店铺信息</span>
+              <span>Store information</span>
             </router-link>
           </a-menu-item>
           <a-menu-item key="home">
             <router-link to="/">
               <home-outlined />
-              <span>返回商城</span>
+              <span>Return to the Marketplace</span>
             </router-link>
           </a-menu-item>
         </a-menu>
@@ -62,7 +68,7 @@
                   <a-menu>
                     <a-menu-item @click="logout">
                       <logout-outlined />
-                      <span>退出登录</span>
+                      <span>Sign out</span>
                     </a-menu-item>
                   </a-menu>
                 </template>
@@ -76,7 +82,7 @@
           </div>
         </a-layout-content>
         <a-layout-footer style="text-align: center">
-          网上商城卖家中心 ©2023 Created by Your Company
+          Online Marketplace Seller Central ©2023 Created by Your Company
         </a-layout-footer>
       </a-layout>
     </a-layout>
@@ -96,7 +102,8 @@ import {
   UserOutlined,
   DownOutlined,
   HomeOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  PieChartOutlined
 } from '@ant-design/icons-vue'
 
 const collapsed = ref(false)
@@ -121,7 +128,7 @@ watch(
 // 退出登录
 const logout = () => {
   userStore.clearUserInfo()
-  message.success('退出登录成功')
+  message.success('Logout successful')
   router.push('/login')
 }
 </script>

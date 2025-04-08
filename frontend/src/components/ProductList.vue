@@ -4,12 +4,12 @@
       <a-col :span="6" v-for="product in products" :key="product.id">
         <a-card hoverable @click="handleProductClick(product.id)">
           <template #cover>
-            <img :src="getImageUrl(product.mainImage)" :alt="product.name" />
+            <img :src="getImageUrl(product.mainImage)" :alt="product.name" @error="handleImageError" />
           </template>
           <a-card-meta :title="product.name">
             <template #description>
               <div class="product-price">¥{{ product.price }}</div>
-              <div class="product-sales">销量: {{ product.sales }}</div>
+              <div class="product-sales">Sales: {{ product.sales }}</div>
             </template>
           </a-card-meta>
         </a-card>
@@ -29,7 +29,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { getImageUrl } from '@/utils/imageUtil';
+import { getImageUrl, handleImageError } from '@/utils/imageUtil';
 
 const props = defineProps({
   products: {

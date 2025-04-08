@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * 商家控制器
  */
@@ -82,20 +84,20 @@ public class SellerController {
         try {
             // 获取当前商家
             Seller currentSeller = sellerService.getCurrentSeller();
+            log.info("当前商家ID: {}", currentSeller.getId());
             
-            // 上传文件并获取路径
-            String filePath = FileUtil.uploadSellerQualification(file, currentSeller.getId(), fileType);
+            // 上传文件并获取路径 - 这个路径已经是 /images/seller/filename 格式，不含/api前缀
+            String relativePath = FileUtil.uploadSellerQualification(file, currentSeller.getId(), fileType);
+            log.info("资质图片上传结果 - 相对路径: {}", relativePath);
             
-            // 更新商家资质信息
-            sellerService.uploadQualification(currentSeller.getId(), fileType, filePath);
+            // 更新商家资质信息 - 保存到数据库的路径不含/api前缀
+            sellerService.uploadQualification(currentSeller.getId(), fileType, relativePath);
+            log.info("商家资质信息已更新, 资质类型: {}, 路径: {}", fileType, relativePath);
             
-            // 返回完整URL
-            String fullUrl = "/api" + filePath;
-            log.info("资质图片上传成功，路径: {}", fullUrl);
-            
-            return Result.success(fullUrl);
+            // 返回相对路径，前端会自动添加基础URL
+            return Result.success(relativePath);
         } catch (IOException e) {
-            log.error("资质图片上传失败", e);
+            log.error("资质图片上传失败: {}", e.getMessage(), e);
             return Result.error("资质图片上传失败: " + e.getMessage());
         }
     }
@@ -260,15 +262,40 @@ public class SellerController {
         
         try {
             Seller seller = sellerService.getCurrentSeller();
+            log.info("当前商家ID: {}", seller.getId());
+            
+            // 如果没有提供图片序号但提供了商品ID，则获取当前图片数量
+            if (productId != null && imageIndex == null) {
+                int currentImageCount = productService.getProductImageCount(productId);
+                // 新图片的序号从当前图片数量+1开始
+                imageIndex = currentImageCount + 1;
+                log.info("自动计算图片序号: 商品{}的当前图片数量={}, 新序号={}", 
+                          productId, currentImageCount, imageIndex);
+            }
             
             // 使用FileUtil上传图片，提供更全面的参数
             String relativePath = FileUtil.uploadProductImage(file, seller.getId(), productId, imageIndex);
-            log.info("商品图片上传成功，路径: {}", relativePath);
+            log.info("商品图片上传成功，返回路径: {}", relativePath);
             
             return Result.success(relativePath);
         } catch (IOException e) {
             log.error("商品图片上传失败: {}", e.getMessage(), e);
+            
+            // 尝试在异常处理时处理文件关闭
+            try {
+                file.getInputStream().close();
+            } catch (Exception ex) {
+                log.warn("关闭文件流失败，忽略此错误: {}", ex.getMessage());
+            }
+            
             return Result.error("商品图片上传失败: " + e.getMessage());
+        } finally {
+            // 尝试清理Tomcat临时文件
+            try {
+                file.getInputStream().close();
+            } catch (Exception ex) {
+                // 忽略关闭错误
+            }
         }
     }
 
@@ -447,6 +474,185 @@ public class SellerController {
         } catch (Exception e) {
             log.error("批量更新商品库存失败", e);
             return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 更新商家信息
+     */
+    @PutMapping("/info/update")
+    public Result<Seller> updateSellerInfo(@RequestBody Map<String, Object> updateMap) {
+        log.info("更新商家信息: {}", updateMap);
+        try {
+            Seller currentSeller = sellerService.getCurrentSeller();
+            
+            // 创建新的Seller对象
+            Seller sellerInfo = new Seller();
+            sellerInfo.setId(currentSeller.getId());
+            sellerInfo.setUserId(currentSeller.getUserId());
+            
+            // 处理前端传来的字段
+            if (updateMap.containsKey("shopName")) {
+                sellerInfo.setShopName((String) updateMap.get("shopName"));
+            }
+            
+            // 处理description/shopDesc字段
+            if (updateMap.containsKey("description")) {
+                sellerInfo.setShopDesc((String) updateMap.get("description"));
+                log.info("从description字段获取描述: {}", updateMap.get("description"));
+            } else if (updateMap.containsKey("shopDesc")) {
+                sellerInfo.setShopDesc((String) updateMap.get("shopDesc"));
+                log.info("从shopDesc字段获取描述: {}", updateMap.get("shopDesc"));
+            }
+            
+            // 处理商家logo
+            if (updateMap.containsKey("shopLogo")) {
+                Object logoObj = updateMap.get("shopLogo");
+                if (logoObj instanceof String) {
+                    String logoStr = (String) logoObj;
+                    if (logoStr.startsWith("{")) {
+                        log.warn("商家logo格式不正确，可能是对象字符串: {}", logoStr);
+                        sellerInfo.setShopLogo(currentSeller.getShopLogo());
+                    } else {
+                        // 处理重复的/api前缀
+                        if (logoStr.startsWith("/api/api/")) {
+                            logoStr = logoStr.replace("/api/api/", "/api/");
+                            log.info("修正重复API前缀后的logo路径: {}", logoStr);
+                        }
+                        sellerInfo.setShopLogo(logoStr);
+                    }
+                } else {
+                    log.warn("商家logo不是字符串类型");
+                    sellerInfo.setShopLogo(currentSeller.getShopLogo());
+                }
+            }
+            
+            // 处理其他字段
+            if (updateMap.containsKey("contactName")) {
+                sellerInfo.setContactName((String) updateMap.get("contactName"));
+            }
+            if (updateMap.containsKey("contactPhone")) {
+                sellerInfo.setContactPhone((String) updateMap.get("contactPhone"));
+            }
+            if (updateMap.containsKey("contactEmail")) {
+                sellerInfo.setContactEmail((String) updateMap.get("contactEmail"));
+            }
+            
+            log.info("处理后的商家信息: {}", sellerInfo);
+            
+            // 更新商家信息
+            sellerService.updateSeller(sellerInfo);
+            
+            // 获取更新后的信息
+            Seller updatedSeller = sellerService.getSellerInfo(currentSeller.getId());
+            return Result.success(updatedSeller);
+        } catch (Exception e) {
+            log.error("更新商家信息失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 批量删除商品所有图片
+     */
+    @DeleteMapping("/images/product/all")
+    public Result<Boolean> deleteAllProductImages(@RequestParam Long productId) {
+        log.info("批量删除商品所有图片: productId={}", productId);
+        try {
+            Seller seller = sellerService.getCurrentSeller();
+            
+            // 检查商品是否属于当前卖家
+            ProductVO existingProduct = productService.getProductDetail(productId);
+            if (existingProduct == null) {
+                return Result.error("商品不存在");
+            }
+            
+            if (!existingProduct.getSellerId().equals(seller.getId())) {
+                return Result.error("无权操作此商品");
+            }
+            
+            // 删除图片
+            boolean deleted = productService.deleteAllProductImages(productId);
+            
+            return Result.success(deleted);
+        } catch (Exception e) {
+            log.error("批量删除商品图片失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取销售数据分析
+     */
+    @GetMapping("/sales/analytics")
+    public Result<Map<String, Object>> getSalesAnalytics(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(defaultValue = "day") String period) {
+        log.info("获取销售数据分析: startDate={}, endDate={}, period={}", startDate, endDate, period);
+        try {
+            Seller seller = sellerService.getCurrentSeller();
+            
+            // 构建查询参数
+            Map<String, Object> params = new HashMap<>();
+            params.put("sellerId", seller.getId());
+            params.put("period", period);
+            
+            if (StringUtils.hasText(startDate)) {
+                params.put("startDate", startDate);
+            }
+            
+            if (StringUtils.hasText(endDate)) {
+                params.put("endDate", endDate);
+            }
+            
+            // 获取销售数据分析
+            Map<String, Object> salesAnalytics = orderService.getSalesAnalytics(params);
+            
+            return Result.success(salesAnalytics);
+        } catch (Exception e) {
+            log.error("获取销售数据分析失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 导出财务报表
+     */
+    @GetMapping("/financial/export")
+    public void exportFinancialReport(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
+            @RequestParam(defaultValue = "monthly") String reportType,
+            HttpServletResponse response) {
+        log.info("导出财务报表: startDate={}, endDate={}, reportType={}", 
+                startDate, endDate, reportType);
+        try {
+            Seller seller = sellerService.getCurrentSeller();
+            
+            // 构建查询参数
+            Map<String, Object> params = new HashMap<>();
+            params.put("sellerId", seller.getId());
+            params.put("startDate", startDate);
+            params.put("endDate", endDate);
+            params.put("reportType", reportType);
+            
+            // 设置响应头
+            String fileName = "financial_report_" + startDate + "_to_" + endDate;
+            response.setContentType("text/csv;charset=utf-8");
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".csv");
+            
+            // 导出报表
+            orderService.exportFinancialReport(params, response.getOutputStream(), "csv");
+            
+        } catch (Exception e) {
+            log.error("导出财务报表失败", e);
+            try {
+                response.setContentType("application/json;charset=utf-8");
+                response.getWriter().write("{\"code\":500,\"message\":\"" + e.getMessage() + "\"}");
+            } catch (IOException ex) {
+                log.error("写入错误响应失败", ex);
+            }
         }
     }
 } 

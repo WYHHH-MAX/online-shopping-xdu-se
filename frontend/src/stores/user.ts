@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { LoginRequest, LoginResponse, RegisterRequest, ApiResponse } from '../types/auth'
-import { login as loginApi, register as registerApi } from '../api/auth'
+import { login as loginApi, register as registerApi, checkToken } from '../api/auth'
 import { message } from 'ant-design-vue'
 import type { AxiosResponse } from 'axios'
 
@@ -131,11 +131,17 @@ export const useUserStore = defineStore('user', {
 
     async register(data: RegisterRequest) {
       try {
-        const { username, password, nickname } = data
-        const response = await registerApi(username, password, nickname)
+        const response = await registerApi(data)
         // console.log('注册成功，响应:', response)
-        this.setUserInfo(response)
-        return response
+        if (response.code === 200 || response.code === 1) {
+          if (response.data) {
+            this.setUserInfo(response.data)
+          }
+          return response
+        } else {
+          message.error(response.message || '注册失败')
+          return null
+        }
       } catch (error: any) {
         // console.error('注册失败:', error)
         message.error(error.message || '注册失败')
@@ -145,7 +151,33 @@ export const useUserStore = defineStore('user', {
     
     // 检查用户是否已登录
     isLoggedIn() {
-      return this.authenticated && !!this.token
+      return this.authenticated && !!this.token && !!this.userId
+    },
+    
+    // 检查并恢复用户会话
+    checkAndRestoreSession() {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        this.clearUserInfo()
+        return false
+      }
+      return true
+    },
+    
+    // 验证当前token是否有效
+    async validateToken() {
+      try {
+        if (!this.token) {
+          return false
+        }
+        // 调用验证token的API
+        const result = await checkToken()
+        return result && result.code === 200
+      } catch (error) {
+        console.error('Token验证失败:', error)
+        this.clearUserInfo()
+        return false
+      }
     }
   }
 }) 

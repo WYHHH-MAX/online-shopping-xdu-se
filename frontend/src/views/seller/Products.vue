@@ -1,7 +1,7 @@
 <template>
   <div class="product-list">
     <div class="actions">
-      <a-button type="primary" @click="goToAddProduct">添加商品</a-button>
+      <a-button type="primary" @click="goToAddProduct">Add a product</a-button>
     </div>
     
     <a-table
@@ -14,14 +14,14 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'image'">
-          <img :src="record.mainImage" alt="商品图片" class="product-image" />
+          <img :src="record.mainImage" alt="product-image" class="product-image" />
         </template>
         <template v-if="column.key === 'price'">
           ¥{{ record.price.toFixed(2) }}
         </template>
         <template v-if="column.key === 'status'">
           <a-tag :color="record.status === 1 ? 'green' : 'red'">
-            {{ record.status === 1 ? '上架' : '下架' }}
+            {{ record.status === 1 ? 'Shelves' : 'Taken off the shelves' }}
           </a-tag>
         </template>
         <template v-if="column.key === 'stock'">
@@ -31,13 +31,13 @@
         </template>
         <template v-if="column.key === 'action'">
           <a-space>
-            <a @click="goToEditProduct(record.id)">编辑</a>
+            <a @click="goToEditProduct(record.id)">edit</a>
             <a-divider type="vertical" />
             <a-popconfirm
-              title="确定要删除这个商品吗？"
+              title="Are you sure you want to delete this item?？"
               @confirm="handleDelete(record.id)"
             >
-              <a class="danger">删除</a>
+              <a class="danger">delete</a>
             </a-popconfirm>
           </a-space>
         </template>
@@ -64,42 +64,42 @@ const pagination = reactive({
   pageSize: 10,
   total: 0,
   showSizeChanger: true,
-  showTotal: (total: number) => `共 ${total} 条记录`
+  showTotal: (total: number) => `totally ${total} records`
 });
 
 const columns = [
   {
-    title: '图片',
+    title: 'image',
     key: 'image',
     width: 100
   },
   {
-    title: '商品名称',
+    title: 'name',
     dataIndex: 'name',
     key: 'name'
   },
   {
-    title: '价格',
+    title: 'price',
     key: 'price',
     sorter: true
   },
   {
-    title: '库存',
+    title: 'stock',
     key: 'stock',
     sorter: true
   },
   {
-    title: '销量',
+    title: 'sales',
     dataIndex: 'sales',
     key: 'sales',
     sorter: true
   },
   {
-    title: '状态',
+    title: 'status',
     key: 'status'
   },
   {
-    title: '操作',
+    title: 'action',
     key: 'action',
     width: 150
   }
@@ -125,11 +125,11 @@ const fetchProducts = async () => {
     }
     
     // 处理商品数据，确保图片正确显示
-    const processedProducts = res.list.map(product => ({
+    const processedProducts = res.list.map((product: any) => ({
       ...product,
       mainImage: product.mainImage ? getImageUrl(product.mainImage) : '/images/placeholder.jpg',
       images: Array.isArray(product.images) 
-        ? product.images.map(img => getImageUrl(img))
+        ? product.images.map((img: any) => getImageUrl(img))
         : []
     }));
     

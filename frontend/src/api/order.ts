@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import { PageResult } from '@/types/common'
+import { PageResult, ApiResponse } from '@/types/common'
 
 export interface OrderProduct {
   id: number
@@ -35,7 +35,7 @@ export interface CreateOrderResult {
  */
 export function getOrders(params: OrderQuery) {
   console.log('调用获取订单列表API, 参数:', params);
-  return request<PageResult<Order>>({
+  return request<ApiResponse<PageResult<Order>>>({
     url: '/orders',
     method: 'get',
     params
@@ -46,7 +46,7 @@ export function getOrders(params: OrderQuery) {
  * 获取订单详情
  */
 export function getOrderDetail(orderNo: string) {
-  return request<Order>({
+  return request<ApiResponse<Order>>({
     url: `/orders/${orderNo}`,
     method: 'get'
   })
@@ -55,9 +55,15 @@ export function getOrderDetail(orderNo: string) {
 /**
  * 创建订单
  */
-export function createOrder(data: { cartItemIds?: number[], directBuy?: boolean, productId?: number, quantity?: number }) {
+export function createOrder(data: { 
+  cartItemIds?: number[], 
+  directBuy?: boolean, 
+  productId?: number, 
+  quantity?: number,
+  paymentMethod?: string  // 添加支付方式参数
+}) {
   console.log('调用创建订单API，参数:', data);
-  return request<CreateOrderResult>({
+  return request<ApiResponse<CreateOrderResult>>({
     url: '/orders/create',
     method: 'post',
     data
@@ -67,17 +73,20 @@ export function createOrder(data: { cartItemIds?: number[], directBuy?: boolean,
 /**
  * 支付订单
  */
-export function payOrder(orderNo: string) {
-  console.log('正在调用支付订单API，订单号:', orderNo);
+export function payOrder(orderNo: string, paymentMethod?: string) {
+  console.log('正在调用支付订单API，订单号:', orderNo, '支付方式:', paymentMethod);
   
   // 确保orderNo是一个字符串并去除前后空格
   const cleanOrderNo = String(orderNo).trim();
   console.log('处理后的订单号:', cleanOrderNo);
   
-  return request({
+  return request<ApiResponse<any>>({
     url: '/orders/pay',
     method: 'post',
-    data: { orderNo: cleanOrderNo }
+    data: { 
+      orderNo: cleanOrderNo,
+      paymentMethod: paymentMethod || '1' // 默认使用支付宝(1)
+    }
   }).then(response => {
     console.log('支付订单API成功:', response);
     return response;
@@ -91,7 +100,7 @@ export function payOrder(orderNo: string) {
  * 取消订单
  */
 export function cancelOrder(orderNo: string) {
-  return request({
+  return request<ApiResponse<any>>({
     url: `/orders/${orderNo}/cancel`,
     method: 'post'
   })
@@ -101,7 +110,7 @@ export function cancelOrder(orderNo: string) {
  * 确认收货
  */
 export function confirmOrder(orderNo: string) {
-  return request({
+  return request<ApiResponse<any>>({
     url: `/orders/${orderNo}/confirm`,
     method: 'post'
   })

@@ -10,6 +10,7 @@ import com.shop.online.dto.OrderQueryDTO;
 import com.shop.online.entity.Cart;
 import com.shop.online.entity.Order;
 import com.shop.online.entity.Product;
+import com.shop.online.entity.User;
 import com.shop.online.exception.BusinessException;
 import com.shop.online.mapper.CartMapper;
 import com.shop.online.mapper.OrderItemMapper;
@@ -19,6 +20,11 @@ import com.shop.online.service.OrderService;
 import com.shop.online.service.UserService;
 import com.shop.online.vo.OrderVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,14 +32,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -652,6 +665,21 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             Map<Long, List<OrderItemDTO>> orderItemMap = orderItems.stream()
                     .collect(Collectors.groupingBy(OrderItemDTO::getOrderId));
             
+            // 获取所有用户ID
+            List<Long> userIds = orderPage.getRecords().stream()
+                    .map(Order::getUserId)
+                    .distinct()
+                    .collect(Collectors.toList());
+            
+            // 查询用户信息
+            Map<Long, User> userMap = new HashMap<>();
+            if (!userIds.isEmpty()) {
+                LambdaQueryWrapper<User> userQueryWrapper = new LambdaQueryWrapper<>();
+                userQueryWrapper.in(User::getId, userIds);
+                List<User> users = userService.list(userQueryWrapper);
+                users.forEach(user -> userMap.put(user.getId(), user));
+            }
+            
             // 转换VO
             List<OrderVO> orderVOList = orderPage.getRecords().stream().map(order -> {
                 OrderVO orderVO = new OrderVO();
@@ -659,6 +687,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 
                 // 转换订单状态
                 orderVO.setStatus(order.getStatus().toString());
+                
+                // 设置用户ID
+                orderVO.setUserId(order.getUserId());
+                
+                // 设置用户名
+                User user = userMap.get(order.getUserId());
+                if (user != null) {
+                    orderVO.setUsername(user.getUsername());
+                }
+                
+                // 设置支付方式（这里假设我们有一个字段或者默认值）
+                // 实际情况可能需要从订单表中增加一个支付方式字段，或从支付记录表中查询
+                orderVO.setPaymentMethod("1"); // 这里假设默认为支付宝，实际应该从订单数据中获取
                 
                 // 确保时间字段不为null
                 if (order.getCreatedTime() != null) {
@@ -760,12 +801,349 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         log.info("统计卖家订单总数: sellerId={}", sellerId);
         
         LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Order::getSellerId, sellerId);
-        queryWrapper.eq(Order::getDeleted, 0);  // 未删除
+        queryWrapper.eq(Order::getSellerId, sellerId)
+                   .eq(Order::getDeleted, 0);
+        return Math.toIntExact(count(queryWrapper));
+    }
+    
+    /**
+     * 获取销售数据分析
+     */
+    @Override
+    public Map<String, Object> getSalesAnalytics(Map<String, Object> params) {
+        log.info("开始获取销售数据分析，参数: {}", params);
         
-        long count = baseMapper.selectCount(queryWrapper);
-        log.info("卖家订单总数统计结果: {}", count);
+        try {
+            // 获取参数
+            Long sellerId = (Long) params.get("sellerId");
+            String startDate = (String) params.get("startDate");
+            String endDate = (String) params.get("endDate");
+            String period = (String) params.get("period");
+            
+            if (sellerId == null) {
+                throw new BusinessException("卖家ID不能为空");
+            }
+            
+            // 设置默认值
+            if (!StringUtils.hasText(period)) {
+                period = "day";
+            }
+            
+            LocalDateTime startDateTime = null;
+            LocalDateTime endDateTime = null;
+            
+            // 解析日期
+            if (StringUtils.hasText(startDate)) {
+                startDateTime = LocalDateTime.parse(startDate + "T00:00:00");
+            } else {
+                // 默认为近30天
+                startDateTime = LocalDateTime.now().minusDays(30);
+            }
+            
+            if (StringUtils.hasText(endDate)) {
+                endDateTime = LocalDateTime.parse(endDate + "T23:59:59");
+            } else {
+                endDateTime = LocalDateTime.now();
+            }
+            
+            // 查询订单数据
+            LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Order::getSellerId, sellerId)
+                       .eq(Order::getDeleted, 0)
+                       .ge(Order::getCreatedTime, startDateTime)
+                       .le(Order::getCreatedTime, endDateTime)
+                       .ne(Order::getStatus, 0) // 排除未支付订单
+                       .orderByAsc(Order::getCreatedTime);
+            
+            List<Order> orders = list(queryWrapper);
+            log.info("查询到订单数量: {}", orders.size());
+            
+            // 计算销售总览数据
+            double totalSales = orders.stream()
+                    .filter(order -> order.getStatus() != null && order.getStatus() != 0) // 排除未支付订单
+                    .mapToDouble(order -> order.getTotalAmount().doubleValue())
+                    .sum();
+            
+            int totalOrders = orders.size();
+            double averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+            
+            Map<String, Object> overviewData = new HashMap<>();
+            overviewData.put("totalSales", totalSales);
+            overviewData.put("totalOrders", totalOrders);
+            overviewData.put("averageOrderValue", averageOrderValue);
+            
+            // 按时间分组销售数据
+            Map<String, List<Order>> ordersByTime = groupOrdersByTime(orders, period);
+            
+            List<Map<String, Object>> salesByTime = new ArrayList<>();
+            for (Map.Entry<String, List<Order>> entry : ordersByTime.entrySet()) {
+                Map<String, Object> timeData = new HashMap<>();
+                timeData.put("period", entry.getKey());
+                
+                double amount = entry.getValue().stream()
+                        .mapToDouble(order -> order.getTotalAmount().doubleValue())
+                        .sum();
+                
+                timeData.put("amount", amount);
+                timeData.put("orderCount", entry.getValue().size());
+                
+                salesByTime.add(timeData);
+            }
+            
+            // 按商品类别统计销售数据
+            List<Map<String, Object>> salesByCategory = baseMapper.getSalesByCategory(sellerId, startDateTime, endDateTime);
+            
+            // 计算类别销售占比
+            double totalCategorySales = salesByCategory.stream()
+                    .mapToDouble(category -> ((Number) category.get("amount")).doubleValue())
+                    .sum();
+                    
+            for (Map<String, Object> categoryData : salesByCategory) {
+                double amount = ((Number) categoryData.get("amount")).doubleValue();
+                double percentage = totalCategorySales > 0 ? (amount / totalCategorySales) * 100 : 0;
+                categoryData.put("percentage", percentage);
+            }
+            
+            // 获取热销商品
+            List<Map<String, Object>> topProducts = baseMapper.getTopSellingProducts(sellerId, startDateTime, endDateTime, 10);
+            
+            // 组合结果
+            Map<String, Object> result = new HashMap<>();
+            result.put("overview", overviewData);
+            result.put("salesByTime", salesByTime);
+            result.put("salesByCategory", salesByCategory);
+            result.put("topProducts", topProducts);
+            
+            log.info("销售数据分析完成");
+            return result;
+            
+        } catch (Exception e) {
+            log.error("获取销售数据分析失败", e);
+            throw e;
+        }
+    }
+    
+    /**
+     * 按时间周期分组订单
+     */
+    private Map<String, List<Order>> groupOrdersByTime(List<Order> orders, String period) {
+        DateTimeFormatter formatter;
+        Function<LocalDateTime, String> groupingFunction;
         
-        return Math.toIntExact(count);
+        switch (period) {
+            case "week":
+                formatter = DateTimeFormatter.ofPattern("yyyy-'W'ww");
+                groupingFunction = dateTime -> dateTime.format(formatter);
+                break;
+            case "month":
+                formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+                groupingFunction = dateTime -> dateTime.format(formatter);
+                break;
+            case "day":
+            default:
+                formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                groupingFunction = dateTime -> dateTime.format(formatter);
+                break;
+        }
+        
+        return orders.stream()
+                .collect(Collectors.groupingBy(
+                        order -> groupingFunction.apply(order.getCreatedTime()),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+    }
+    
+    /**
+     * 导出财务报表
+     */
+    @Override
+    public void exportFinancialReport(Map<String, Object> params, java.io.OutputStream outputStream, String fileType) throws java.io.IOException {
+        log.info("开始导出财务报表，参数: {}", params);
+        
+        try {
+            // 获取参数
+            Long sellerId = (Long) params.get("sellerId");
+            String startDate = (String) params.get("startDate");
+            String endDate = (String) params.get("endDate");
+            String reportType = (String) params.get("reportType");
+            
+            if (sellerId == null) {
+                throw new BusinessException("卖家ID不能为空");
+            }
+            
+            LocalDateTime startDateTime = null;
+            LocalDateTime endDateTime = null;
+            
+            // 解析日期
+            if (StringUtils.hasText(startDate)) {
+                startDateTime = LocalDateTime.parse(startDate + "T00:00:00");
+            } else {
+                throw new BusinessException("开始日期不能为空");
+            }
+            
+            if (StringUtils.hasText(endDate)) {
+                endDateTime = LocalDateTime.parse(endDate + "T23:59:59");
+            } else {
+                throw new BusinessException("结束日期不能为空");
+            }
+            
+            // 查询订单数据
+            LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Order::getSellerId, sellerId)
+                       .eq(Order::getDeleted, 0)
+                       .ge(Order::getCreatedTime, startDateTime)
+                       .le(Order::getCreatedTime, endDateTime)
+                       .ne(Order::getStatus, 0) // 排除未支付订单
+                       .orderByAsc(Order::getCreatedTime);
+            
+            List<Order> orders = list(queryWrapper);
+            log.info("查询到订单数量: {}", orders.size());
+            
+            // 获取订单详情
+            List<Map<String, Object>> orderDetails = new ArrayList<>();
+            for (Order order : orders) {
+                Map<String, Object> orderDetail = new HashMap<>();
+                orderDetail.put("orderNo", order.getOrderNo());
+                orderDetail.put("createdTime", order.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                orderDetail.put("status", getOrderStatusText(order.getStatus()));
+                orderDetail.put("totalAmount", order.getTotalAmount());
+                
+                // 查询订单用户信息
+                if (order.getUserId() != null) {
+                    User user = userService.getUserById(order.getUserId());
+                    orderDetail.put("username", user != null ? user.getUsername() : "未知用户");
+                } else {
+                    orderDetail.put("username", "未知用户");
+                }
+                
+                // 查询订单商品信息
+                List<OrderItemDTO> orderItems = orderItemMapper.selectByOrderId(order.getId());
+                int productCount = orderItems.size();
+                String productNames = orderItems.stream()
+                        .map(OrderItemDTO::getProductName)
+                        .collect(Collectors.joining(", "));
+                
+                orderDetail.put("productCount", productCount);
+                orderDetail.put("productNames", productNames);
+                
+                orderDetails.add(orderDetail);
+            }
+            
+            // 导出为CSV或Excel
+            if ("csv".equalsIgnoreCase(fileType)) {
+                exportToCSV(orderDetails, outputStream);
+            } else {
+                exportToExcel(orderDetails, outputStream);
+            }
+            
+            log.info("财务报表导出完成");
+            
+        } catch (Exception e) {
+            log.error("导出财务报表失败", e);
+            throw e;
+        }
+    }
+    
+    /**
+     * 导出为CSV格式
+     */
+    private void exportToCSV(List<Map<String, Object>> data, java.io.OutputStream outputStream) throws java.io.IOException {
+        log.info("导出为CSV格式, 数据条数: {}", data.size());
+        
+        // 添加UTF-8 BOM标记，使Excel可以正确识别UTF-8编码的CSV文件
+        byte[] bom = new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
+        outputStream.write(bom);
+        
+        try (java.io.BufferedWriter writer = new java.io.BufferedWriter(new java.io.OutputStreamWriter(outputStream, "UTF-8"))) {
+            // 写入标题行
+            writer.write("订单号,创建时间,状态,金额,用户名,商品数量,商品名称");
+            writer.newLine();
+            
+            // 写入数据行
+            for (Map<String, Object> row : data) {
+                StringBuilder line = new StringBuilder();
+                line.append(row.get("orderNo")).append(",");
+                line.append(row.get("createdTime")).append(",");
+                line.append(row.get("status")).append(",");
+                line.append(row.get("totalAmount")).append(",");
+                line.append(row.get("username")).append(",");
+                line.append(row.get("productCount")).append(",");
+                
+                // 商品名称需要处理引号和逗号
+                String productNames = (String) row.get("productNames");
+                if (productNames.contains(",")) {
+                    line.append("\"").append(productNames).append("\"");
+                } else {
+                    line.append(productNames);
+                }
+                
+                writer.write(line.toString());
+                writer.newLine();
+            }
+            
+            writer.flush();
+        }
+    }
+    
+    /**
+     * 导出为Excel格式
+     */
+    private void exportToExcel(List<Map<String, Object>> data, java.io.OutputStream outputStream) throws java.io.IOException {
+        log.info("导出为Excel格式, 数据条数: {}", data.size());
+        
+        // 创建工作簿
+        org.apache.poi.ss.usermodel.Workbook workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+        org.apache.poi.ss.usermodel.Sheet sheet = workbook.createSheet("财务报表");
+        
+        // 创建标题行
+        org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
+        String[] headers = {"订单号", "创建时间", "状态", "金额", "用户名", "商品数量", "商品名称"};
+        for (int i = 0; i < headers.length; i++) {
+            org.apache.poi.ss.usermodel.Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+        }
+        
+        // 填充数据行
+        int rowNum = 1;
+        for (Map<String, Object> row : data) {
+            org.apache.poi.ss.usermodel.Row dataRow = sheet.createRow(rowNum++);
+            
+            dataRow.createCell(0).setCellValue((String) row.get("orderNo"));
+            dataRow.createCell(1).setCellValue((String) row.get("createdTime"));
+            dataRow.createCell(2).setCellValue((String) row.get("status"));
+            
+            org.apache.poi.ss.usermodel.Cell amountCell = dataRow.createCell(3);
+            amountCell.setCellValue(((BigDecimal) row.get("totalAmount")).doubleValue());
+            
+            dataRow.createCell(4).setCellValue((String) row.get("username"));
+            dataRow.createCell(5).setCellValue(((Integer) row.get("productCount")));
+            dataRow.createCell(6).setCellValue((String) row.get("productNames"));
+        }
+        
+        // 自动调整列宽
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+        
+        // 写入输出流
+        workbook.write(outputStream);
+        workbook.close();
+    }
+    
+    /**
+     * 获取订单状态文本
+     */
+    private String getOrderStatusText(Integer status) {
+        if (status == null) return "未知状态";
+        
+        switch (status) {
+            case 0: return "已取消";
+            case 1: return "待发货";
+            case 2: return "已发货";
+            case 3: return "已完成";
+            case 4: return "已退款";
+            default: return "未知状态";
+        }
     }
 } 

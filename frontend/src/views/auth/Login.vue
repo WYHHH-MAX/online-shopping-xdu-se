@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <div class="login-box">
-      <h2>登录</h2>
+      <h2>login</h2>
       <a-form
         :model="formState"
         name="basic"
@@ -11,24 +11,24 @@
         @finish="onFinish"
       >
         <a-form-item
-          label="用户名"
+          label="Username"
           name="username"
-          :rules="[{ required: true, message: '请输入用户名!' }]"
+          :rules="[{ required: true, message: 'Please enter a username!' }]"
         >
           <a-input v-model:value="formState.username" />
         </a-form-item>
 
         <a-form-item
-          label="密码"
+          label="Password"
           name="password"
-          :rules="[{ required: true, message: '请输入密码!' }]"
+          :rules="[{ required: true, message: 'Please enter your password!' }]"
         >
           <a-input-password v-model:value="formState.password" />
         </a-form-item>
 
         <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
-          <a-button type="primary" html-type="submit">登录</a-button>
-          <a-button style="margin-left: 10px" @click="goToRegister">注册</a-button>
+          <a-button type="primary" html-type="submit">login</a-button>
+          <a-button style="margin-left: 10px" @click="goToRegister">register</a-button>
         </a-form-item>
       </a-form>
     </div>
@@ -37,7 +37,7 @@
 
 <script lang="ts" setup>
 import { reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { login } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
@@ -45,6 +45,10 @@ import type { LoginResponse } from '@/types/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+// 获取重定向URL（如果有）
+const route = useRoute()
+const redirectUrl = route.query.redirect as string || '/'
 
 interface FormState {
   username: string
@@ -79,9 +83,15 @@ const onFinish = async (values: FormState) => {
         // console.log('检测到管理员角色，跳转到管理员页面')
         router.push('/admin')
       } else {
-        // 非管理员用户（包括买家和卖家）跳转到首页
-        // console.log('检测到非管理员角色，跳转到首页')
-        router.push('/')
+        // 优先使用重定向URL，如果有的话
+        if (redirectUrl && redirectUrl !== '/login') {
+          // console.log('检测到重定向URL，跳转到:', redirectUrl)
+          router.push(redirectUrl)
+        } else {
+          // 没有重定向URL时才跳转到首页
+          // console.log('没有重定向URL或重定向到登录页面，跳转到首页')
+          router.push('/')
+        }
       }
     }
   } catch (error: any) {

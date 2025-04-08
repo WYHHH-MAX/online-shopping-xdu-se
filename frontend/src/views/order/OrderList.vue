@@ -1,32 +1,32 @@
 <template>
   <div class="order-list-page">
     <div class="content-wrapper">
-      <h1 class="page-title">我的订单</h1>
+      <h1 class="page-title">My Orders</h1>
       
       <div class="filter-section">
         <a-tabs v-model:activeKey="activeStatus" @change="handleStatusChange">
-          <a-tab-pane key="" tab="全部订单"></a-tab-pane>
-          <a-tab-pane key="0" tab="待付款"></a-tab-pane>
-          <a-tab-pane key="1" tab="待发货"></a-tab-pane>
-          <a-tab-pane key="2" tab="待收货"></a-tab-pane>
-          <a-tab-pane key="3" tab="已完成"></a-tab-pane>
-          <a-tab-pane key="4" tab="已取消"></a-tab-pane>
+          <a-tab-pane key="" tab="All orders"></a-tab-pane>
+          <a-tab-pane key="0" tab="Pending payment"></a-tab-pane>
+          <a-tab-pane key="1" tab="To be shipped"></a-tab-pane>
+          <a-tab-pane key="2" tab="To be received"></a-tab-pane>
+          <a-tab-pane key="3" tab="Done"></a-tab-pane>
+          <a-tab-pane key="4" tab="Canceled"></a-tab-pane>
         </a-tabs>
       </div>
       
       <div v-if="loading" class="loading-container">
-        <a-spin tip="加载中..."></a-spin>
+        <a-spin tip="Loading..."></a-spin>
       </div>
       
       <div v-else-if="orders.length === 0" class="empty-container">
-        <a-empty description="暂无订单"></a-empty>
+        <a-empty description="There are no orders yet"></a-empty>
       </div>
       
       <div v-else class="order-list">
         <div v-for="order in orders" :key="order.id" class="order-card">
           <div class="order-header">
             <div class="order-info">
-              <span class="order-no">订单号：{{ order.orderNo }}</span>
+              <span class="order-no">Order number:{{ order.orderNo }}</span>
               <span class="order-date">{{ formatDate(order.createTime) }}</span>
             </div>
             <div class="order-status" :class="getStatusClass(order.status)">
@@ -46,21 +46,21 @@
           
           <div class="order-footer">
             <div class="order-amount">
-              <span>共 {{ getTotalQuantity(order) }} 件商品，总计：</span>
+              <span>totally, {{ getTotalQuantity(order) }} units, total:</span>
               <span class="total-price">¥{{ order.totalAmount }}</span>
             </div>
             
             <div class="order-actions">
               <template v-if="order.status === 0">
-                <a-button type="primary" @click="handlePayOrder(order)">去支付</a-button>
-                <a-button @click="handleCancelOrder(order)">取消订单</a-button>
+                <a-button type="primary" @click="handlePayOrder(order)">Go and pay</a-button>
+                <a-button @click="handleCancelOrder(order)">Cancel the order</a-button>
               </template>
               
               <template v-if="order.status === 2">
-                <a-button type="primary" @click="handleConfirmOrder(order)">确认收货</a-button>
+                <a-button type="primary" @click="handleConfirmOrder(order)">Confirm receipt</a-button>
               </template>
               
-              <a-button v-if="order.status === 3" @click="handleViewOrderDetail(order)">查看详情</a-button>
+              <a-button v-if="order.status === 3" @click="handleViewOrderDetail(order)">Find out more</a-button>
             </div>
           </div>
         </div>
@@ -80,31 +80,31 @@
     <!-- 支付模态框 -->
     <a-modal
       v-model:visible="paymentModalVisible"
-      title="订单支付"
+      title="Order Payment"
       :footer="null"
       @cancel="cancelPayment"
     >
       <div class="payment-modal">
         <div class="payment-amount">
-          <p>订单金额</p>
+          <p>The amount of the order</p>
           <h2>¥{{ currentOrderAmount }}</h2>
         </div>
         
         <div class="payment-methods">
-          <h3>选择支付方式</h3>
+          <h3>Select a payment method</h3>
           <div class="method-options">
             <a-radio-group v-model:value="paymentMethod">
-              <a-radio value="wechat">微信支付</a-radio>
-              <a-radio value="alipay">支付宝</a-radio>
-              <a-radio value="card">银行卡</a-radio>
+              <a-radio value="wechat">WeChat Pay</a-radio>
+              <a-radio value="alipay">Alipay</a-radio>
+              <a-radio value="card">Bank cards</a-radio>
             </a-radio-group>
           </div>
         </div>
         
         <div class="payment-actions">
-          <a-button @click="cancelPayment">取消</a-button>
+          <a-button @click="cancelPayment">cancel</a-button>
           <a-button type="primary" @click="completePayment" :loading="paymentLoading">
-            确认支付
+            Confirm the payment
           </a-button>
         </div>
       </div>
@@ -167,40 +167,26 @@ const loadOrders = async () => {
     // console.log('订单列表加载成功:', result);
     
     // 处理不同的响应格式
-    if (result && result.records) {
-      // 原始格式，包含records字段
-      orders.value = result.records;
-      total.value = result.total || 0;
-    } else if (result && result.list) {
-      // 包含list字段的格式
-      orders.value = result.list;
-      total.value = result.total || 0;
-    } else if (result && (result as any).data) {
-      // 数据在data字段中
-      const data = (result as any).data;
-      if (Array.isArray(data)) {
+    if (result.code === 200 && result.data) {
+      if (result.data.records) {
+        // 原始格式，包含records字段
+        orders.value = result.data.records;
+        total.value = result.data.total || 0;
+      } else if (result.data.list) {
+        // 包含list字段的格式
+        orders.value = result.data.list;
+        total.value = result.data.total || 0;
+      } else if (Array.isArray(result.data)) {
         // data直接是数组
-        orders.value = data;
-        total.value = data.length;
-      } else if (data.records) {
-        // data.records是数组
-        orders.value = data.records;
-        total.value = data.total || data.records.length;
-      } else if (data.list) {
-        // data.list是数组
-        orders.value = data.list;
-        total.value = data.total || data.list.length;
+        orders.value = result.data;
+        total.value = result.data.length;
       } else {
-        console.error('订单数据格式异常，data字段结构不符合预期:', data);
+        console.error('订单数据格式异常，data字段结构不符合预期:', result.data);
         orders.value = [];
         total.value = 0;
       }
-    } else if (Array.isArray(result)) {
-      // 直接返回数组
-      orders.value = result;
-      total.value = result.length;
     } else {
-      console.warn('API返回的数据格式不符合预期:', result);
+      console.warn('API返回失败或数据为空:', result);
       orders.value = [];
       total.value = 0;
     }

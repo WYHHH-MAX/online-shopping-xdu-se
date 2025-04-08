@@ -1,7 +1,7 @@
 <template>
   <div class="product-form">
     <a-page-header
-      :title="isEdit ? '编辑商品' : '添加商品'"
+      :title="isEdit ? 'Edit the product' : 'Add a product'"
       @back="goBack"
     />
     
@@ -12,16 +12,16 @@
       :label-col="{ span: 4 }"
       :wrapper-col="{ span: 16 }"
     >
-      <a-form-item label="商品名称" name="name">
-        <a-input v-model:value="formState.name" placeholder="请输入商品名称" />
+      <a-form-item label="name" name="name">
+        <a-input v-model:value="formState.name" placeholder="Please enter the product name" />
       </a-form-item>
       
-      <a-form-item label="商品分类" name="categoryId">
+      <a-form-item label="categoryId" name="categoryId">
         <a-cascader
           v-model:value="formState.categoryId"
           :options="categoryOptions"
           :field-names="{ label: 'name', value: 'id', children: 'children' }"
-          placeholder="请选择商品分类"
+          placeholder="Please select a product category"
           @change="handleCategoryChange"
           :show-search="{ 
             filter: (inputValue: string, path: any[]) => 
@@ -30,7 +30,7 @@
         />
       </a-form-item>
       
-      <a-form-item label="商品价格" name="price">
+      <a-form-item label="price" name="price">
         <a-input-number 
           v-model:value="formState.price" 
           :precision="2"
@@ -39,7 +39,7 @@
         />
       </a-form-item>
       
-      <a-form-item label="商品库存" name="stock">
+      <a-form-item label="stock" name="stock">
         <a-input-number 
           v-model:value="formState.stock" 
           :min="0"
@@ -47,38 +47,39 @@
         />
       </a-form-item>
       
-      <a-form-item label="商品状态" name="status">
+      <a-form-item label="status" name="status">
         <a-radio-group v-model:value="formState.status">
-          <a-radio :value="1">上架</a-radio>
-          <a-radio :value="0">下架</a-radio>
+          <a-radio :value="1">Shelves</a-radio>
+          <a-radio :value="0">Taken off the shelves</a-radio>
         </a-radio-group>
       </a-form-item>
       
-      <a-form-item label="商品图片" name="images">
+      <a-form-item label="images" name="images">
         <a-upload
           v-model:file-list="fileList"
           list-type="picture-card"
           :customRequest="customUpload"
           :beforeUpload="beforeUpload"
+          :remove="onRemove"
         >
           <div v-if="fileList.length < 5">
             <upload-outlined />
-            <div style="margin-top: 8px">上传</div>
+            <div style="margin-top: 8px">upload</div>
           </div>
         </a-upload>
       </a-form-item>
       
-      <a-form-item label="商品详情" name="description">
+      <a-form-item label="description" name="description">
         <a-textarea 
           v-model:value="formState.description" 
-          placeholder="请输入商品详情" 
+          placeholder="Please enter your product details"
           :rows="6" 
         />
       </a-form-item>
       
       <a-form-item :wrapper-col="{ offset: 4, span: 16 }">
-        <a-button type="primary" @click="handleSubmit" :loading="submitting">提交</a-button>
-        <a-button style="margin-left: 10px" @click="goBack">取消</a-button>
+        <a-button type="primary" @click="handleSubmit" :loading="submitting">submit</a-button>
+        <a-button style="margin-left: 10px" @click="goBack">cancel</a-button>
       </a-form-item>
     </a-form>
   </div>
@@ -91,7 +92,7 @@ import { message } from 'ant-design-vue';
 import { UploadOutlined } from '@ant-design/icons-vue';
 import type { FormInstance } from 'ant-design-vue';
 import { getCategoryTree } from '@/api/category';
-import { addProduct, updateProduct, uploadProductImage } from '@/api/seller';
+import { addProduct, updateProduct, uploadProductImage, deleteAllProductImages } from '@/api/seller';
 import { getProductDetail } from '@/api/product';
 
 // 定义表单状态接口
@@ -164,11 +165,16 @@ const fetchCategories = async () => {
 const fetchProductDetail = async (id: number) => {
   try {
     const data = await getProductDetail(id);
+    console.log('获取到的商品详情:', data);
     
     // 填充表单数据
     Object.assign(formState, data);
     
-    // 设置图片列表
+    // 清空当前图片列表和formState.images数组，避免累积
+    fileList.value = [];
+    formState.images = [];
+    
+    // 设置图片列表 - 后端只会返回未删除的图片
     if (data.images && data.images.length > 0) {
       fileList.value = data.images.map((url: string, index: number) => ({
         uid: -(index + 1),
@@ -176,8 +182,13 @@ const fetchProductDetail = async (id: number) => {
         status: 'done',
         url
       }));
+      
+      // 同步更新formState.images数组
+      formState.images = [...data.images];
+      console.log('加载商品详情时的图片列表:', formState.images);
     }
   } catch (error: any) {
+    console.error('获取商品详情失败:', error);
     message.error('获取商品详情失败: ' + error.message);
   }
 };
@@ -204,11 +215,31 @@ const customUpload = async (options: any) => {
   const { file, onSuccess, onError } = options;
   
   try {
-    const url = await uploadProductImage(file);
+    console.log("开始上传图片:", file.name);
+    let url;
+    if (isEdit.value && route.params.id) {
+      // 如果是编辑模式，传递商品ID和图片序号
+      const productId = Number(route.params.id);
+      // 使用当前fileList长度+1作为新图片的序号
+      const imageIndex = fileList.value.length + 1;
+      url = await uploadProductImage(file, productId, imageIndex);
+    } else {
+      // 新增商品模式，不传递商品ID
+      url = await uploadProductImage(file);
+    }
+    
+    console.log("上传图片成功，返回URL:", url);
     
     // 验证URL是否有效
     if (!url || typeof url !== 'string' || url.trim() === '') {
       throw new Error('上传图片返回的URL无效');
+    }
+    
+    // 成功上传后，将URL添加到formState.images数组中
+    if (!formState.images.includes(url)) {
+      formState.images.push(url);
+      console.log('图片已添加到formState.images中:', url);
+      console.log('当前images数组:', formState.images);
     }
     
     // 如果是第一张图片，设置为主图
@@ -216,16 +247,44 @@ const customUpload = async (options: any) => {
       formState.mainImage = url;
     }
     
-    // 添加到图片列表，确保url是有效的字符串
-    formState.images.push(url);
-    
     onSuccess(url, file);
-    // console.log('图片上传成功，URL:', url);
+    message.success('图片上传成功');
   } catch (error: any) {
-    // console.error('上传图片失败:', error, '文件信息:', file.name, file.size);
+    console.error('上传图片失败:', error, '文件信息:', file.name, file.size);
     message.error('上传图片失败: ' + error.message);
     onError(error);
   }
+};
+
+// 处理图片移除操作
+const onRemove = (file: any) => {
+  const url = file.url || file.response;
+  
+  if (url && typeof url === 'string') {
+    console.log('从前端移除图片:', url);
+    
+    // 从formState.images数组中移除图片
+    formState.images = formState.images.filter(item => item !== url);
+    console.log('删除图片后的formState.images:', formState.images);
+    
+    // 检查是否删除的是主图
+    if (url === formState.mainImage) {
+      console.log('主图被删除，重新设置主图');
+      // 如果还有其他图片，将第一张设为主图
+      if (formState.images.length > 0) {
+        formState.mainImage = formState.images[0];
+        console.log('新的主图设置为:', formState.mainImage);
+      } else {
+        // 没有图片了，清空主图
+        formState.mainImage = '';
+        console.log('没有图片了，清空主图');
+      }
+    }
+    
+    message.success('图片已从列表中移除');
+  }
+  
+  return true;
 };
 
 // 添加处理分类选择的方法
@@ -246,7 +305,7 @@ const handleSubmit = async () => {
     await formRef.value.validate();
     
     // 确保至少有一张图片
-    if (formState.images.length === 0) {
+    if (fileList.value.length === 0) {
       message.error('请至少上传一张商品图片');
       return;
     }
@@ -257,61 +316,77 @@ const handleSubmit = async () => {
       return;
     }
     
-    // 确保mainImage不为空
-    if (!formState.mainImage || formState.mainImage.trim() === '') {
-      if (formState.images.length > 0) {
-        formState.mainImage = formState.images[0];
-        // console.log('自动设置第一张图片为主图:', formState.mainImage);
-      } else {
-        message.error('请上传至少一张图片作为主图');
-        return;
-      }
-    }
-    
     submitting.value = true;
     
-    // 过滤和处理图片URL
-    const validImages = formState.images
+    // 从fileList中获取当前实际显示的图片URLs
+    const currentImages = fileList.value
+      .filter(file => file.status === 'done') // 只包含上传成功的文件
+      .map(file => file.url || file.response)
       .filter(url => url && typeof url === 'string' && url.trim() !== '')
       .map(url => url.trim());
     
-    if (validImages.length === 0) {
+    if (currentImages.length === 0) {
       message.error('没有有效的商品图片');
       submitting.value = false;
       return;
     }
     
-    // 构建请求数据对象，过滤掉可能为null的属性
+    // 更新formState.images，确保与当前显示的图片完全一致
+    formState.images = [...currentImages];
+    console.log('提交前的images数组:', formState.images);
+    
+    // 确保设置主图为第一张图片
+    if (currentImages.length > 0 && !formState.mainImage) {
+      formState.mainImage = currentImages[0];
+      console.log('自动设置主图为第一张图片:', formState.mainImage);
+    }
+    
+    // 构建请求数据对象
     const productData = {
       ...formState,
       categoryId: formState.categoryId as number,
       price: Number(formState.price),
       stock: Number(formState.stock),
       status: Number(formState.status),
-      // 确保mainImage是有效的字符串
-      mainImage: formState.mainImage.trim(),
-      // 使用验证过的图片数组
-      images: validImages
+      images: formState.images, // 使用更新后的formState.images
+      mainImage: formState.mainImage // 确保包含主图
     };
     
-    // console.log('提交的商品数据:', productData);
+    console.log('提交的商品数据:', productData);
     
-    if (isEdit.value) {
-      // 编辑商品
-      await updateProduct(Number(route.params.id), productData);
-      message.success('商品更新成功');
-    } else {
-      // 新增商品
-      await addProduct(productData);
-      message.success('商品添加成功');
+    try {
+      if (isEdit.value) {
+        const productId = Number(route.params.id);
+        
+        // 编辑模式下，先尝试删除所有旧图片
+        try {
+          console.log('尝试批量删除商品所有图片:', productId);
+          await deleteAllProductImages(productId);
+          console.log('成功批量删除商品所有图片');
+        } catch (error) {
+          console.warn('批量删除商品图片失败，继续更新商品:', error);
+          // 继续执行，不中断流程
+        }
+        
+        // 编辑商品 - 后端会处理图片的重命名和设置主图
+        await updateProduct(productId, productData);
+        message.success('商品更新成功');
+      } else {
+        // 新增商品 - 后端也会处理设置主图
+        await addProduct(productData);
+        message.success('商品添加成功');
+      }
+      
+      // 返回商品列表
+      router.push('/seller/products');
+    } catch (error: any) {
+      console.error('API请求失败:', error);
+      message.error('提交失败: ' + error.message);
+      submitting.value = false;
     }
-    
-    // 返回商品列表
-    router.push('/seller/products');
   } catch (error: any) {
-    // console.error('提交失败:', error);
-    message.error('提交失败: ' + error.message);
-  } finally {
+    console.error('表单验证失败:', error);
+    message.error('表单验证失败: ' + error.message);
     submitting.value = false;
   }
 };

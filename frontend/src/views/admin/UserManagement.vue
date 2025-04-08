@@ -4,35 +4,35 @@
     
     <!-- 搜索表单 -->
     <a-form layout="inline" class="search-form">
-      <a-form-item label="用户名">
+      <a-form-item label="Username">
         <a-input v-model:value="searchForm.username" placeholder="请输入用户名" />
       </a-form-item>
-      <a-form-item label="角色">
+      <a-form-item label="role">
         <a-select
           v-model:value="searchForm.role"
-          placeholder="请选择角色"
+          placeholder="Please select a role"
           style="width: 120px"
           :allowClear="true"
         >
-          <a-select-option :value="0">普通用户</a-select-option>
-          <a-select-option :value="1">卖家</a-select-option>
-          <a-select-option :value="2">管理员</a-select-option>
+          <a-select-option :value="0">Regular users</a-select-option>
+          <a-select-option :value="1">Seller</a-select-option>
+          <a-select-option :value="2">administrator</a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="状态">
+      <a-form-item label="state">
         <a-select
           v-model:value="searchForm.status"
-          placeholder="请选择状态"
+          placeholder="Please select a status"
           style="width: 120px"
           :allowClear="true"
         >
-          <a-select-option :value="0">禁用</a-select-option>
-          <a-select-option :value="1">启用</a-select-option>
+          <a-select-option :value="0">disable</a-select-option>
+          <a-select-option :value="1">enable</a-select-option>
         </a-select>
       </a-form-item>
       <a-form-item>
-        <a-button type="primary" @click="handleSearch">搜索</a-button>
-        <a-button style="margin-left: 8px" @click="handleReset">重置</a-button>
+        <a-button type="primary" @click="handleSearch">Search</a-button>
+        <a-button style="margin-left: 8px" @click="handleReset">reset</a-button>
       </a-form-item>
     </a-form>
     
@@ -104,32 +104,32 @@ const columns = [
     key: 'role',
     customRender: ({ text }: { text: number }) => {
       const roleMap = {
-        0: '普通用户',
-        1: '卖家',
-        2: '管理员',
+        0: 'Regular users',
+        1: 'Seller',
+        2: 'administrator',
       };
-      return roleMap[text as keyof typeof roleMap] || '未知';
+      return roleMap[text as keyof typeof roleMap] || 'Unknown';
     },
   },
   {
-    title: '状态',
+    title: 'status',
     dataIndex: 'status',
     key: 'status',
     customRender: ({ text }: { text: number }) => {
       const statusMap = {
-        0: '禁用',
-        1: '启用',
+        0: 'disable',
+        1: 'enable',
       };
-      return statusMap[text as keyof typeof statusMap] || '未知';
+      return statusMap[text as keyof typeof statusMap] || 'Unknown';
     },
   },
   {
-    title: '注册时间',
+    title: 'regist time',
     dataIndex: 'createTime',
     key: 'createTime',
   },
   {
-    title: '操作',
+    title: 'operation',
     key: 'action',
   },
 ];

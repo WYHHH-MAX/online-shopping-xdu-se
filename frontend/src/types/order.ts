@@ -5,6 +5,9 @@ export interface OrderVO {
   totalAmount: number
   createTime: string
   updateTime: string
+  userId?: number
+  username?: string
+  paymentMethod?: string
   products: OrderProductVO[]
 }
 

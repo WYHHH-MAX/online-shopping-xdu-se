@@ -1,7 +1,7 @@
 <template>
   <div class="inventory">
     <div class="actions">
-      <a-button type="primary" @click="batchUpdate">批量更新库存</a-button>
+      <a-button type="primary" @click="batchUpdate">Bulk inventory update</a-button>
     </div>
     
     <a-table
@@ -14,7 +14,7 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'image'">
-          <img :src="record.mainImage" alt="商品图片" class="product-image" />
+          <img :src="record.mainImage" alt="product-image" class="product-image" />
         </template>
         <template v-if="column.key === 'stock'">
           <a-input-number 
@@ -35,7 +35,7 @@
             @click="updateStock(record.id)" 
             :disabled="!isStockChanged(record.id)"
           >
-            更新
+            update
           </a-button>
         </template>
       </template>

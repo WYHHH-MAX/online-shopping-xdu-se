@@ -1,12 +1,20 @@
 <template>
   <div class="seller-orders">
     <div class="orders">
-      <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
-        <a-tab-pane key="0" tab="全部订单"></a-tab-pane>
-        <a-tab-pane key="1" tab="待发货"></a-tab-pane>
-        <a-tab-pane key="2" tab="已发货"></a-tab-pane>
-        <a-tab-pane key="3" tab="已完成"></a-tab-pane>
-      </a-tabs>
+      <div class="orders-header">
+        <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
+          <a-tab-pane key="0" tab="All orders"></a-tab-pane>
+          <a-tab-pane key="1" tab="To be shipped"></a-tab-pane>
+          <a-tab-pane key="2" tab="Shipped"></a-tab-pane>
+          <a-tab-pane key="3" tab="Done"></a-tab-pane>
+        </a-tabs>
+        <div class="orders-actions">
+          <a-button type="primary" @click="goToSalesAnalytics">
+            <BarChartOutlined />
+            View Sales Analytics
+          </a-button>
+        </div>
+      </div>
       
       <a-table
         :columns="columns"
@@ -29,7 +37,7 @@
                 size="small" 
                 @click="showOrderDetail(record)"
               >
-                查看详情
+                Find out more
               </a-button>
               <a-button 
                 v-if="record.status === '1'" 
@@ -37,7 +45,7 @@
                 size="small" 
                 @click="handleShip(record.id)"
               >
-                发货
+                shipments
               </a-button>
             </div>
           </template>
@@ -46,19 +54,21 @@
       
       <a-modal
         v-model:visible="orderDetailVisible"
-        title="订单详情"
+        title="Order Details"
         width="800px"
         :footer="null"
       >
         <a-descriptions bordered :column="3">
-          <a-descriptions-item label="订单号" :span="3">{{ currentOrder ? currentOrder.orderNo : '无订单号' }}</a-descriptions-item>
-          <a-descriptions-item label="下单时间" :span="3">{{ currentOrder ? formatTime(currentOrder.createTime) : '无下单时间' }}</a-descriptions-item>
-          <a-descriptions-item label="订单金额" :span="1">{{ currentOrder ? `¥${currentOrder.totalAmount}` : '¥0.00' }}</a-descriptions-item>
-          <a-descriptions-item label="状态" :span="2">
+          <a-descriptions-item label="Order number" :span="3">{{ currentOrder ? currentOrder.orderNo : 'No order number' }}</a-descriptions-item>
+          <a-descriptions-item label="Time when the order was placed" :span="3">{{ currentOrder ? formatTime(currentOrder.createTime) : 'There is no time to place an order' }}</a-descriptions-item>
+          <a-descriptions-item label="user" :span="1">{{ currentOrder?.username || 'Unknown user' }}</a-descriptions-item>
+          <a-descriptions-item label="The amount of the order" :span="1">{{ currentOrder ? `¥${currentOrder.totalAmount}` : '¥0.00' }}</a-descriptions-item>
+          <a-descriptions-item label="status" :span="1">
             <a-tag :color="currentOrder ? getStatusType(currentOrder.status) : 'default'">
-              {{ currentOrder ? getStatusText(currentOrder.status) : '未知状态' }}
+              {{ currentOrder ? getStatusText(currentOrder.status) : 'Unknown status' }}
             </a-tag>
           </a-descriptions-item>
+          <a-descriptions-item label="Payment Methods" :span="3">{{ getPaymentMethodText(currentOrder?.paymentMethod) }}</a-descriptions-item>
         </a-descriptions>
         
         <a-divider />
@@ -71,30 +81,32 @@
         />
         
         <div class="order-action" v-if="currentOrder && currentOrder.status === '1'">
-          <a-button type="primary" @click="handleShip(currentOrder.id)">发货</a-button>
+          <a-button type="primary" @click="handleShip(currentOrder.id)">shipments</a-button>
         </div>
       </a-modal>
       
       <a-modal
         v-model:visible="shipConfirmVisible"
-        title="确认发货"
+        title="Confirm the shipment"
         @ok="confirmShip"
         @cancel="() => shipConfirmVisible = false"
-        :okText="'确认发货'"
-        :cancelText="'取消'"
+        :okText="'Confirm the shipment'"
+        :cancelText="'Cancel'"
       >
-        <p>确认为该订单发货吗？发货后无法撤销。</p>
+        <p>Is the order confirmed to be shipped? It cannot be reversed after it has been shipped.</p>
       </a-modal>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, h } from 'vue';
 import { message } from 'ant-design-vue';
 import { getSellerOrders, shipOrder } from '@/api/seller';
 import { getImageUrl } from '@/utils/imageUtil';
 import type { OrderVO, OrderProductVO } from '@/types/order';
+import { BarChartOutlined } from '@ant-design/icons-vue';
+import { useRouter } from 'vue-router';
 
 // 扩展OrderVO接口，添加我们需要的字段
 interface ExtendedOrderVO extends OrderVO {
@@ -102,10 +114,10 @@ interface ExtendedOrderVO extends OrderVO {
 }
 
 const tabs = ref([
-  { key: '0', name: '全部订单' },
-  { key: '1', name: '待发货' },
-  { key: '2', name: '已发货' },
-  { key: '3', name: '已完成' }
+  { key: '0', name: 'All orders' },
+  { key: '1', name: 'To be shipped' },
+  { key: '2', name: 'Shipped' },
+  { key: '3', name: 'Done' }
 ]);
 
 const activeTab = ref('0');
@@ -116,7 +128,7 @@ const pagination = reactive({
   pageSize: 10,
   total: 0,
   showSizeChanger: true,
-  showTotal: (total: number) => `共 ${total} 条`
+  showTotal: (total: number) => `totally  ${total} records`
 });
 
 const currentOrder = ref<ExtendedOrderVO | null>(null);
@@ -129,6 +141,12 @@ const columns = [
     title: '订单号',
     dataIndex: 'orderNo',
     key: 'orderNo'
+  },
+  {
+    title: '用户',
+    dataIndex: 'username',
+    key: 'username',
+    customRender: ({ text }: { text: string }) => text || '未知用户'
   },
   {
     title: '下单时间',
@@ -202,10 +220,10 @@ const fetchOrders = async () => {
       size: pagination.pageSize
     });
     
-    // console.log('获取到的订单数据:', response);
+    console.log('获取到的订单数据:', response);
     
     if (response && response.data && response.data.list) {
-      // console.log('订单原始数据:', response.data.list);
+      console.log('订单原始数据:', response.data.list);
       
       // 处理每个订单的商品图片
       const processedOrders = response.data.list.map((order: any, index: number) => {
@@ -219,6 +237,8 @@ const fetchOrders = async () => {
         if (order.status === undefined || order.status === null) {
           console.warn(`订单[${index}]缺少status字段:`, order);
         }
+        
+        console.log(`订单[${index}] 用户名:`, order.username, '支付方式:', order.paymentMethod);
         
         // 确保products字段为数组
         const products = Array.isArray(order.products) ? order.products : [];
@@ -234,6 +254,10 @@ const fetchOrders = async () => {
           orderNo: String(order.orderNo || ''),
           // 确保status为字符串
           status: String(order.status || '0'),
+          // 保留用户名，如果没有则显示未知用户
+          username: order.username || '未知用户',
+          // 保留支付方式，如果没有则默认为支付宝
+          paymentMethod: order.paymentMethod || '1',
           // 处理商品图片
           products: products.map((product: any) => ({
             ...product,
@@ -375,6 +399,24 @@ const getStatusType = (status: string | undefined) => {
   }
 };
 
+const getPaymentMethodText = (method: string | undefined) => {
+  if (!method) return '未知支付方式';
+  
+  switch (method) {
+    case '1': return '支付宝';
+    case '2': return '微信支付';
+    case '3': return '银行卡';
+    case '4': return '货到付款';
+    default: return '未知支付方式';
+  }
+};
+
+const router = useRouter();
+
+const goToSalesAnalytics = () => {
+  router.push('/seller/sales');
+};
+
 onMounted(() => {
   fetchOrders();
 });
@@ -390,6 +432,18 @@ onMounted(() => {
   padding: 20px;
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.orders-actions {
+  display: flex;
+  align-items: center;
 }
 
 .order-action {

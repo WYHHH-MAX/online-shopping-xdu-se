@@ -7,6 +7,7 @@ import com.shop.online.dto.OrderQueryDTO;
 import com.shop.online.vo.OrderVO;
 import com.shop.online.common.result.PageResult;
 import java.util.Map;
+import java.io.IOException;
 
 /**
  * 订单服务接口
@@ -81,4 +82,20 @@ public interface OrderService extends IService<Order> {
      * @return 订单总数
      */
     int countSellerOrders(Long sellerId);
+
+    /**
+     * 获取销售数据分析
+     * @param params 查询参数，包含sellerId、startDate、endDate、period等
+     * @return 销售数据分析结果
+     */
+    Map<String, Object> getSalesAnalytics(Map<String, Object> params);
+
+    /**
+     * 导出财务报表
+     * @param params 查询参数，包含sellerId、startDate、endDate、reportType等
+     * @param outputStream 输出流
+     * @param fileType 文件类型，csv或excel
+     * @throws IOException IO异常
+     */
+    void exportFinancialReport(Map<String, Object> params, java.io.OutputStream outputStream, String fileType) throws java.io.IOException;
 } 

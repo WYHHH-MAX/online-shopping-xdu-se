@@ -1,34 +1,34 @@
 <template>
   <div class="dashboard">
     <div class="dashboard-header">
-      <h1>卖家数据仪表盘</h1>
+      <h1>Seller Data Dashboard</h1>
       <a-button type="primary" @click="goToHome" class="home-button">
         <HomeOutlined />
-        返回商城首页
+        Return to the homepage of the mall
       </a-button>
     </div>
     <a-row :gutter="16">
       <a-col :span="6">
         <a-card>
-          <template #title>待发货订单</template>
+          <template #title>Orders to be shipped</template>
           <div class="stat-value">{{ dashboardData.pendingShipments || 0 }}</div>
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <template #title>总订单数</template>
+          <template #title>Total number of orders</template>
           <div class="stat-value">{{ dashboardData.totalOrders || 0 }}</div>
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <template #title>产品总数</template>
+          <template #title>The total number of products</template>
           <div class="stat-value">{{ dashboardData.totalProducts || 0 }}</div>
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <template #title>库存不足商品</template>
+          <template #title>Out-of-stock items</template>
           <div class="stat-value">{{ dashboardData.lowStockProducts || 0 }}</div>
         </a-card>
       </a-col>

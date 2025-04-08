@@ -16,6 +16,10 @@ import java.util.Map;
 /**
  * 订单控制器
  */
+
+/**
+ * @RestController = @Controller + @ResponseBody
+ */
 @Slf4j
 @RestController
 @RequestMapping("/orders")

@@ -1,24 +1,24 @@
 <template>
   <div class="product-management">
-    <a-card class="search-card" title="搜索条件">
+    <a-card class="search-card" title="Search criteria for today's orders">
       <a-form layout="inline" :model="searchForm">
-        <a-form-item label="商品名称">
-          <a-input v-model:value="searchForm.name" placeholder="输入商品名称" allow-clear />
+        <a-form-item label="The title of the product">
+          <a-input v-model:value="searchForm.name" placeholder="Enter a title" allow-clear />
         </a-form-item>
-        <a-form-item label="状态">
-          <a-select v-model:value="searchForm.status" placeholder="请选择状态" style="width: 150px" allow-clear>
-            <a-select-option :value="0">已下架</a-select-option>
-            <a-select-option :value="1">已上架</a-select-option>
+        <a-form-item label="status">
+          <a-select v-model:value="searchForm.status" placeholder="Please select a status" style="width: 150px" allow-clear>
+            <a-select-option :value="0">Removed from shelves</a-select-option>
+            <a-select-option :value="1">Available</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item>
           <a-button type="primary" @click="handleSearch">
             <search-outlined />
-            搜索
+            Search
           </a-button>
           <a-button style="margin-left: 8px" @click="handleReset">
             <redo-outlined />
-            重置
+            reset
           </a-button>
         </a-form-item>
       </a-form>
@@ -40,7 +40,7 @@
               :width="64"
               :src="getImageUrl(record.mainImage)"
               :fallback="defaultImage"
-              alt="商品图片"
+              alt="Product images"
             />
           </template>
 
@@ -52,14 +52,14 @@
           <!-- 状态 -->
           <template v-if="column.dataIndex === 'status'">
             <a-tag :color="record.status === 1 ? 'green' : 'red'">
-              {{ record.status === 1 ? '已上架' : '已下架' }}
+              {{ record.status === 1 ? 'Available' : 'Removed from shelves' }}
             </a-tag>
           </template>
 
           <!-- 推荐 -->
           <template v-if="column.dataIndex === 'isFeatured'">
             <a-tag :color="record.isFeatured === 1 ? 'success' : 'default'">
-              {{ record.isFeatured === 1 ? '已推荐' : '未推荐' }}
+              {{ record.isFeatured === 1 ? 'Recommended' : 'haven\'t be recommended' }}
             </a-tag>
           </template>
 
@@ -73,7 +73,7 @@
                 @click="handleUpdateStatus(record.id, 1)"
               >
                 <check-outlined />
-                上架
+                Shelves
               </a-button>
               <a-button 
                 v-else 
@@ -82,7 +82,7 @@
                 @click="handleUpdateStatus(record.id, 0)"
               >
                 <stop-outlined />
-                下架
+                Taken off the shelves
               </a-button>
               <a-button 
                 v-if="record.isFeatured === 0"
@@ -91,7 +91,7 @@
                 @click="handleSetFeatured(record.id, 1)"
               >
                 <star-outlined />
-                设为推荐
+                Set it as a recommendation
               </a-button>
               <a-button 
                 v-if="record.isFeatured === 1"
@@ -100,7 +100,7 @@
                 @click="handleSetFeatured(record.id, 0)"
               >
                 <star-filled />
-                取消推荐
+                Cancel a referral
               </a-button>
               <a-button 
                 danger 
@@ -109,7 +109,7 @@
                 @click="handleDelete(record.id)"
               >
                 <delete-outlined />
-                删除
+                Delete
               </a-button>
             </div>
           </template>
@@ -231,7 +231,7 @@ const pagination = reactive({
   total: 0,
   showSizeChanger: true,
   showQuickJumper: true,
-  showTotal: (total: number) => `共 ${total} 条记录`
+  showTotal: (total: number) => `total ${total} records`
 })
 
 // 加载商品数据

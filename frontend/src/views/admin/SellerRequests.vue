@@ -1,9 +1,9 @@
 <template>
   <div class="seller-requests">
-    <h1 class="page-title">卖家申请管理</h1>
+    <h1 class="page-title">Seller Application Management</h1>
     
     <a-tabs v-model:activeKey="activeTab">
-      <a-tab-pane key="pending" tab="待审核">
+      <a-tab-pane key="pending" tab="To be reviewed">
         <a-table
           :columns="columns"
           :data-source="pendingRequests"
@@ -21,7 +21,7 @@
             </template>
             
             <template v-if="column.key === 'status'">
-              <a-tag color="orange">待审核</a-tag>
+              <a-tag color="orange">To be reviewed</a-tag>
             </template>
             
             <template v-if="column.key === 'action'">
@@ -35,7 +35,7 @@
         </a-table>
       </a-tab-pane>
       
-      <a-tab-pane key="approved" tab="已通过">
+      <a-tab-pane key="approved" tab="approved">
         <a-table
           :columns="columns"
           :data-source="approvedRequests"
@@ -53,17 +53,17 @@
             </template>
             
             <template v-if="column.key === 'status'">
-              <a-tag color="green">已通过</a-tag>
+              <a-tag color="green">Passed</a-tag>
             </template>
             
             <template v-if="column.key === 'action'">
-              <a-button type="primary" size="small" @click="showDetail(record)">查看</a-button>
+              <a-button type="primary" size="small" @click="showDetail(record)">View</a-button>
             </template>
           </template>
         </a-table>
       </a-tab-pane>
       
-      <a-tab-pane key="rejected" tab="已拒绝">
+      <a-tab-pane key="rejected" tab="rejected">
         <a-table
           :columns="columns"
           :data-source="rejectedRequests"
@@ -81,11 +81,11 @@
             </template>
             
             <template v-if="column.key === 'status'">
-              <a-tag color="red">已拒绝</a-tag>
+              <a-tag color="red">Rejected</a-tag>
             </template>
             
             <template v-if="column.key === 'action'">
-              <a-button type="primary" size="small" @click="showDetail(record)">查看</a-button>
+              <a-button type="primary" size="small" @click="showDetail(record)">check</a-button>
             </template>
           </template>
         </a-table>
@@ -95,25 +95,25 @@
     <!-- 申请详情对话框 -->
     <a-modal
       v-model:visible="detailVisible"
-      title="申请详情"
+      title="Application Details"
       width="600px"
       :footer="null"
     >
       <a-descriptions bordered :column="1" v-if="currentRequest">
-        <a-descriptions-item label="申请ID">{{ currentRequest.id }}</a-descriptions-item>
-        <a-descriptions-item label="用户名">{{ currentRequest.username }}</a-descriptions-item>
-        <a-descriptions-item label="联系方式">{{ currentRequest.phone || '未提供' }}</a-descriptions-item>
-        <a-descriptions-item label="电子邮箱">{{ currentRequest.email || '未提供' }}</a-descriptions-item>
-        <a-descriptions-item label="申请时间">{{ currentRequest.applyTime }}</a-descriptions-item>
-        <a-descriptions-item label="申请理由">{{ currentRequest.reason || '未提供申请理由' }}</a-descriptions-item>
-        <a-descriptions-item label="状态">
+        <a-descriptions-item label="Application ID">{{ currentRequest.id }}</a-descriptions-item>
+        <a-descriptions-item label="Username">{{ currentRequest.username }}</a-descriptions-item>
+        <a-descriptions-item label="Contact">{{ currentRequest.phone || 'Not provided' }}</a-descriptions-item>
+        <a-descriptions-item label="Email">{{ currentRequest.email || 'Not provided' }}</a-descriptions-item>
+        <a-descriptions-item label="Application timeline">{{ currentRequest.applyTime }}</a-descriptions-item>
+        <a-descriptions-item label="Reason for application">{{ currentRequest.reason || 'Not provided' }}</a-descriptions-item>
+        <a-descriptions-item label="state">
           <a-tag :color="getStatusColor(currentRequest.status)">{{ getStatusText(currentRequest.status) }}</a-tag>
         </a-descriptions-item>
       </a-descriptions>
       
       <div class="modal-footer" v-if="currentRequest && currentRequest.status === 0">
-        <a-button type="primary" @click="approveRequest(currentRequest)">通过申请</a-button>
-        <a-button type="danger" @click="rejectRequest(currentRequest)">拒绝申请</a-button>
+        <a-button type="primary" @click="approveRequest(currentRequest)">Apply by application</a-button>
+        <a-button type="danger" @click="rejectRequest(currentRequest)">Rejection of the application</a-button>
       </div>
     </a-modal>
   </div>

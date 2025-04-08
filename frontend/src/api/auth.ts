@@ -17,4 +17,12 @@ export function register(data: RegisterRequest): Promise<ApiResponse<LoginRespon
     method: 'post',
     data
   });
+}
+
+// 验证token是否有效
+export function checkToken(): Promise<ApiResponse<boolean>> {
+  return request<ApiResponse<boolean>>({
+    url: '/auth/check-token',
+    method: 'get'
+  });
 } 

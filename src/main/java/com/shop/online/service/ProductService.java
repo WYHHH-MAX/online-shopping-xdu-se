@@ -101,4 +101,27 @@ public interface ProductService {
      * @return 图片数量
      */
     int getProductImageCount(Long productId);
+
+    /**
+     * 验证商品是否属于指定卖家
+     * @param productId 商品ID
+     * @param sellerId 卖家ID
+     * @return 是否属于该卖家
+     */
+    boolean isProductOwnedBySeller(Long productId, Long sellerId);
+
+    /**
+     * 删除商品图片(根据URL)
+     * @param productId 商品ID
+     * @param imageUrl 图片URL
+     * @return 操作结果
+     */
+    boolean deleteProductImage(Long productId, String imageUrl);
+
+    /**
+     * 批量删除商品所有图片
+     * @param productId 商品ID
+     * @return 操作结果
+     */
+    boolean deleteAllProductImages(Long productId);
 } 
