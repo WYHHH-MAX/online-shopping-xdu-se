@@ -142,4 +142,11 @@ export function request<T>(config: AxiosRequestConfig): Promise<T> {
   return instance(config)
 }
 
+// 提供useRequest钩子，方便组件中使用
+export function useRequest() {
+  return {
+    request
+  }
+}
+
 export default request 

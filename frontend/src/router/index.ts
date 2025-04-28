@@ -50,9 +50,10 @@ const router = createRouter({
           props: true
         },
         {
-          path: 'payment-success',
+          path: 'payment-success/:orderNo',
           name: 'PaymentSuccess',
-          component: () => import('../views/cart/PaymentSuccess.vue')
+          component: () => import('../views/cart/PaymentSuccess.vue'),
+          props: true
         },
         {
           path: 'orders',
@@ -134,6 +135,11 @@ const router = createRouter({
           path: 'sales',
           name: 'SellerSales',
           component: () => import('../views/seller/SalesAnalytics.vue')
+        },
+        {
+          path: 'payment',
+          name: 'SellerPayment',
+          component: () => import('../views/seller/Payment.vue')
         }
       ]
     },
@@ -181,6 +187,12 @@ const router = createRouter({
           name: 'ProductManagement',
           component: () => import('@/views/admin/ProductManagement.vue'),
           meta: { title: '商品管理' }
+        },
+        {
+          path: 'orders',
+          name: 'OrderManagement',
+          component: () => import('@/views/admin/OrderManagement.vue'),
+          meta: { title: '订单管理' }
         }
       ]
     }

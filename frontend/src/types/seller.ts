@@ -16,21 +16,24 @@ export interface SellerApplyRequest {
 
 // 商家信息
 export interface SellerInfo {
-  id: number
-  shopName: string
-  description: string
-  logo: string
-  contactName: string
-  contactPhone: string
-  contactEmail: string
-  businessLicense: string
-  businessLicenseImage: string
-  idCardFront: string
-  idCardBack: string
-  status: number
-  rejectReason: string
-  createdTime: string
-  updatedTime: string
+  id?: number
+  userId?: number
+  shopName?: string
+  shopLogo?: string
+  logo?: string // 兼容性字段，与shopLogo同义
+  description?: string
+  shopDesc?: string // 兼容性字段，与description同义
+  contactName?: string
+  contactPhone?: string
+  contactEmail?: string
+  businessLicense?: string
+  idCardFront?: string
+  idCardBack?: string
+  status?: number
+  wechatQrCode?: string // 微信支付二维码
+  alipayQrCode?: string // 支付宝支付二维码
+  createTime?: string
+  updateTime?: string
 }
 
 // 商家统计数据

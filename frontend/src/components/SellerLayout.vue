@@ -47,6 +47,12 @@
               <span>Store information</span>
             </router-link>
           </a-menu-item>
+          <a-menu-item key="payment">
+            <router-link to="/seller/payment">
+              <credit-card-outlined />
+              <span>Payment Settings</span>
+            </router-link>
+          </a-menu-item>
           <a-menu-item key="home">
             <router-link to="/">
               <home-outlined />
@@ -103,7 +109,8 @@ import {
   DownOutlined,
   HomeOutlined,
   LogoutOutlined,
-  PieChartOutlined
+  PieChartOutlined,
+  CreditCardOutlined
 } from '@ant-design/icons-vue'
 
 const collapsed = ref(false)

@@ -35,10 +35,23 @@ public interface OrderService extends IService<Order> {
     void payOrder(String orderNo);
 
     /**
+     * 支付订单（带支付方式）
+     * @param orderNo 订单号
+     * @param paymentMethod 支付方式
+     */
+    void payOrder(String orderNo, Integer paymentMethod);
+
+    /**
      * 取消订单
      * @param orderNo 订单号
      */
     void cancelOrder(String orderNo);
+
+    /**
+     * 退款订单
+     * @param orderNo 订单号
+     */
+    void refundOrder(String orderNo);
 
     /**
      * 确认收货

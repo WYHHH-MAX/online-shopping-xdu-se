@@ -9,6 +9,7 @@
       <a-tab-pane key="2" tab="To be received"></a-tab-pane>
       <a-tab-pane key="3" tab="Completed"></a-tab-pane>
       <a-tab-pane key="4" tab="Cancelled"></a-tab-pane>
+      <a-tab-pane key="5" tab="Refunded"></a-tab-pane>
     </a-tabs>
 
     <div v-if="loading" class="loading-container">
@@ -56,6 +57,11 @@
               <a-button @click="handleCancelOrder(item)">Cancel order</a-button>
             </template>
             
+            <!-- Actions for to be shipped orders -->
+            <template v-if="item.status === '1'">
+              <a-button @click="handleCancelOrder(item)">Cancel order</a-button>
+            </template>
+            
             <!-- Actions for shipped orders awaiting receipt -->
             <template v-if="item.status === '2'">
               <a-button type="primary" @click="handleConfirmOrder(item)">Confirm receipt</a-button>
@@ -68,6 +74,9 @@
               </a-button>
               <a-button type="default" size="small" @click="showReviewDialog(item)">
                 Review
+              </a-button>
+              <a-button type="danger" size="small" @click="handleRefundOrder(item)">
+                Apply for refund
               </a-button>
               <!-- 调试信息 -->
               <span style="display: none;">状态: {{ item.status }}</span>
@@ -132,11 +141,13 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { message, Modal } from 'ant-design-vue';
-import { getOrders, payOrder, cancelOrder, confirmOrder } from '@/api/order';
+import { getOrders, payOrder, cancelOrder, confirmOrder, refundOrder } from '@/api/order';
 import { submitReview as submitProductReview, hasReviewed } from '@/api/review';
 import type { ReviewDTO } from '@/types/review';
 import { getImageUrl } from '@/utils/imageUtil';
 import type { OrderVO, OrderProductVO } from '@/types/order';
+import { ExclamationCircleOutlined } from '@ant-design/icons-vue';
+import { h } from 'vue';
 
 const router = useRouter();
 
@@ -146,7 +157,8 @@ const ORDER_STATUS = {
   PENDING_SHIPMENT: 1, // 待发货
   PENDING_RECEIPT: 2,  // 待收货
   COMPLETED: 3,        // 已完成
-  CANCELLED: 4         // 已取消
+  CANCELLED: 4,        // 已取消
+  REFUNDED: 5          // 已退款
 };
 
 // Order list data
@@ -234,26 +246,36 @@ const handlePageChange = (page: number) => {
 };
 
 // Get status text
-const getStatusText = (status: string) => {
-  console.log('获取状态文本，状态值:', status);
-  switch (status) {
-    case '0': return 'Pending Payment';
-    case '1': return 'To be Shipped';
-    case '2': return 'To be Received';
-    case '3': return 'Completed';
-    case '4': return 'Cancelled';
-    default: return 'Unknown Status';
+const getStatusText = (status: string | number) => {
+  const statusNum = parseInt(status.toString());
+  switch (statusNum) {
+    case ORDER_STATUS.PENDING_PAYMENT:
+      return '待付款';
+    case ORDER_STATUS.PENDING_SHIPMENT:
+      return '待发货';
+    case ORDER_STATUS.PENDING_RECEIPT:
+      return '待收货';
+    case ORDER_STATUS.COMPLETED:
+      return '已完成';
+    case ORDER_STATUS.CANCELLED:
+      return '已取消';
+    case ORDER_STATUS.REFUNDED:
+      return '已退款';
+    default:
+      return '未知状态';
   }
 };
 
 // Get status CSS class
 const getStatusClass = (status: string) => {
+  console.log('获取状态样式类，状态值:', status);
   switch (status) {
     case '0': return 'status-pending';
     case '1': return 'status-shipping';
     case '2': return 'status-shipped';
     case '3': return 'status-completed';
     case '4': return 'status-cancelled';
+    case '5': return 'status-refunded';
     default: return '';
   }
 };
@@ -426,10 +448,29 @@ const submitReview = async () => {
 // 添加一个辅助函数，判断是否是已完成订单
 const isCompletedOrder = (order: OrderVO) => {
   console.log('检查是否是已完成订单:', order.orderNo, order.status);
-  // 检查状态值是否为3或状态文本是否为Completed/Done
-  return order.status === '3' || 
-         getStatusText(order.status).toLowerCase() === 'completed' || 
-         getStatusText(order.status).toLowerCase() === 'done';
+  // 只有当状态值为3（已完成）时才返回true
+  return order.status === '3';
+};
+
+// 处理退款申请
+const handleRefundOrder = (order: OrderVO) => {
+  Modal.confirm({
+    title: '确认申请退款',
+    icon: () => h(ExclamationCircleOutlined),
+    content: '确定要申请退款吗？申请后无法撤销。',
+    okText: '确认',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await refundOrder(order.orderNo);
+        message.success('退款申请成功');
+        loadOrders();
+      } catch (error) {
+        console.error('退款申请失败:', error);
+        message.error('退款申请失败，请稍后再试');
+      }
+    },
+  });
 };
 
 onMounted(() => {
@@ -502,6 +543,10 @@ onMounted(() => {
 
 .status-cancelled {
   color: #bfbfbf;
+}
+
+.status-refunded {
+  color: #722ed1; /* 紫色，使退款状态更加明显 */
 }
 
 .order-items {

@@ -40,6 +40,14 @@
               <span class="label">Payment Methods:</span>
               <span class="value">{{ order.paymentMethod || 'Not yet paid' }}</span>
             </div>
+            <div class="info-item">
+              <span class="label">Receiver Phone:</span>
+              <span class="value">{{ order.phone || 'Not available' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Shipping Address:</span>
+              <span class="value">{{ order.location || 'Not available' }}</span>
+            </div>
           </div>
         </div>
         

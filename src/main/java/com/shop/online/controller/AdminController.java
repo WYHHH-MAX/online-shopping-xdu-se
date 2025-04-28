@@ -303,4 +303,58 @@ public class AdminController {
             return Result.error("设置商品推荐状态失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 获取所有订单列表（分页）
+     */
+    @GetMapping("/orders")
+    public Result<?> getAllOrders(
+            @RequestParam(required = false) String orderNo,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        log.info("收到获取所有订单列表请求, 订单号: {}, 用户名: {}, 状态: {}, 页码: {}, 每页数量: {}", 
+                 orderNo, username, status, page, pageSize);
+        try {
+            PageResult<?> pageResult = adminService.getAllOrders(orderNo, username, status, page, pageSize);
+            log.info("获取所有订单列表成功，总记录数: {}", pageResult.getTotal());
+            return Result.success(pageResult);
+        } catch (Exception e) {
+            log.error("获取所有订单列表失败: {}", e.getMessage(), e);
+            return Result.error("获取所有订单列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 管理员发货接口
+     */
+    @PostMapping("/orders/{orderNo}/ship")
+    public Result<Boolean> shipOrder(@PathVariable String orderNo) {
+        log.info("收到管理员发货请求, 订单号: {}", orderNo);
+        try {
+            boolean result = adminService.shipOrder(orderNo);
+            log.info("管理员发货成功, 订单号: {}", orderNo);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("管理员发货失败, 订单号: {}, 错误: {}", orderNo, e.getMessage(), e);
+            return Result.error("发货失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取订单详情
+     */
+    @GetMapping("/orders/{orderNo}")
+    public Result<?> getOrderDetail(@PathVariable String orderNo) {
+        log.info("收到获取订单详情请求, 订单号: {}", orderNo);
+        try {
+            Object orderDetail = adminService.getOrderDetail(orderNo);
+            log.info("获取订单详情成功, 订单号: {}", orderNo);
+            return Result.success(orderDetail);
+        } catch (Exception e) {
+            log.error("获取订单详情失败, 订单号: {}, 错误: {}", orderNo, e.getMessage(), e);
+            return Result.error("获取订单详情失败: " + e.getMessage());
+        }
+    }
 } 

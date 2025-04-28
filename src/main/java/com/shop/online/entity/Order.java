@@ -45,6 +45,21 @@ public class Order {
     private Integer status;
 
     /**
+     * 支付方式: 1-支付宝，2-微信支付，3-银行卡，4-货到付款
+     */
+    private Integer paymentMethod;
+
+    /**
+     * 收货人手机号码
+     */
+    private String phone;
+
+    /**
+     * 收货地址
+     */
+    private String location;
+
+    /**
      * 创建时间
      */
     @TableField("created_time")

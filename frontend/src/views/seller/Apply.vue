@@ -165,6 +165,53 @@
           </a-col>
         </a-row>
         
+        <a-row :gutter="16" style="margin-top: 24px">
+          <a-col :span="24">
+            <h3 style="margin-bottom: 16px">Payment QR Codes</h3>
+            <p style="margin-bottom: 24px">Upload your payment QR codes so customers can make payments to your account</p>
+          </a-col>
+          
+          <a-col :span="12">
+            <a-form-item label="WeChat Pay QR Code" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+              <a-upload
+                v-model:file-list="wechatQrCodeFileList"
+                list-type="picture-card"
+                :show-upload-list="true"
+                :before-upload="beforeUpload"
+                :custom-request="(options: UploadOptions) => customUpload(options, 'wechat')"
+              >
+                <div v-if="!wechatQrCodeUrl">
+                  <plus-outlined />
+                  <div style="margin-top: 8px">Upload WeChat Pay QR Code</div>
+                </div>
+              </a-upload>
+              <div v-if="wechatQrCodeUrl" style="margin-top: 10px">
+                <img :src="wechatQrCodeUrl" style="max-width: 200px" />
+              </div>
+            </a-form-item>
+          </a-col>
+          
+          <a-col :span="12">
+            <a-form-item label="Alipay QR Code" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+              <a-upload
+                v-model:file-list="alipayQrCodeFileList"
+                list-type="picture-card"
+                :show-upload-list="true"
+                :before-upload="beforeUpload"
+                :custom-request="(options: UploadOptions) => customUpload(options, 'alipay')"
+              >
+                <div v-if="!alipayQrCodeUrl">
+                  <plus-outlined />
+                  <div style="margin-top: 8px">Upload Alipay QR Code</div>
+                </div>
+              </a-upload>
+              <div v-if="alipayQrCodeUrl" style="margin-top: 10px">
+                <img :src="alipayQrCodeUrl" style="max-width: 200px" />
+              </div>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        
         <div :style="{ textAlign: 'right' }">
           <a-button style="margin-right: 10px" @click="prevStep">Previous</a-button>
           <a-button style="margin-right: 10px" type="dashed" @click="skipUpload">Skip uploads</a-button>
@@ -300,12 +347,16 @@ const logoFileList = ref<any[]>([])
 const licenseFileList = ref<any[]>([])
 const idCardFrontFileList = ref<any[]>([])
 const idCardBackFileList = ref<any[]>([])
+const wechatQrCodeFileList = ref<any[]>([])
+const alipayQrCodeFileList = ref<any[]>([])
 
 // 上传的文件URL
 const logoUrl = ref('')
 const licenseUrl = ref('')
 const idCardFrontUrl = ref('')
 const idCardBackUrl = ref('')
+const wechatQrCodeUrl = ref('')
+const alipayQrCodeUrl = ref('')
 
 // 添加上传选项接口定义
 interface UploadOptions {
@@ -350,6 +401,12 @@ const nextStep = async () => {
       message.warning('请上传营业执照')
       return
     }
+    
+    // 支付二维码是推荐但不是必须的
+    if (!wechatQrCodeUrl.value && !alipayQrCodeUrl.value) {
+      message.info('建议上传至少一种支付二维码，以便顾客可以支付订单。您也可以之后在卖家中心设置。')
+    }
+    
     currentStep.value++
   } else {
     currentStep.value++
@@ -431,7 +488,9 @@ const beforeUpload = (file: File) => {
 const customUpload = async (options: UploadOptions, fileType: string) => {
   const { file, onSuccess, onError } = options;
   try {
+    // 使用普通资质上传API
     const res = await uploadQualification(fileType, file);
+
     // 设置对应的URL
     if (fileType === 'logo') {
       logoUrl.value = res;
@@ -441,6 +500,10 @@ const customUpload = async (options: UploadOptions, fileType: string) => {
       idCardFrontUrl.value = res;
     } else if (fileType === 'idCardBack') {
       idCardBackUrl.value = res;
+    } else if (fileType === 'wechat') {
+      wechatQrCodeUrl.value = res;
+    } else if (fileType === 'alipay') {
+      alipayQrCodeUrl.value = res;
     }
     message.success('上传成功');
     onSuccess(res, file);
@@ -457,6 +520,8 @@ const skipUpload = () => {
   licenseUrl.value = licenseUrl.value || '/api/default-license.png';
   idCardFrontUrl.value = idCardFrontUrl.value || '/api/default-id-front.png';
   idCardBackUrl.value = idCardBackUrl.value || '/api/default-id-back.png';
+  wechatQrCodeUrl.value = wechatQrCodeUrl.value || '/api/default-wechat.png';
+  alipayQrCodeUrl.value = alipayQrCodeUrl.value || '/api/default-alipay.png';
   
   // 直接进入下一步
   currentStep.value++;

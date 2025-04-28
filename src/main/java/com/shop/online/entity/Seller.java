@@ -86,6 +86,18 @@ public class Seller {
     private String idCardBack;
 
     /**
+     * 微信支付二维码
+     */
+    @TableField("wechat_qr_code")
+    private String wechatQrCode;
+
+    /**
+     * 支付宝支付二维码
+     */
+    @TableField("alipay_qr_code")
+    private String alipayQrCode;
+
+    /**
      * 审核拒绝理由
      */
     private String rejectReason;

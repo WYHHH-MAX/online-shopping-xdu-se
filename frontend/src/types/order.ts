@@ -8,6 +8,8 @@ export interface OrderVO {
   userId?: number
   username?: string
   paymentMethod?: string
+  phone?: string
+  location?: string
   products: OrderProductVO[]
 }
 

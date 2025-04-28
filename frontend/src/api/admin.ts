@@ -191,4 +191,42 @@ export function deleteSeller(id: number) {
     url: `/admin/sellers/${id}`,
     method: 'delete'
   })
+}
+
+/**
+ * 获取所有订单列表
+ * @param params 查询参数
+ * @returns 订单列表数据
+ */
+export function getAllOrders(params?: any) {
+  return request<{
+    code: number;
+    msg?: string;
+    message?: string;
+    data: {
+      total: number;
+      list: any[];
+    }
+  }>({
+    url: '/admin/orders',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 获取订单详情
+ * @param orderNo 订单号
+ * @returns 订单详情数据
+ */
+export function getOrderDetail(orderNo: string) {
+  return request<{
+    code: number;
+    msg?: string;
+    message?: string;
+    data: any;
+  }>({
+    url: `/admin/orders/${orderNo}`,
+    method: 'get'
+  })
 } 

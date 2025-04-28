@@ -58,6 +58,16 @@ public class OrderVO {
     private String paymentMethod;
     
     /**
+     * 收货人手机号码
+     */
+    private String phone;
+    
+    /**
+     * 收货地址
+     */
+    private String location;
+    
+    /**
      * 订单商品列表
      */
     private List<OrderProductVO> products;

@@ -15,6 +15,8 @@ export interface Order {
   status: string // 后端返回的是字符串表示的数字
   totalAmount: number
   products: OrderProduct[]
+  phone?: string
+  location?: string
   createdTime?: string
   updatedTime?: string
 }
@@ -60,7 +62,9 @@ export function createOrder(data: {
   directBuy?: boolean, 
   productId?: number, 
   quantity?: number,
-  paymentMethod?: string  // 添加支付方式参数
+  paymentMethod?: string,  // 添加支付方式参数
+  phone: string,           // 添加手机号字段
+  location: string         // 添加地址字段
 }) {
   console.log('调用创建订单API，参数:', data);
   return request<ApiResponse<CreateOrderResult>>({
@@ -80,12 +84,16 @@ export function payOrder(orderNo: string, paymentMethod?: string) {
   const cleanOrderNo = String(orderNo).trim();
   console.log('处理后的订单号:', cleanOrderNo);
   
+  // 确保支付方式是数字字符串
+  const payMethod = paymentMethod ? String(paymentMethod).trim() : '1';
+  console.log('使用的支付方式:', payMethod);
+  
   return request<ApiResponse<any>>({
     url: '/orders/pay',
     method: 'post',
     data: { 
       orderNo: cleanOrderNo,
-      paymentMethod: paymentMethod || '1' // 默认使用支付宝(1)
+      paymentMethod: payMethod // 使用指定的支付方式
     }
   }).then(response => {
     console.log('支付订单API成功:', response);
@@ -102,6 +110,16 @@ export function payOrder(orderNo: string, paymentMethod?: string) {
 export function cancelOrder(orderNo: string) {
   return request<ApiResponse<any>>({
     url: `/orders/${orderNo}/cancel`,
+    method: 'post'
+  })
+}
+
+/**
+ * 申请退款
+ */
+export function refundOrder(orderNo: string) {
+  return request<ApiResponse<any>>({
+    url: `/orders/${orderNo}/refund`,
     method: 'post'
   })
 }

@@ -57,6 +57,15 @@ public interface SellerService extends IService<Seller> {
      */
     boolean uploadQualification(Long sellerId, String fileType, String filePath);
 
+    /**
+     * 上传支付二维码
+     * @param sellerId 商家ID
+     * @param payType 支付类型(wechat, alipay)
+     * @param filePath 文件路径
+     * @return 更新结果
+     */
+    boolean uploadPaymentQrCode(Long sellerId, String payType, String filePath);
+
     SellerVO getSellerByUserId(Long userId);
     SellerVO createSeller(Seller seller);
     SellerVO updateSeller(Seller seller);

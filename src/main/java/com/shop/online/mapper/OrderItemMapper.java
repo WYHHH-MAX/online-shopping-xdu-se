@@ -64,4 +64,13 @@ public interface OrderItemMapper {
      */
     @Update("UPDATE order_item SET deleted = 1 WHERE id = #{id}")
     int deleteById(@Param("id") Long id);
+    
+    /**
+     * 根据订单ID逻辑删除所有订单明细
+     * 
+     * @param orderId 订单ID
+     * @return 影响行数
+     */
+    @Update("UPDATE order_item SET deleted = 1 WHERE order_id = #{orderId}")
+    int logicalDeleteByOrderId(@Param("orderId") Long orderId);
 } 

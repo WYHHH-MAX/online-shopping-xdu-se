@@ -238,22 +238,47 @@ const fetchRequests = async () => {
     
     // 发送请求获取卖家申请
     const res: any = await getSellerRequests(params)
-    // console.log('获取到卖家申请列表原始数据:', res)
+    console.log('获取到卖家申请列表原始数据:', res)
     
     // 处理返回的数据
     if (res && typeof res === 'object') {
-      if (res.records) {
-        // 标准分页数据格式
+      // 检查是否有data属性（标准接口返回格式）
+      if (res.data && typeof res.data === 'object') {
+        // 标准接口返回格式 {code, msg, data: {total, list}}
+        if (res.data.list && Array.isArray(res.data.list)) {
+          allRequests.value = res.data.list
+          pagination.total = res.data.total || 0
+          console.log('成功解析标准接口返回格式数据')
+        } else if (res.data.records && Array.isArray(res.data.records)) {
+          // 兼容另一种分页格式 {code, msg, data: {total, records}}
+          allRequests.value = res.data.records
+          pagination.total = res.data.total || 0
+          console.log('成功解析records格式数据')
+        } else if (Array.isArray(res.data)) {
+          // data直接是数组
+          allRequests.value = res.data
+          pagination.total = res.data.length
+          console.log('成功解析data数组格式数据')
+        } else {
+          console.error('无法识别data中的数据格式:', res.data)
+          allRequests.value = []
+          pagination.total = 0
+        }
+      } else if (res.records) {
+        // 直接返回分页对象格式
         allRequests.value = res.records
         pagination.total = res.total || 0
+        console.log('成功解析直接分页对象格式数据')
       } else if (res.list) {
-        // 兼容旧的分页格式
+        // 直接返回带list的格式
         allRequests.value = res.list
         pagination.total = res.total || 0
+        console.log('成功解析直接list格式数据')
       } else if (Array.isArray(res)) {
         // 直接返回数组
         allRequests.value = res
         pagination.total = res.length
+        console.log('成功解析直接数组格式数据')
       } else {
         console.error('未识别的响应格式:', res)
         allRequests.value = []
@@ -265,7 +290,7 @@ const fetchRequests = async () => {
       pagination.total = 0
     }
 
-    // console.log('处理后的卖家申请数据:', allRequests.value)
+    console.log('处理后的卖家申请数据:', allRequests.value)
   } catch (error: any) {
     console.error('获取卖家申请失败:', error)
     message.error(error.message || '获取卖家申请失败')

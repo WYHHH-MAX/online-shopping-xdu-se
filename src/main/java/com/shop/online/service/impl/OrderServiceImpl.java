@@ -1,6 +1,7 @@
 package com.shop.online.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shop.online.common.result.PageResult;
@@ -144,6 +145,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 orderVO.setStatus(order.getStatus().toString());
                 orderVO.setTotalAmount(order.getTotalAmount());
                 
+                // 设置手机号和地址
+                orderVO.setPhone(order.getPhone());
+                orderVO.setLocation(order.getLocation());
+                
                 // 显式设置创建时间和更新时间
                 if (order.getCreatedTime() != null) {
                     orderVO.setCreateTime(order.getCreatedTime());
@@ -199,6 +204,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             // 获取当前用户
             Long userId = userService.getCurrentUser().getId();
 //            log.info("当前用户ID: {}", userId);
+            
+            // 验证必填字段
+            if (createOrderDTO.getPhone() == null || createOrderDTO.getPhone().trim().isEmpty()) {
+                throw new BusinessException("收货人手机号不能为空");
+            }
+            
+            if (createOrderDTO.getLocation() == null || createOrderDTO.getLocation().trim().isEmpty()) {
+                throw new BusinessException("收货地址不能为空");
+            }
             
             // 判断是否是直接购买
             boolean isDirectBuy = createOrderDTO.getDirectBuy() != null && createOrderDTO.getDirectBuy();
@@ -339,6 +353,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             order.setUpdatedTime(LocalDateTime.now());
             order.setDeleted(0); // 未删除
             
+            // 设置收货人手机号和地址
+            order.setPhone(createOrderDTO.getPhone());
+            order.setLocation(createOrderDTO.getLocation());
+            
 //            log.info("保存订单: {}", order);
             baseMapper.insert(order);
 //            log.info("订单已保存, ID: {}", order.getId());
@@ -376,6 +394,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             BeanUtils.copyProperties(order, orderVO);
             orderVO.setStatus(order.getStatus().toString());
             
+            // 设置支付方式
+            if (order.getPaymentMethod() != null) {
+                orderVO.setPaymentMethod(order.getPaymentMethod().toString());
+            } else {
+                orderVO.setPaymentMethod("0");
+            }
+            
+            // 设置收货人手机号和地址
+            orderVO.setPhone(order.getPhone());
+            orderVO.setLocation(order.getLocation());
+            
             List<OrderVO.OrderProductVO> productVOList = orderItems.stream().map(item -> {
                 OrderVO.OrderProductVO productVO = new OrderVO.OrderProductVO();
                 productVO.setId(item.getProductId().intValue());
@@ -402,7 +431,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void payOrder(String orderNo) {
-//        log.info("开始处理支付订单请求，订单号: {}", orderNo);
+        // 调用新的方法，保持兼容性
+        payOrder(orderNo, null);
+    }
+    
+    /**
+     * 支付订单（带支付方式）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void payOrder(String orderNo, Integer paymentMethod) {
+//        log.info("开始处理支付订单请求，订单号: {}, 支付方式: {}", orderNo, paymentMethod);
         
         if (orderNo == null || orderNo.trim().isEmpty()) {
             log.error("订单号为空，无法支付");
@@ -467,6 +506,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             order.setStatus(1); // 待发货
             order.setUpdatedTime(LocalDateTime.now());
             
+            // 设置支付方式（如果提供）
+            if (paymentMethod != null) {
+                order.setPaymentMethod(paymentMethod);
+                log.info("设置订单支付方式: {}", paymentMethod);
+            }
+            
 //            log.info("更新订单状态: 待付款(0) -> 待发货(1)");
             baseMapper.updateById(order);
 //            log.info("订单支付成功，订单号: {}", cleanOrderNo);
@@ -499,19 +544,29 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             throw new BusinessException("订单不存在");
         }
         
-        if (order.getStatus() != 0) {
-            throw new BusinessException("只能取消待付款订单");
+        // 修改：允许取消待付款(0)和待发货(1)的订单
+        if (order.getStatus() != 0 && order.getStatus() != 1) {
+            throw new BusinessException("只能取消待付款或待发货的订单");
         }
         
-        // 更新订单状态
-        order.setStatus(4); // 已取消
-        order.setUpdatedTime(LocalDateTime.now());
+        // 使用 LambdaUpdateWrapper 直接更新订单的状态和 deleted 字段
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Order::getId, order.getId())
+                .set(Order::getStatus, 4) // 已取消
+                .set(Order::getDeleted, 1) // 设置为已删除
+                .set(Order::getUpdatedTime, LocalDateTime.now());
         
-        baseMapper.updateById(order);
+        boolean updated = update(updateWrapper);
+        log.info("使用UpdateWrapper更新订单取消状态: orderId={}, updated={}", order.getId(), updated);
         
-        // 恢复库存
+        // 查询订单项
         List<OrderItemDTO> orderItems = orderItemMapper.selectByOrderId(order.getId());
         
+        // 先将订单项逻辑删除（只需调用一次）
+        int itemsDeleted = orderItemMapper.logicalDeleteByOrderId(order.getId());
+        log.info("订单项逻辑删除结果: orderId={}, itemsDeleted={}", order.getId(), itemsDeleted);
+        
+        // 恢复库存
         for (OrderItemDTO orderItem : orderItems) {
             Product product = productMapper.selectById(orderItem.getProductId());
             if (product != null) {
@@ -519,6 +574,62 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 productMapper.updateById(product);
             }
         }
+        
+        log.info("订单已取消并逻辑删除: {}", orderNo);
+    }
+
+    /**
+     * 退款订单
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void refundOrder(String orderNo) {
+        // 获取当前用户
+        Long userId = userService.getCurrentUser().getId();
+        
+        // 查询订单
+        LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Order::getOrderNo, orderNo);
+        queryWrapper.eq(Order::getUserId, userId);
+        queryWrapper.eq(Order::getDeleted, 0); // 只查询未删除订单
+        Order order = baseMapper.selectOne(queryWrapper);
+        
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        
+        // 只允许已完成(3)的订单申请退款
+        if (order.getStatus() != 3) {
+            throw new BusinessException("只能对已完成的订单申请退款");
+        }
+        
+        // 使用 LambdaUpdateWrapper 直接更新订单的状态和 deleted 字段
+        LambdaUpdateWrapper<Order> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Order::getId, order.getId())
+                .set(Order::getStatus, 5) // 已退款
+                .set(Order::getDeleted, 1) // 设置为已删除
+                .set(Order::getUpdatedTime, LocalDateTime.now());
+        
+        boolean updated = update(updateWrapper);
+        log.info("使用UpdateWrapper更新订单退款状态: orderId={}, updated={}", order.getId(), updated);
+        
+        // 查询订单项
+        List<OrderItemDTO> orderItems = orderItemMapper.selectByOrderId(order.getId());
+        
+        // 先将订单项逻辑删除（只需调用一次）
+        int itemsDeleted = orderItemMapper.logicalDeleteByOrderId(order.getId());
+        log.info("订单项逻辑删除结果: orderId={}, itemsDeleted={}", order.getId(), itemsDeleted);
+        
+        // 恢复库存
+        for (OrderItemDTO orderItem : orderItems) {
+            Product product = productMapper.selectById(orderItem.getProductId());
+            if (product != null) {
+                product.setStock(product.getStock() + orderItem.getQuantity());
+                productMapper.updateById(product);
+            }
+        }
+        
+        log.info("订单退款成功并逻辑删除: {}", orderNo);
     }
 
     /**
@@ -582,6 +693,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         BeanUtils.copyProperties(order, orderVO);
         orderVO.setStatus(order.getStatus().toString());
         
+        // 设置支付方式
+        if (order.getPaymentMethod() != null) {
+            orderVO.setPaymentMethod(order.getPaymentMethod().toString());
+        } else {
+            orderVO.setPaymentMethod("0");
+        }
+        
+        // 设置手机号和地址
+        orderVO.setPhone(order.getPhone());
+        orderVO.setLocation(order.getLocation());
+        
         List<OrderVO.OrderProductVO> productVOList = orderItems.stream().map(item -> {
             OrderVO.OrderProductVO productVO = new OrderVO.OrderProductVO();
             productVO.setId(item.getProductId().intValue());
@@ -626,7 +748,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             Integer size = Integer.parseInt(params.getOrDefault("size", 10).toString());
             String status = (String) params.get("status");
             
-//            log.info("查询参数: sellerId={}, page={}, size={}, status={}", sellerId, page, size, status);
+            // 获取日期范围参数
+            String startDateStr = (String) params.get("startDate");
+            String endDateStr = (String) params.get("endDate");
+            
+            log.info("查询参数: sellerId={}, page={}, size={}, status={}, startDate={}, endDate={}", 
+                    sellerId, page, size, status, startDateStr, endDateStr);
             
             // 构建查询条件
             LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
@@ -636,6 +763,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             // 按状态筛选
             if (StringUtils.hasText(status)) {
                 queryWrapper.eq(Order::getStatus, Integer.parseInt(status));
+            }
+            
+            // 按日期范围筛选
+            if (StringUtils.hasText(startDateStr)) {
+                LocalDateTime startDateTime = LocalDateTime.parse(startDateStr + "T00:00:00");
+                queryWrapper.ge(Order::getCreatedTime, startDateTime);
+                log.info("添加起始日期筛选: {}", startDateTime);
+            }
+            
+            if (StringUtils.hasText(endDateStr)) {
+                LocalDateTime endDateTime = LocalDateTime.parse(endDateStr + "T23:59:59");
+                queryWrapper.le(Order::getCreatedTime, endDateTime);
+                log.info("添加结束日期筛选: {}", endDateTime);
             }
             
             // 按创建时间倒序
@@ -691,15 +831,23 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 // 设置用户ID
                 orderVO.setUserId(order.getUserId());
                 
+                // 设置手机号和地址
+                orderVO.setPhone(order.getPhone());
+                orderVO.setLocation(order.getLocation());
+                
                 // 设置用户名
                 User user = userMap.get(order.getUserId());
                 if (user != null) {
                     orderVO.setUsername(user.getUsername());
                 }
                 
-                // 设置支付方式（这里假设我们有一个字段或者默认值）
-                // 实际情况可能需要从订单表中增加一个支付方式字段，或从支付记录表中查询
-                orderVO.setPaymentMethod("1"); // 这里假设默认为支付宝，实际应该从订单数据中获取
+                // 设置支付方式 - 从订单对象中获取真实的支付方式
+                if (order.getPaymentMethod() != null) {
+                    orderVO.setPaymentMethod(order.getPaymentMethod().toString());
+                } else {
+                    // 只有在没有支付方式数据时才使用默认值
+                    orderVO.setPaymentMethod("0");
+                }
                 
                 // 确保时间字段不为null
                 if (order.getCreatedTime() != null) {
@@ -846,21 +994,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 endDateTime = LocalDateTime.now();
             }
             
-            // 查询订单数据
+            // 查询订单数据 - 修改：只统计状态为已完成(3)的订单
             LambdaQueryWrapper<Order> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(Order::getSellerId, sellerId)
                        .eq(Order::getDeleted, 0)
                        .ge(Order::getCreatedTime, startDateTime)
                        .le(Order::getCreatedTime, endDateTime)
-                       .ne(Order::getStatus, 0) // 排除未支付订单
+                       .eq(Order::getStatus, 3) // 只统计已完成的订单
                        .orderByAsc(Order::getCreatedTime);
             
             List<Order> orders = list(queryWrapper);
-            log.info("查询到订单数量: {}", orders.size());
+            log.info("查询到已完成订单数量: {}", orders.size());
             
             // 计算销售总览数据
             double totalSales = orders.stream()
-                    .filter(order -> order.getStatus() != null && order.getStatus() != 0) // 排除未支付订单
                     .mapToDouble(order -> order.getTotalAmount().doubleValue())
                     .sum();
             
@@ -890,7 +1037,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 salesByTime.add(timeData);
             }
             
-            // 按商品类别统计销售数据
+            // 修改：按商品类别统计销售数据，只统计已完成的订单
             List<Map<String, Object>> salesByCategory = baseMapper.getSalesByCategory(sellerId, startDateTime, endDateTime);
             
             // 计算类别销售占比
@@ -904,7 +1051,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 categoryData.put("percentage", percentage);
             }
             
-            // 获取热销商品
+            // 修改：获取热销商品，只统计已完成的订单
             List<Map<String, Object>> topProducts = baseMapper.getTopSellingProducts(sellerId, startDateTime, endDateTime, 10);
             
             // 组合结果

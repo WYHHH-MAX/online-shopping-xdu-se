@@ -44,6 +44,12 @@
                   Cancel the order
                 </a-button>
                 <a-button
+                  v-if="parseInt(item.status) === 1"
+                  @click="handleCancel(item)"
+                >
+                  Cancel the order
+                </a-button>
+                <a-button
                   v-if="parseInt(item.status) === 2"
                   type="primary"
                   @click="handleConfirm(item)"
@@ -57,6 +63,13 @@
                 >
                   Review
                 </a-button>
+                <a-button
+                  v-if="parseInt(item.status) === 3"
+                  type="danger"
+                  @click="handleRefund(item)"
+                >
+                  Apply for refund
+                </a-button>
               </div>
             </div>
           </a-card>
@@ -68,10 +81,12 @@
 
 <script lang="ts" setup>
 import { ref, onMounted, watch } from 'vue'
-import { message } from 'ant-design-vue'
-import { getOrders, payOrder, cancelOrder, confirmOrder } from '@/api/order'
+import { message, Modal } from 'ant-design-vue'
+import { getOrders, payOrder, cancelOrder, confirmOrder, refundOrder } from '@/api/order'
 import { getImageUrl } from '@/utils/imageUtil'
 import { useRouter } from 'vue-router'
+import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
+import { h } from 'vue'
 
 const props = defineProps<{
   status: string | null
@@ -176,6 +191,7 @@ const getStatusColor = (status: string) => {
     case 2: return 'cyan'   // 待收货
     case 3: return 'green'  // 已完成
     case 4: return 'red'    // 已取消
+    case 5: return 'purple' // 已退款，添加
     default: return 'default'
   }
 }
@@ -191,6 +207,7 @@ const getStatusText = (status: string) => {
     case 2: return 'To be received'
     case 3: return 'Done'
     case 4: return 'Canceled'
+    case 5: return 'Refunded'  // 添加退款状态
     default: return status
   }
 }
@@ -258,6 +275,28 @@ const handleReview = (order: Order) => {
     }
   });
 }
+
+// 添加退款处理函数
+const handleRefund = (order: Order) => {
+  Modal.confirm({
+    title: '确认申请退款',
+    icon: () => h(ExclamationCircleOutlined),
+    content: '确定要申请退款吗？此操作无法撤销。',
+    okText: '确认',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await refundOrder(order.orderNo);
+        message.success('退款申请成功');
+        // 刷新订单列表
+        loadOrders();
+      } catch (error) {
+        console.error('申请退款失败:', error);
+        message.error('申请退款失败');
+      }
+    }
+  });
+};
 
 // 监听status变化，重新加载订单
 watch(() => props.status, (newStatus) => {

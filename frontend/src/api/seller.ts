@@ -89,6 +89,8 @@ export function getSellerInfo() {
     url: '/seller/info',
     method: 'get'
   }).then(response => {
+    console.log('Raw seller info response:', response);
+    
     // 标准化字段名，以便前端正确处理
     const data = response;
     
@@ -108,6 +110,25 @@ export function getSellerInfo() {
         data.shopLogo = data.logo;
       } else if (data.shopLogo && !data.logo) {
         data.logo = data.shopLogo;
+      }
+      
+      // 确保支付二维码路径正确
+      if (data.wechatQrCode) {
+        console.log('Original WeChat QR Code path:', data.wechatQrCode);
+        // 使用相对路径
+        if (data.wechatQrCode.startsWith('/api/images')) {
+          data.wechatQrCode = data.wechatQrCode.replace('/api', '');
+        }
+        console.log('Processed WeChat QR Code path:', data.wechatQrCode);
+      }
+      
+      if (data.alipayQrCode) {
+        console.log('Original Alipay QR Code path:', data.alipayQrCode);
+        // 使用相对路径
+        if (data.alipayQrCode.startsWith('/api/images')) {
+          data.alipayQrCode = data.alipayQrCode.replace('/api', '');
+        }
+        console.log('Processed Alipay QR Code path:', data.alipayQrCode);
       }
     }
     
@@ -657,6 +678,44 @@ export function exportFinancialReport(params: {
     return response;
   }).catch(error => {
     console.error('导出财务报表失败:', error);
+    throw error;
+  });
+}
+
+/**
+ * 上传支付二维码
+ */
+export function uploadPaymentQrCode(payType: 'wechat' | 'alipay', file: File) {
+  console.log(`上传${payType}支付二维码, 文件: ${file.name}, 大小: ${file.size} 字节`);
+  
+  if (!file) {
+    return Promise.reject(new Error('文件不能为空'));
+  }
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('payType', payType);
+  
+  return request<string>({
+    url: '/seller/upload/payment-qrcode',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  }).then(response => {
+    console.log(`${payType}支付二维码上传成功, 响应:`, response);
+    
+    // 处理不同返回格式
+    if (typeof response === 'string') {
+      return response;
+    } else if (response && typeof response === 'object' && 'data' in response) {
+      return (response as any).data as string;
+    }
+    
+    throw new Error('无法获取上传的图片URL');
+  }).catch(error => {
+    console.error(`${payType}支付二维码上传失败:`, error);
     throw error;
   });
 } 

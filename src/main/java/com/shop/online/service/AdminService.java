@@ -91,4 +91,27 @@ public interface AdminService {
      * @return 是否操作成功
      */
     boolean setProductFeatured(Long id, Integer featured);
+
+    /**
+     * 获取所有订单列表（分页）
+     * @param orderNo 订单号
+     * @param username 用户名
+     * @param status 订单状态
+     * @param page 页码
+     * @param pageSize 每页数量
+     * @return 订单分页结果
+     */
+    PageResult<?> getAllOrders(String orderNo, String username, Integer status, int page, int pageSize);
+
+    /**
+     * 管理员发货
+     * @param orderNo 订单号
+     * @return 是否操作成功
+     */
+    boolean shipOrder(String orderNo);
+
+    /**
+     * 获取订单详情
+     */
+    Object getOrderDetail(String orderNo);
 } 

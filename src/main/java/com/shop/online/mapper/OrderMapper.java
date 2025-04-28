@@ -30,7 +30,7 @@ public interface OrderMapper extends BaseMapper<Order> {
             "WHERE o.seller_id = #{sellerId} " +
             "AND o.created_time >= #{startDate} " +
             "AND o.created_time <= #{endDate} " +
-            "AND o.status != 0 " +
+            "AND o.status = 3 " +
             "AND o.deleted = 0 " +
             "GROUP BY c.name " +
             "ORDER BY amount DESC")
@@ -55,7 +55,7 @@ public interface OrderMapper extends BaseMapper<Order> {
             "WHERE o.seller_id = #{sellerId} " +
             "AND o.created_time >= #{startDate} " +
             "AND o.created_time <= #{endDate} " +
-            "AND o.status != 0 " +
+            "AND o.status = 3 " +
             "AND o.deleted = 0 " +
             "GROUP BY p.id, p.name " +
             "ORDER BY salesAmount DESC " +

@@ -110,8 +110,20 @@ public class OrderController {
             return Result.error("订单号不能为空");
         }
         
+        String paymentMethod = params.get("paymentMethod");
+        Integer paymentMethodInt = null;
+        
+        if (paymentMethod != null && !paymentMethod.isEmpty()) {
+            try {
+                paymentMethodInt = Integer.parseInt(paymentMethod);
+            } catch (NumberFormatException e) {
+                log.warn("支付方式格式不正确: {}", paymentMethod);
+                return Result.error("支付方式格式不正确");
+            }
+        }
+        
         try {
-            orderService.payOrder(orderNo);
+            orderService.payOrder(orderNo, paymentMethodInt);
 //            log.info("订单支付成功: {}", orderNo);
             return Result.success();
         } catch (Exception e) {
@@ -132,6 +144,22 @@ public class OrderController {
             return Result.success();
         } catch (Exception e) {
             log.error("订单取消失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 退款订单
+     */
+    @PostMapping("/{orderNo}/refund")
+    public Result refundOrder(@PathVariable("orderNo") String orderNo) {
+        log.info("申请退款, 订单号: {}", orderNo);
+        try {
+            orderService.refundOrder(orderNo);
+            log.info("订单退款成功: {}", orderNo);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("订单退款失败", e);
             return Result.error(e.getMessage());
         }
     }

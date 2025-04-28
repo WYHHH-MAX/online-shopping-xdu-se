@@ -58,7 +58,7 @@
       </a-col>
       
       <a-col :span="6">
-        <a-card hoverable @click="navigateTo('users')">
+        <a-card hoverable @click="navigateTo('products')">
           <template #cover>
             <div class="stats-icon products">
               <shopping-outlined />
@@ -68,6 +68,22 @@
             <template #title>Manage products</template>
             <template #description>
               <div class="stats-value">{{ stats.productCount }}</div>
+            </template>
+          </a-card-meta>
+        </a-card>
+      </a-col>
+      
+      <a-col :span="6">
+        <a-card hoverable @click="navigateTo('orders')">
+          <template #cover>
+            <div class="stats-icon orders">
+              <shopping-cart-outlined />
+            </div>
+          </template>
+          <a-card-meta>
+            <template #title>Order management</template>
+            <template #description>
+              <div class="stats-value">88</div>
             </template>
           </a-card-meta>
         </a-card>
@@ -153,7 +169,8 @@ import {
   ShopOutlined, 
   SolutionOutlined, 
   ShoppingOutlined,
-  RiseOutlined
+  RiseOutlined,
+  ShoppingCartOutlined
 } from '@ant-design/icons-vue'
 import { getAdminStats, getPendingSellerRequests } from '@/api/admin'
 import { useRouter } from 'vue-router'
@@ -332,6 +349,10 @@ onMounted(() => {
 
 .stats-icon.products {
   background-color: #722ed1;
+}
+
+.stats-icon.orders {
+  background-color: #f5222d;
 }
 
 .stats-value {

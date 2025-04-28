@@ -29,4 +29,14 @@ public class CreateOrderDTO {
      * 直接购买的商品数量
      */
     private Integer quantity;
+    
+    /**
+     * 收货人手机号
+     */
+    private String phone;
+    
+    /**
+     * 收货地址
+     */
+    private String location;
 } 

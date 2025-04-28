@@ -273,6 +273,39 @@ public class SellerServiceImpl extends ServiceImpl<SellerMapper, Seller> impleme
     }
 
     @Override
+    public boolean uploadPaymentQrCode(Long sellerId, String payType, String filePath) {
+        Seller seller = getById(sellerId);
+        if (seller == null || seller.getDeleted() == 1) {
+            log.error("商家不存在, sellerId={}", sellerId);
+            throw new BusinessException("商家不存在");
+        }
+
+        log.info("更新商家支付二维码, sellerId={}, payType={}, filePath={}", sellerId, payType, filePath);
+        
+        // 根据支付类型更新对应的字段
+        switch (payType) {
+            case "wechat":
+                String oldWechatQrCode = seller.getWechatQrCode();
+                log.info("更新微信支付二维码, 旧二维码: {}, 新二维码: {}", oldWechatQrCode, filePath);
+                seller.setWechatQrCode(filePath);
+                break;
+            case "alipay":
+                String oldAlipayQrCode = seller.getAlipayQrCode();
+                log.info("更新支付宝支付二维码, 旧二维码: {}, 新二维码: {}", oldAlipayQrCode, filePath);
+                seller.setAlipayQrCode(filePath);
+                break;
+            default:
+                log.error("不支持的支付类型, payType={}", payType);
+                throw new BusinessException("不支持的支付类型");
+        }
+
+        seller.setUpdatedTime(LocalDateTime.now());
+        boolean result = updateById(seller);
+        log.info("更新商家支付二维码结果: {}", result);
+        return result;
+    }
+
+    @Override
     public SellerVO getSellerByUserId(Long userId) {
         if (userId == null) {
             return null;

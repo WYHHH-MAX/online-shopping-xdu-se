@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +100,36 @@ public class SellerController {
         } catch (IOException e) {
             log.error("资质图片上传失败: {}", e.getMessage(), e);
             return Result.error("资质图片上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 支付二维码上传
+     */
+    @PostMapping("/upload/payment-qrcode")
+    public Result<String> uploadPaymentQrCode(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("payType") String payType) {
+        log.info("上传支付二维码, 类型: {}, 文件名: {}, 大小: {}", payType, file.getOriginalFilename(), file.getSize());
+        
+        try {
+            // 获取当前商家
+            Seller currentSeller = sellerService.getCurrentSeller();
+            log.info("当前商家ID: {}", currentSeller.getId());
+            
+            // 上传文件并获取路径
+            String relativePath = FileUtil.uploadPaymentQrCode(file, currentSeller.getId(), payType);
+            log.info("支付二维码上传结果 - 相对路径: {}", relativePath);
+            
+            // 更新商家支付二维码信息
+            sellerService.uploadPaymentQrCode(currentSeller.getId(), payType, relativePath);
+            log.info("商家支付二维码已更新, 支付类型: {}, 路径: {}", payType, relativePath);
+            
+            // 返回相对路径，前端会自动添加基础URL
+            return Result.success(relativePath);
+        } catch (IOException e) {
+            log.error("支付二维码上传失败: {}", e.getMessage(), e);
+            return Result.error("支付二维码上传失败: " + e.getMessage());
         }
     }
 
@@ -608,6 +639,37 @@ public class SellerController {
             
             // 获取销售数据分析
             Map<String, Object> salesAnalytics = orderService.getSalesAnalytics(params);
+            
+            // 获取订单数据，增加这部分逻辑
+            try {
+                // 构建查询参数
+                Map<String, Object> orderParams = new HashMap<>();
+                orderParams.put("sellerId", seller.getId());
+                
+                // 使用相同的日期范围
+                if (StringUtils.hasText(startDate)) {
+                    orderParams.put("startDate", startDate);
+                }
+                
+                if (StringUtils.hasText(endDate)) {
+                    orderParams.put("endDate", endDate);
+                }
+                
+                // 查询状态为已完成的订单
+                orderParams.put("status", "3");
+                orderParams.put("page", 1);
+                orderParams.put("size", 10);
+                
+                // 调用服务查询订单
+                PageResult<OrderVO> recentOrders = orderService.getSellerOrders(orderParams);
+                log.info("查询到的订单: {} 条", recentOrders.getList().size());
+                
+                // 将订单数据添加到返回结果中
+                salesAnalytics.put("recentOrders", recentOrders.getList());
+            } catch (Exception e) {
+                log.error("获取订单数据失败", e);
+                salesAnalytics.put("recentOrders", new ArrayList<>());
+            }
             
             return Result.success(salesAnalytics);
         } catch (Exception e) {

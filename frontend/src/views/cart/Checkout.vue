@@ -50,6 +50,26 @@
           </div>
         </div>
         
+        <div class="section">
+          <h2 class="section-title">Shipping Information</h2>
+          <div class="shipping-info">
+            <a-form :model="shippingInfo" layout="vertical">
+              <a-row :gutter="16">
+                <a-col :span="12">
+                  <a-form-item label="Phone Number" name="phone" :rules="[{ required: true, message: 'Please enter your phone number' }]">
+                    <a-input v-model:value="shippingInfo.phone" placeholder="Enter your phone number" />
+                  </a-form-item>
+                </a-col>
+                <a-col :span="12">
+                  <a-form-item label="Shipping Address" name="location" :rules="[{ required: true, message: 'Please enter your shipping address' }]">
+                    <a-textarea v-model:value="shippingInfo.location" placeholder="Enter your shipping address" :rows="3" />
+                  </a-form-item>
+                </a-col>
+              </a-row>
+            </a-form>
+          </div>
+        </div>
+        
         <div class="actions">
           <a-button @click="goBack">Return to cart</a-button>
           <a-button type="primary" @click="handleSubmitOrder">Submit your order</a-button>
@@ -108,6 +128,12 @@ const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const cartItems = ref<CartItemVO[]>([])
+
+// 收货信息
+const shippingInfo = ref({
+  phone: '',
+  location: ''
+})
 
 // 支付相关
 const paymentModalVisible = ref(false)
@@ -232,6 +258,17 @@ const handleSubmitOrder = async () => {
       return;
     }
     
+    // 验证收货信息
+    if (!shippingInfo.value.phone) {
+      message.error('请填写收货人手机号');
+      return;
+    }
+    
+    if (!shippingInfo.value.location) {
+      message.error('请填写收货地址');
+      return;
+    }
+    
     // 检查是否是直接购买模式
     const directBuy = route.query.directBuy === 'true'
     
@@ -247,7 +284,9 @@ const handleSubmitOrder = async () => {
         directBuy: true,
         productId: productId,
         quantity: quantity,
-        paymentMethod: paymentMethod.value
+        paymentMethod: paymentMethod.value,
+        phone: shippingInfo.value.phone,
+        location: shippingInfo.value.location
       };
       console.log('直接购买模式，参数:', requestData);
     } else {
@@ -255,7 +294,9 @@ const handleSubmitOrder = async () => {
       const itemIds = cartItems.value.map(item => item.id);
       requestData = { 
         cartItemIds: itemIds,
-        paymentMethod: paymentMethod.value
+        paymentMethod: paymentMethod.value,
+        phone: shippingInfo.value.phone,
+        location: shippingInfo.value.location
       };
       console.log('购物车模式，购物车项IDs:', itemIds);
     }
@@ -375,57 +416,63 @@ const completePayment = async () => {
     return
   }
   
-  // console.log('准备支付订单, 订单号:', currentOrderNo.value);
+  // 关闭支付模态框
+  paymentModalVisible.value = false
   
-  paymentLoading.value = true
-  try {
-    // 确保订单号有效
-    const orderNoStr = String(currentOrderNo.value).trim();
-    // console.log('处理后的订单号:', orderNoStr);
-    
-    // 执行支付操作
-    await payOrder(orderNoStr)
-    
-    // 支付成功
-    message.success('支付成功！')
-    
-    // 关闭模态框并跳转到支付成功页面
-    paymentModalVisible.value = false
-    
-    // 跳转到支付成功页面，带上订单号和金额参数
+  // 检查支付方式
+  if (paymentMethod.value === '1' || paymentMethod.value === '2') {
+    // 支付宝或微信支付 - 跳转到支付二维码页面
     router.push({
-      path: '/payment-success',
+      path: `/payment/${currentOrderNo.value}`,
       query: {
-        orderNo: orderNoStr,
-        amount: totalPrice.value.toFixed(2)
+        amount: totalPrice.value.toFixed(2),
+        method: paymentMethod.value
       }
     })
-  } catch (error: any) {
-    // 详细记录错误信息
-    console.error('支付失败:', {
-      orderNo: currentOrderNo.value,
-      错误详情: error,
-      响应状态: error.response?.status,
-      响应数据: error.response?.data,
-      请求配置: error.config
-    });
-    
-    // 提供更详细的错误信息
-    if (error.response) {
-      if (error.response.status === 404) {
-        message.error('订单不存在，请重新提交订单')
-      } else if (error.response.status === 400) {
-        message.error(error.response.data?.message || '订单状态异常，无法支付')
+  } else {
+    // 其他支付方式 - 直接处理支付并跳转到成功页面
+    paymentLoading.value = true
+    try {
+      // 确保订单号有效
+      const orderNoStr = String(currentOrderNo.value).trim();
+      
+      // 执行支付操作
+      await payOrder(orderNoStr, paymentMethod.value)
+      
+      // 支付成功
+      message.success('支付成功！')
+      
+      // 跳转到支付成功页面
+      router.push({
+        path: `/payment-success/${orderNoStr}`,
+      })
+    } catch (error: any) {
+      // 详细记录错误信息
+      console.error('支付失败:', {
+        orderNo: currentOrderNo.value,
+        错误详情: error,
+        响应状态: error.response?.status,
+        响应数据: error.response?.data,
+        请求配置: error.config
+      });
+      
+      // 提供更详细的错误信息
+      if (error.response) {
+        if (error.response.status === 404) {
+          message.error('订单不存在，请重新提交订单')
+        } else if (error.response.status === 400) {
+          message.error(error.response.data?.message || '订单状态异常，无法支付')
+        } else {
+          message.error(error.response.data?.message || '支付失败，请稍后重试')
+        }
+      } else if (error.request) {
+        message.error('网络请求失败，请检查网络连接')
       } else {
-        message.error(error.response.data?.message || '支付失败，请稍后重试')
+        message.error(error.message || '支付操作出现异常')
       }
-    } else if (error.request) {
-      message.error('网络请求失败，请检查网络连接')
-    } else {
-      message.error(error.message || '支付操作出现异常')
+    } finally {
+      paymentLoading.value = false
     }
-  } finally {
-    paymentLoading.value = false
   }
 }
 

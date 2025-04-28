@@ -7,6 +7,8 @@
           <a-tab-pane key="1" tab="To be shipped"></a-tab-pane>
           <a-tab-pane key="2" tab="Shipped"></a-tab-pane>
           <a-tab-pane key="3" tab="Done"></a-tab-pane>
+          <a-tab-pane key="4" tab="Canceled"></a-tab-pane>
+          <a-tab-pane key="5" tab="Refunded"></a-tab-pane>
         </a-tabs>
         <div class="orders-actions">
           <a-button type="primary" @click="goToSalesAnalytics">
@@ -56,7 +58,7 @@
         v-model:visible="orderDetailVisible"
         title="Order Details"
         width="800px"
-        :footer="null"
+        :footer="null"fro
       >
         <a-descriptions bordered :column="3">
           <a-descriptions-item label="Order number" :span="3">{{ currentOrder ? currentOrder.orderNo : 'No order number' }}</a-descriptions-item>
@@ -69,6 +71,8 @@
             </a-tag>
           </a-descriptions-item>
           <a-descriptions-item label="Payment Methods" :span="3">{{ getPaymentMethodText(currentOrder?.paymentMethod) }}</a-descriptions-item>
+          <a-descriptions-item label="Receiver Phone" :span="1">{{ currentOrder?.phone || 'Not available' }}</a-descriptions-item>
+          <a-descriptions-item label="Receiver Address" :span="2">{{ currentOrder?.location || 'Not available' }}</a-descriptions-item>
         </a-descriptions>
         
         <a-divider />
@@ -117,7 +121,9 @@ const tabs = ref([
   { key: '0', name: 'All orders' },
   { key: '1', name: 'To be shipped' },
   { key: '2', name: 'Shipped' },
-  { key: '3', name: 'Done' }
+  { key: '3', name: 'Done' },
+  { key: '4', name: 'Canceled' },
+  { key: '5', name: 'Refunded' }
 ]);
 
 const activeTab = ref('0');
@@ -256,8 +262,8 @@ const fetchOrders = async () => {
           status: String(order.status || '0'),
           // 保留用户名，如果没有则显示未知用户
           username: order.username || '未知用户',
-          // 保留支付方式，如果没有则默认为支付宝
-          paymentMethod: order.paymentMethod || '1',
+          // 保留支付方式，只在为null或undefined时默认为未知
+          paymentMethod: order.paymentMethod !== undefined ? String(order.paymentMethod) : undefined,
           // 处理商品图片
           products: products.map((product: any) => ({
             ...product,
@@ -381,7 +387,8 @@ const getStatusText = (status: string | undefined) => {
     case '1': return '待发货';
     case '2': return '已发货';
     case '3': return '已完成';
-    case '4': return '已退款';
+    case '4': return '已取消';
+    case '5': return '已退款';
     default: return '未知状态';
   }
 };
@@ -394,20 +401,24 @@ const getStatusType = (status: string | undefined) => {
     case '1': return 'warning';
     case '2': return 'processing';
     case '3': return 'success';
-    case '4': return 'error';
+    case '4': return 'default';
+    case '5': return 'error';
     default: return 'default';
   }
 };
 
-const getPaymentMethodText = (method: string | undefined) => {
-  if (!method) return '未知支付方式';
+const getPaymentMethodText = (method: string | number | undefined | null) => {
+  if (method === undefined || method === null) return '未知支付方式';
   
-  switch (method) {
+  // 确保处理为字符串
+  const methodStr = String(method);
+  
+  switch (methodStr) {
     case '1': return '支付宝';
     case '2': return '微信支付';
     case '3': return '银行卡';
     case '4': return '货到付款';
-    default: return '未知支付方式';
+    default: return `支付方式(${methodStr})`;
   }
 };
 

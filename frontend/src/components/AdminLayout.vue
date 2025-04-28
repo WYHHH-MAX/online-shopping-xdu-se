@@ -56,7 +56,8 @@ import {
   LogoutOutlined,
   DownOutlined,
   SolutionOutlined,
-  ShoppingOutlined
+  ShoppingOutlined,
+  ShoppingCartOutlined
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
@@ -91,6 +92,12 @@ const menuItems = reactive([
     path: '/admin/products', 
     title: 'Merchandise management',
     icon: ShoppingOutlined 
+  },
+  { 
+    key: 'orders', 
+    path: '/admin/orders', 
+    title: 'Order management',
+    icon: ShoppingCartOutlined 
   }
 ])
 
@@ -114,7 +121,7 @@ watch(
       selectedKeys.value = [menuKey];
       
       // 确保菜单项存在，否则默认选中dashboard
-      const validMenuKeys = ['dashboard', 'seller-requests', 'users', 'products'];
+      const validMenuKeys = ['dashboard', 'seller-requests', 'users', 'products', 'orders'];
       if (!validMenuKeys.includes(menuKey)) {
         // console.warn('无效的菜单键:', menuKey, '将使用默认值dashboard');
         selectedKeys.value = ['dashboard'];

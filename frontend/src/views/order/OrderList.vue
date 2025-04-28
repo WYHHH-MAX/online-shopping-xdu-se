@@ -11,6 +11,7 @@
           <a-tab-pane key="2" tab="To be received"></a-tab-pane>
           <a-tab-pane key="3" tab="Done"></a-tab-pane>
           <a-tab-pane key="4" tab="Canceled"></a-tab-pane>
+          <a-tab-pane key="5" tab="Refunded"></a-tab-pane>
         </a-tabs>
       </div>
       
@@ -51,16 +52,27 @@
             </div>
             
             <div class="order-actions">
-              <template v-if="order.status === 0">
+              <template v-if="parseInt(order.status) === ORDER_STATUS.PENDING_PAYMENT">
                 <a-button type="primary" @click="handlePayOrder(order)">Go and pay</a-button>
                 <a-button @click="handleCancelOrder(order)">Cancel the order</a-button>
               </template>
               
-              <template v-if="order.status === 2">
+              <template v-if="parseInt(order.status) === ORDER_STATUS.PENDING_SHIPMENT">
+                <a-button @click="handleCancelOrder(order)">Cancel the order</a-button>
+              </template>
+              
+              <template v-if="parseInt(order.status) === ORDER_STATUS.PENDING_RECEIPT">
                 <a-button type="primary" @click="handleConfirmOrder(order)">Confirm receipt</a-button>
               </template>
               
-              <a-button v-if="order.status === 3" @click="handleViewOrderDetail(order)">Find out more</a-button>
+              <template v-if="parseInt(order.status) === ORDER_STATUS.COMPLETED">
+                <a-button type="primary" @click="handleRefundOrder(order)">Apply for refund</a-button>
+                <a-button @click="handleViewOrderDetail(order)">Find out more</a-button>
+              </template>
+              
+              <template v-if="parseInt(order.status) === ORDER_STATUS.CANCELLED || parseInt(order.status) === ORDER_STATUS.REFUNDED">
+                <a-button @click="handleViewOrderDetail(order)">Find out more</a-button>
+              </template>
             </div>
           </div>
         </div>
@@ -116,7 +128,7 @@
 import { ref, reactive, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
-import { getOrders, payOrder, cancelOrder, confirmOrder, Order } from '@/api/order'
+import { getOrders, payOrder, cancelOrder, confirmOrder, refundOrder, Order } from '@/api/order'
 import type { PageResult } from '@/types/common'
 import { getImageUrl } from '@/utils/imageUtil'
 import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
@@ -129,7 +141,8 @@ const ORDER_STATUS = {
   PENDING_SHIPMENT: 1, // 待发货
   PENDING_RECEIPT: 2,  // 待收货
   COMPLETED: 3,        // 已完成
-  CANCELLED: 4         // 已取消
+  CANCELLED: 4,        // 已取消
+  REFUNDED: 5          // 已退款
 }
 
 // 列表数据
@@ -191,6 +204,14 @@ const loadOrders = async () => {
       total.value = 0;
     }
     
+    // 输出每个订单的状态，便于调试
+    if (orders.value.length > 0) {
+      console.log('订单状态详情:');
+      orders.value.forEach((order, index) => {
+        console.log(`订单 ${index+1} - orderNo: ${order.orderNo}, 状态值: ${order.status}, 类型: ${typeof order.status}`);
+      });
+    }
+    
     console.log('处理后的订单列表数据:', {
       length: orders.value.length,
       total: total.value,
@@ -231,6 +252,8 @@ const getStatusText = (status: number) => {
       return '已完成'
     case ORDER_STATUS.CANCELLED:
       return '已取消'
+    case ORDER_STATUS.REFUNDED:
+      return '已退款'
     default:
       return '未知状态'
   }
@@ -249,6 +272,8 @@ const getStatusClass = (status: number) => {
       return 'status-completed'
     case ORDER_STATUS.CANCELLED:
       return 'status-cancelled'
+    case ORDER_STATUS.REFUNDED:
+      return 'status-refunded'
     default:
       return ''
   }
@@ -360,6 +385,27 @@ const handleViewOrderDetail = (order: any) => {
   router.push(`/order/${order.id}`)
 }
 
+// 申请退款
+const handleRefundOrder = (order: any) => {
+  Modal.confirm({
+    title: '确认申请退款',
+    icon: () => h(ExclamationCircleOutlined),
+    content: '确定要申请退款吗？',
+    okText: '确认',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await refundOrder(order.orderNo)
+        message.success('退款申请成功')
+        loadOrders()
+      } catch (error) {
+        console.error('申请退款失败:', error)
+        message.error('申请退款失败')
+      }
+    }
+  })
+}
+
 onMounted(() => {
   loadOrders()
 })
@@ -446,6 +492,10 @@ onMounted(() => {
 
 .status-cancelled {
   color: #d9d9d9;
+}
+
+.status-refunded {
+  color: #722ed1;
 }
 
 .order-items {

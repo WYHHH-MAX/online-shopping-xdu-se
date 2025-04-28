@@ -151,7 +151,7 @@ spm2/
 - 购物车状态 (空购物车/有商品/结算中)
 - 订单状态 (待付款/待发货/待收货/已完成/已取消)
 - 商家申请状态 (待提交/待审核/审核通过/审核拒绝)
-[README.md](README.md)
+
 ### 活动图
 系统主要活动包括:
 - 用户认证流程
@@ -163,3 +163,40 @@ spm2/
 ## 许可证
 
 本项目使用 [MIT 许可证](LICENSE)。
+
+## Payment Simulation Feature
+
+The application now supports simulated WeChat and Alipay payments. Here's how it works:
+
+### For Merchants:
+1. During merchant registration or later in the merchant settings, merchants can upload QR code images for WeChat Pay and Alipay.
+2. These QR codes are stored in the `src/main/resources/static/images/pay` directory with filenames based on the merchant ID and payment type.
+3. If a merchant doesn't upload their own QR codes, default QR codes are automatically generated.
+
+### For Customers:
+1. During checkout, customers can select their preferred payment method (Alipay, WeChat Pay, etc.).
+2. For WeChat Pay and Alipay, customers are redirected to a payment page showing the merchant's QR code.
+3. On this page, customers can simulate a successful payment by clicking the "Simulate Payment" button.
+4. Upon successful payment, the order status is updated, and the customer is redirected to a payment success page.
+
+### Implementation Details:
+- Payment QR code images are stored at `src/main/resources/static/images/pay/` with naming convention `{payType}_{sellerId}.{extension}`.
+- Default QR codes are generated at application startup if they don't exist.
+- The payment process is simulated through client-side actions without requiring actual payment processors.
+- Payment success is recorded in the database, updating order status appropriately.
+
+### Related Files:
+- Frontend:
+  - `frontend/src/views/cart/Payment.vue` - Main payment page with QR code display
+  - `frontend/src/views/cart/PaymentSuccess.vue` - Success page after payment
+  - `frontend/src/views/cart/Checkout.vue` - Updated to redirect to payment page
+  - `frontend/src/views/seller/Apply.vue` - Updated to allow QR code upload during registration
+  - `frontend/src/views/seller/Payment.vue` - Management of payment QR codes
+  - `frontend/src/api/seller.ts` - API functions for QR code uploads
+  - `frontend/src/router/index.ts` - Updated routes for payment pages
+
+- Backend:
+  - `src/main/java/com/shop/online/controller/SellerController.java` - Endpoints for QR code uploads
+  - `src/main/java/com/shop/online/service/impl/SellerServiceImpl.java` - Implementation of QR code storage
+  - `src/main/java/com/shop/online/util/FileUtil.java` - File handling utilities for QR codes
+  - `src/main/java/com/shop/online/config/ApplicationStartupListener.java` - Default QR code initialization

@@ -28,6 +28,9 @@ public class FileUtil {
     // 商品图片上传目录
     private static final String PRODUCT_DIR = "products";
     
+    // 支付二维码上传目录
+    private static final String PAY_DIR = "pay";
+    
     // 允许的图片格式
     private static final String[] ALLOWED_IMAGE_TYPES = {
         "image/jpeg", "image/png", "image/gif"
@@ -405,6 +408,138 @@ public class FileUtil {
         
         if (file.isEmpty() || file.getSize() > 5 * 1024 * 1024) { // 5MB限制
             throw new IllegalArgumentException("文件大小不合法，最大支持5MB");
+        }
+    }
+    
+    /**
+     * 上传支付二维码图片
+     *
+     * @param file 二维码图片文件
+     * @param sellerId 商家ID
+     * @param payType 支付类型(wechat, alipay)
+     * @return 图片相对路径
+     * @throws IOException 文件上传异常
+     */
+    public static String uploadPaymentQrCode(MultipartFile file, Long sellerId, String payType) throws IOException {
+        // 验证文件是否为图片
+        validateImageFile(file);
+        
+        // 获取文件扩展名
+        String originalFilename = file.getOriginalFilename();
+        String extension = StringUtils.getFilenameExtension(originalFilename);
+        
+        // 生成唯一的文件名
+        // 使用固定命名方式，便于覆盖同一商家的二维码
+        String filename = String.format("%s_%d.%s", payType, sellerId, extension);
+        
+        // 创建上传目录
+        Path uploadPath = getPaymentQrCodeUploadPath();
+        
+        // 保存文件
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        
+        // 返回相对路径
+        return "/images/pay/" + filename;
+    }
+    
+    /**
+     * 获取支付二维码上传路径
+     */
+    private static Path getPaymentQrCodeUploadPath() throws IOException {
+        // 使用项目根目录
+        String projectRoot = System.getProperty("user.dir");
+        
+        // 构建支付二维码保存路径: 项目目录/src/main/resources/static/images/pay
+        Path staticPath = Paths.get(projectRoot, "src", "main", "resources", "static", "images");
+        Path payDir = staticPath.resolve(PAY_DIR);
+        
+        // 创建目录（如果不存在）
+        if (!Files.exists(payDir)) {
+            Files.createDirectories(payDir);
+        }
+        
+        return payDir;
+    }
+    
+    /**
+     * 初始化默认的支付二维码
+     */
+    public static void initializeDefaultPaymentQrCodes() {
+        try {
+            Path paymentDir = getPaymentQrCodeUploadPath();
+            
+            // 检查并创建默认的微信支付二维码
+            Path defaultWechatQrCode = paymentDir.resolve("default-wechat.png");
+            if (!Files.exists(defaultWechatQrCode)) {
+                System.out.println("创建默认的微信支付二维码");
+                
+                // 如果您有默认的微信支付图片，可以从资源目录复制
+                // 或者创建一个简单的文本图片
+                createDefaultImage(defaultWechatQrCode, "WeChat Pay");
+            }
+            
+            // 检查并创建默认的支付宝二维码
+            Path defaultAlipayQrCode = paymentDir.resolve("default-alipay.png");
+            if (!Files.exists(defaultAlipayQrCode)) {
+                System.out.println("创建默认的支付宝二维码");
+                
+                // 如果您有默认的支付宝图片，可以从资源目录复制
+                // 或者创建一个简单的文本图片
+                createDefaultImage(defaultAlipayQrCode, "Alipay");
+            }
+            
+            System.out.println("默认支付二维码初始化完成");
+        } catch (Exception e) {
+            System.err.println("初始化默认支付二维码失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * 创建默认的图片，带有文本
+     */
+    private static void createDefaultImage(Path imagePath, String text) throws IOException {
+        try {
+            // 使用Java AWT创建一个简单的带文本的图片
+            java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(
+                200, 200, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            
+            // 获取Graphics2D对象
+            java.awt.Graphics2D g2d = image.createGraphics();
+            
+            // 设置背景颜色
+            g2d.setColor(java.awt.Color.WHITE);
+            g2d.fillRect(0, 0, 200, 200);
+            
+            // 设置文本颜色和字体
+            g2d.setColor(java.awt.Color.BLACK);
+            g2d.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 18));
+            
+            // 计算文本位置使其居中
+            java.awt.FontMetrics metrics = g2d.getFontMetrics();
+            int x = (200 - metrics.stringWidth(text)) / 2;
+            int y = ((200 - metrics.getHeight()) / 2) + metrics.getAscent();
+            
+            // 绘制文本
+            g2d.drawString(text, x, y);
+            
+            // 绘制简易二维码框
+            g2d.drawRect(50, 50, 100, 100);
+            g2d.drawLine(50, 50, 150, 150);
+            g2d.drawLine(50, 150, 150, 50);
+            
+            // 释放资源
+            g2d.dispose();
+            
+            // 保存图片
+            javax.imageio.ImageIO.write(image, "png", imagePath.toFile());
+            
+            System.out.println("成功创建默认图片: " + imagePath);
+        } catch (Exception e) {
+            System.err.println("创建默认图片失败: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
     }
 } 
